@@ -384,7 +384,9 @@ function animate() {
         }
     }
 
-    starField.rotation.y += STARFIELD.rotationSpeed;
+    if (STARFIELD.enabled && starField) {
+        starField.rotation.y += STARFIELD.rotationSpeed;
+    }
 
     controls.update();
     composer.render();
@@ -425,8 +427,10 @@ export function setupScene() {
     renderer.setClearColor(RENDERER.clearColor);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    starField = createStarfield();
-    scene.add(starField);
+    if (STARFIELD.enabled) {
+        starField = createStarfield();
+        scene.add(starField);
+    }
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = CONTROLS.enableDamping;

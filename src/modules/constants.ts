@@ -60,6 +60,7 @@ export const FILM = {
 // STARFIELD SETTINGS
 // ============================================================================
 export const STARFIELD = {
+    enabled: false,          // Set to false to disable starfield completely
     count: 5000,
     radiusMin: 40,
     radiusMax: 120,
