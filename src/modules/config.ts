@@ -4,7 +4,7 @@ export const config = {
     paused: false,
     activePaletteIndex: 1,
     currentFormation: 0,
-    numFormations: 4,
+    numFormations: 7,  // Now includes grid, sphere, and ASCII formations
     densityFactor: 1
 };
 
