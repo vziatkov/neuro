@@ -1,0 +1,39 @@
+{
+  "name": "neuro",
+  "version": "1.0.0",
+  "description": "Interactive 3D neural network visualization with Three.js",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "threejs",
+    "neural-network",
+    "3d-visualization",
+    "webgl",
+    "interactive",
+    "typescript",
+    "vite"
+  ],
+  "author": "Vitalii Ziatkov",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vziatkov/neuro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vziatkov/neuro/issues"
+  },
+  "homepage": "https://github.com/vziatkov/neuro#readme",
+  "dependencies": {
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.181.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}
