@@ -104,6 +104,50 @@ export const NODE = {
 } as const;
 
 // ============================================================================
+// RANDOM DISTRIBUTION & POSITIONING SETTINGS
+// ============================================================================
+// Control randomness and shape of node distribution
+export const RANDOM_DIST = {
+    // ⚪ SPHERE/BALL DISTRIBUTION CONTROL (Основной параметр для формы!)
+    // Влияет на Quantum Cortex кольца и другие сферические распределения
+    // 
+    // Примеры использования:
+    //   sphereDistribution: 0.0   → ШАР (все ноды внутри сферы, равномерно заполнен)
+    //   sphereDistribution: 0.3   → Шар с небольшим количеством на поверхности
+    //   sphereDistribution: 0.5   → Смешанное (половина внутри, половина на поверхности)
+    //   sphereDistribution: 0.7   → Сфера с небольшим количеством внутри
+    //   sphereDistribution: 1.0   → СФЕРА (все ноды на поверхности, полая внутри)
+    sphereDistribution: 0,
+    
+    // Radius distribution exponent (for Hyperdimensional Mesh)
+    // 0.0 = all at max radius (surface), 1.0 = uniform, >1.0 = more towards center
+    radiusDistributionExponent: 0.7,
+    
+    // Cloud/ring radius distribution (для кластеров и колец)
+    // 0.0 = все на краю, 1.0 = равномерно, 0.5 = больше в центре облака
+    cloudRadiusDistributionExponent: 0.5,
+    
+    // Random vector spread for general positioning
+    positionSpread: 1.0,          // How much random offset to apply
+    
+    // Cluster positioning (Synaptic Cloud)
+    clusterDistanceMin: 0.3,      // Min distance factor (0.0-1.0)
+    clusterDistanceMax: 1.0,      // Max distance factor (0.0-1.0)
+    
+    // Cloud radius for clusters
+    cloudRadiusBase: 7.0,
+    cloudRadiusVariation: 3.0,    // cloudRadius = base + random(0, variation)
+    
+    // Position jitter for different node types
+    intermediateJitter: 3.0,      // Random offset for bridge/intermediate nodes
+    jumpConnectionJitter: 8.0,    // Random offset for jump connections
+    bridgeNodeJitter: 5.0,        // Random offset for bridge nodes
+    longRangeJitter: 4.0,         // Random offset for long-range connections
+    spiralJitter: 1.5,            // Random offset for spiral formations
+    radialJitter: 2.0             // Random offset for radial connections
+} as const;
+
+// ============================================================================
 // CONNECTION VISUALIZATION SETTINGS
 // ============================================================================
 export const CONNECTION = {

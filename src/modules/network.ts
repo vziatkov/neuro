@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NODE, QUANTUM_CORTEX, HYPERDIMENSIONAL_MESH, NEURAL_VORTEX, SYNAPTIC_CLOUD } from './constants';
+import { NODE, QUANTUM_CORTEX, HYPERDIMENSIONAL_MESH, NEURAL_VORTEX, SYNAPTIC_CLOUD, RANDOM_DIST } from './constants';
 
 export class Node {
     position: THREE.Vector3;
@@ -77,12 +77,16 @@ function generateQuantumCortex(nodes: Node[], rootNode: Node, densityFactor: num
         const ringLayer: Node[] = [];
         for (let i = 0; i < nodesInRing; i++) {
             const t = i / nodesInRing;
+            // Распределение по сфере: используем sphereDistribution для контроля формы
+            // Если sphereDistribution < 1.0, ноды будут внутри сферы (шар), иначе на поверхности
+            const radiusFactor = Math.pow(Math.random(), 1.0 - RANDOM_DIST.sphereDistribution);
             const ringPhi = Math.acos(2 * Math.random() - 1);
             const ringTheta = 2 * Math.PI * t;
+            const actualRingDist = ringDist * radiusFactor;
             const pos = new THREE.Vector3(
-                ringDist * Math.sin(ringPhi) * Math.cos(ringTheta),
-                ringDist * Math.sin(ringPhi) * Math.sin(ringTheta),
-                ringDist * Math.cos(ringPhi)
+                actualRingDist * Math.sin(ringPhi) * Math.cos(ringTheta),
+                actualRingDist * Math.sin(ringPhi) * Math.sin(ringTheta),
+                actualRingDist * Math.cos(ringPhi)
             );
             const level = Math.ceil(ringDist / 5);
             const nodeType = Math.random() < QUANTUM_CORTEX.ringConnectionProbability ? 1 : 0;
@@ -144,9 +148,9 @@ function generateQuantumCortex(nodes: Node[], rootNode: Node, densityFactor: num
                     const t = j / (QUANTUM_CORTEX.numIntermediates + 1);
                     const pos = new THREE.Vector3().lerpVectors(startNode.position, endNode.position, t);
                     pos.add(new THREE.Vector3(
-                        THREE.MathUtils.randFloatSpread(QUANTUM_CORTEX.intermediateSpread),
-                        THREE.MathUtils.randFloatSpread(QUANTUM_CORTEX.intermediateSpread),
-                        THREE.MathUtils.randFloatSpread(QUANTUM_CORTEX.intermediateSpread)
+                        THREE.MathUtils.randFloatSpread(RANDOM_DIST.intermediateJitter),
+                        THREE.MathUtils.randFloatSpread(RANDOM_DIST.intermediateJitter),
+                        THREE.MathUtils.randFloatSpread(RANDOM_DIST.intermediateJitter)
                     ));
                     const newNode = new Node(pos, startNode.level, 0);
                     newNode.distanceFromRoot = rootNode.position.distanceTo(pos);
@@ -176,11 +180,13 @@ function generateHyperdimensionalMesh(nodes: Node[], rootNode: Node, densityFact
         const dimNodes: Node[] = [];
         const dimVec = dimensionVectors[d];
         for (let i = 0; i < nodesPerDimension; i++) {
+            // Используем radiusDistributionExponent для контроля распределения по радиусу
+            // Можно заменить на RANDOM_DIST.radiusDistributionExponent для единообразия
             const distance = maxRadius * Math.pow(Math.random(), HYPERDIMENSIONAL_MESH.radiusExponent);
             const randomVec = new THREE.Vector3(
-                THREE.MathUtils.randFloatSpread(1),
-                THREE.MathUtils.randFloatSpread(1),
-                THREE.MathUtils.randFloatSpread(1)
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.positionSpread),
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.positionSpread),
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.positionSpread)
             ).normalize();
             const biasedVec = new THREE.Vector3().addVectors(
                 dimVec.clone().multiplyScalar(
@@ -247,9 +253,9 @@ function generateHyperdimensionalMesh(nodes: Node[], rootNode: Node, densityFact
                             if (!n1.isConnectedTo(n2)) {
                                 const midPos = new THREE.Vector3().lerpVectors(n1.position, n2.position, 0.5);
                                 midPos.add(new THREE.Vector3(
-                                    THREE.MathUtils.randFloatSpread(HYPERDIMENSIONAL_MESH.interDimensionSpread),
-                                    THREE.MathUtils.randFloatSpread(HYPERDIMENSIONAL_MESH.interDimensionSpread),
-                                    THREE.MathUtils.randFloatSpread(HYPERDIMENSIONAL_MESH.interDimensionSpread)
+                                    THREE.MathUtils.randFloatSpread(RANDOM_DIST.intermediateJitter),
+                                    THREE.MathUtils.randFloatSpread(RANDOM_DIST.intermediateJitter),
+                                    THREE.MathUtils.randFloatSpread(RANDOM_DIST.intermediateJitter)
                                 ));
                                 const interNode = new Node(midPos, Math.max(n1.level, n2.level), 0);
                                 interNode.distanceFromRoot = rootNode.position.distanceTo(midPos);
@@ -275,9 +281,9 @@ function generateHyperdimensionalMesh(nodes: Node[], rootNode: Node, densityFact
                             const t = j / numPoints;
                             const pos = new THREE.Vector3().lerpVectors(startNode.position, endNode.position, t);
                             pos.add(new THREE.Vector3(
-                                THREE.MathUtils.randFloatSpread(HYPERDIMENSIONAL_MESH.jumpSpread) * Math.sin(t * Math.PI),
-                                THREE.MathUtils.randFloatSpread(HYPERDIMENSIONAL_MESH.jumpSpread) * Math.sin(t * Math.PI),
-                                THREE.MathUtils.randFloatSpread(HYPERDIMENSIONAL_MESH.jumpSpread) * Math.sin(t * Math.PI)
+                                THREE.MathUtils.randFloatSpread(RANDOM_DIST.jumpConnectionJitter) * Math.sin(t * Math.PI),
+                                THREE.MathUtils.randFloatSpread(RANDOM_DIST.jumpConnectionJitter) * Math.sin(t * Math.PI),
+                                THREE.MathUtils.randFloatSpread(RANDOM_DIST.jumpConnectionJitter) * Math.sin(t * Math.PI)
                             ));
                             const jumpNode = new Node(pos, Math.max(startNode.level, endNode.level), 0);
                             jumpNode.distanceFromRoot = rootNode.position.distanceTo(pos);
@@ -313,9 +319,9 @@ function generateNeuralVortex(nodes: Node[], rootNode: Node, densityFactor: numb
 
             const pos = new THREE.Vector3(radius * Math.cos(angle), height, radius * Math.sin(angle));
             pos.add(new THREE.Vector3(
-                THREE.MathUtils.randFloatSpread(1.5),
-                THREE.MathUtils.randFloatSpread(1.5),
-                THREE.MathUtils.randFloatSpread(1.5)
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.spiralJitter),
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.spiralJitter),
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.spiralJitter)
             ));
 
             const level = Math.floor(t * 5) + 1;
@@ -392,11 +398,11 @@ function generateNeuralVortex(nodes: Node[], rootNode: Node, densityFactor: numb
         for (let i = 1; i <= numSegments; i++) {
             const t = i / (numSegments + 1);
             const segPos = node.position.clone().multiplyScalar(1 - t);
-            segPos.add(new THREE.Vector3(
-                THREE.MathUtils.randFloatSpread(2),
-                THREE.MathUtils.randFloatSpread(2),
-                THREE.MathUtils.randFloatSpread(2)
-            ));
+                        segPos.add(new THREE.Vector3(
+                            THREE.MathUtils.randFloatSpread(RANDOM_DIST.radialJitter),
+                            THREE.MathUtils.randFloatSpread(RANDOM_DIST.radialJitter),
+                            THREE.MathUtils.randFloatSpread(RANDOM_DIST.radialJitter)
+                        ));
             const newNode = new Node(segPos, Math.floor(node.level * (1 - t)), 0);
             newNode.distanceFromRoot = rootNode.position.distanceTo(segPos);
             nodes.push(newNode);
@@ -415,7 +421,8 @@ function generateSynapticCloud(nodes: Node[], rootNode: Node, densityFactor: num
     for (let c = 0; c < numClusters; c++) {
         const phi = Math.acos(2 * Math.random() - 1);
         const theta = 2 * Math.PI * Math.random();
-        const distance = maxDist * (0.3 + 0.7 * Math.random());
+        const distance = maxDist * (RANDOM_DIST.clusterDistanceMin + 
+            (RANDOM_DIST.clusterDistanceMax - RANDOM_DIST.clusterDistanceMin) * Math.random());
         const pos = new THREE.Vector3(
             distance * Math.sin(phi) * Math.cos(theta),
             distance * Math.sin(phi) * Math.sin(theta),
@@ -442,13 +449,15 @@ function generateSynapticCloud(nodes: Node[], rootNode: Node, densityFactor: num
 
     for (const cluster of clusterNodes) {
         const clusterSize = Math.floor(20 * densityFactor);
-        const cloudRadius = 7 + Math.random() * 3;
+        const cloudRadius = RANDOM_DIST.cloudRadiusBase + Math.random() * RANDOM_DIST.cloudRadiusVariation;
         for (let i = 0; i < clusterSize; i++) {
-            const radius = cloudRadius * Math.pow(Math.random(), 0.5);
+            // Используем cloudRadiusDistributionExponent для контроля формы облака
+            // 0.5 = больше на краю, 1.0 = равномерно, <0.5 = больше в центре
+            const radius = cloudRadius * Math.pow(Math.random(), RANDOM_DIST.cloudRadiusDistributionExponent);
             const dir = new THREE.Vector3(
-                THREE.MathUtils.randFloatSpread(2),
-                THREE.MathUtils.randFloatSpread(2),
-                THREE.MathUtils.randFloatSpread(2)
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.positionSpread * 2),
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.positionSpread * 2),
+                THREE.MathUtils.randFloatSpread(RANDOM_DIST.positionSpread * 2)
             ).normalize();
             const pos = new THREE.Vector3().copy(cluster.position).add(dir.multiplyScalar(radius));
 
@@ -486,9 +495,9 @@ function generateSynapticCloud(nodes: Node[], rootNode: Node, densityFactor: num
 
         const bridgePos = new THREE.Vector3().lerpVectors(cluster1.position, cluster2.position, 0.3 + Math.random() * 0.4);
         bridgePos.add(new THREE.Vector3(
-            THREE.MathUtils.randFloatSpread(5),
-            THREE.MathUtils.randFloatSpread(5),
-            THREE.MathUtils.randFloatSpread(5)
+            THREE.MathUtils.randFloatSpread(RANDOM_DIST.bridgeNodeJitter),
+            THREE.MathUtils.randFloatSpread(RANDOM_DIST.bridgeNodeJitter),
+            THREE.MathUtils.randFloatSpread(RANDOM_DIST.bridgeNodeJitter)
         ));
         const bridgeNode = new Node(bridgePos, 2, 0);
         bridgeNode.distanceFromRoot = rootNode.position.distanceTo(bridgePos);
@@ -514,11 +523,11 @@ function generateSynapticCloud(nodes: Node[], rootNode: Node, densityFactor: num
         for (let i = 1; i <= numSegments; i++) {
             const t = i / (numSegments + 1);
             const segPos = outerNode.position.clone().multiplyScalar(1 - t * 0.8);
-            segPos.add(new THREE.Vector3(
-                THREE.MathUtils.randFloatSpread(4),
-                THREE.MathUtils.randFloatSpread(4),
-                THREE.MathUtils.randFloatSpread(4)
-            ));
+                        segPos.add(new THREE.Vector3(
+                            THREE.MathUtils.randFloatSpread(RANDOM_DIST.longRangeJitter),
+                            THREE.MathUtils.randFloatSpread(RANDOM_DIST.longRangeJitter),
+                            THREE.MathUtils.randFloatSpread(RANDOM_DIST.longRangeJitter)
+                        ));
             const newNode = new Node(segPos, outerNode.level, 0);
             newNode.distanceFromRoot = rootNode.position.distanceTo(segPos);
             nodes.push(newNode);
