@@ -13,11 +13,14 @@ Version License TypeScript
 
 ## ✨ Features
 
-- **4 Unique Network Formations**:
+- **7 Unique Network Formations**:
   - 🌌 Quantum Cortex
   - 🔮 Hyperdimensional Mesh
   - 🌪️ Neural Vortex
   - ☁️ Synaptic Cloud
+  - 📐 Grid Network
+  - ⭕ Sphere Formation
+  - 🔤 ASCII Neural Network
 
 - **Interactive Controls**:
   - Click or tap to create energy pulses through the network
@@ -37,6 +40,34 @@ Version License TypeScript
   - Mobile-friendly controls
   - Theme selector with 4 color palettes
   - Density slider
+
+## 🎨 Gallery
+
+Explore the diverse neural network formations and visualizations:
+
+<div align="center">
+
+### 🌌 Quantum Cortex
+![Quantum Cortex](Screenshot%202025-11-02%20at%2022.49.07.png)
+*Radial network structure with glowing connections*
+
+### 📐 Grid Network
+![Grid Network](Screenshot%202025-11-02%20at%2022.49.11.png)
+*Perfectly structured 100×100 grid formation*
+
+### ⭕ Sphere Formation
+![Sphere Formation](Screenshot%202025-11-02%20at%2022.49.16.png)
+*Spherical distribution of interconnected nodes*
+
+### ☁️ Synaptic Cloud
+![Synaptic Cloud](Screenshot%202025-11-02%20at%2022.49.22.png)
+*Organic cluster-based neural structure*
+
+### 🔤 ASCII Neural Network
+![ASCII Neural Network](Screenshot%202025-11-02%20at%2022.49.27.png)
+*Structured pattern-based network visualization*
+
+</div>
 
 ## 🚀 Getting Started
 
