@@ -25,7 +25,10 @@ export function initApp(root: HTMLElement) {
       <button id="change-formation-btn" class="control-button">Formation</button>
       <button id="pause-play-btn" class="control-button">Pause</button>
       <button id="reset-camera-btn" class="control-button">Reset Cam</button>
+      <button id="demo-mode-btn" class="control-button">Demo</button>
     </div>
+
+    <div id="formation-title" class="formation-title"></div>
 
     <canvas id="neural-network-canvas"></canvas>
   `;

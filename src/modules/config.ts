@@ -5,8 +5,19 @@ export const config = {
     activePaletteIndex: 1,
     currentFormation: 0,
     numFormations: 7,  // Now includes grid, sphere, and ASCII formations
-    densityFactor: 1
+    densityFactor: 1,
+    demoMode: false
 };
+
+export const formationNames = [
+    'Quantum Cortex',
+    'Hyperdimensional Mesh',
+    'Neural Vortex',
+    'Synaptic Cloud',
+    'Grid Network',
+    'Sphere Formation',
+    'ASCII Neural Network'
+];
 
 export const colorPalettes = [
     [new THREE.Color(0x4F46E5), new THREE.Color(0x7C3AED), new THREE.Color(0xC026D3), new THREE.Color(0xDB2777), new THREE.Color(0x8B5CF6)],

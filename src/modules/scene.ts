@@ -5,7 +5,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { config, colorPalettes } from './config';
+import { config, colorPalettes, formationNames } from './config';
 import { nodeShader, connectionShader } from './shaders';
 import { generateNeuralNetwork, type NeuralNetwork, type Node } from './network';
 import {
@@ -30,6 +30,8 @@ let interactionPlane: THREE.Plane;
 let interactionPoint: THREE.Vector3;
 let lastPulseIndex = 0;
 let densityTimeout: ReturnType<typeof setTimeout>;
+let demoInterval: ReturnType<typeof setInterval> | null = null;
+let formationTitleTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const pulseUniforms = {
     uTime: { value: 0.0 },
@@ -73,8 +75,23 @@ function createStarfield(): THREE.Points {
     return new THREE.Points(geo, mat);
 }
 
+function showFormationTitle(formationIndex: number) {
+    const titleElement = document.getElementById('formation-title');
+    if (!titleElement) return;
+    
+    titleElement.textContent = formationNames[formationIndex] || `Formation ${formationIndex + 1}`;
+    titleElement.classList.add('show');
+    
+    if (formationTitleTimeout) clearTimeout(formationTitleTimeout);
+    formationTitleTimeout = setTimeout(() => {
+        titleElement.classList.remove('show');
+    }, 2500);
+}
+
 function createNetworkVisualization(formationIndex: number, densityFactor = 1.0) {
     console.log(`Creating formation ${formationIndex}, density ${densityFactor}`);
+    
+    showFormationTitle(formationIndex);
     
     if (nodesMesh) {
         scene.remove(nodesMesh);
@@ -363,6 +380,41 @@ function setupUIListeners() {
         controls.reset();
         controls.autoRotate = false;
         setTimeout(() => { controls.autoRotate = true; }, UI.resetCameraDelay);
+    });
+
+    const demoModeBtn = document.getElementById('demo-mode-btn')!;
+    demoModeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        config.demoMode = !config.demoMode;
+        
+        if (config.demoMode) {
+            demoModeBtn.textContent = 'Stop Demo';
+            demoModeBtn.style.background = 'rgba(255, 100, 50, .5)';
+            
+            // Start auto-rotating through formations
+            if (demoInterval) clearInterval(demoInterval);
+            demoInterval = setInterval(() => {
+                config.currentFormation = (config.currentFormation + 1) % config.numFormations;
+                createNetworkVisualization(config.currentFormation, config.densityFactor);
+                controls.reset();
+                controls.autoRotate = true;
+            }, 4000); // Switch every 4 seconds
+            
+            // Start with first formation
+            config.currentFormation = 0;
+            createNetworkVisualization(0, config.densityFactor);
+            controls.reset();
+            controls.autoRotate = true;
+        } else {
+            demoModeBtn.textContent = 'Demo';
+            demoModeBtn.style.background = '';
+            
+            if (demoInterval) {
+                clearInterval(demoInterval);
+                demoInterval = null;
+            }
+            controls.autoRotate = false;
+        }
     });
 }
 
