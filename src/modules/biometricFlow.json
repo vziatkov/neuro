@@ -1,0 +1,102 @@
+{
+  "flow": {
+    "id": "flow_001",
+    "timestamp": 1234567890,
+    "duration_ms": 5000,
+    "layers": [
+      {
+        "id": "breath",
+        "type": "respiratory",
+        "active": true,
+        "data": {
+          "phase": "inhale",
+          "depth": 0.85,
+          "rate_bpm": 12,
+          "intensity": 0.9
+        },
+        "visual": {
+          "color": "#4fd1c5",
+          "pulse_origin": {
+            "x": 0.0,
+            "y": 5.0,
+            "z": 0.0
+          },
+          "pattern": "wave_expansion",
+          "radius": 8.5
+        }
+      },
+      {
+        "id": "heart",
+        "type": "cardiovascular",
+        "active": true,
+        "data": {
+          "bpm": 72,
+          "hrv": 45,
+          "intensity": 0.7,
+          "variability": 0.12
+        },
+        "visual": {
+          "color": "#f6ad55",
+          "pulse_origin": {
+            "x": 2.0,
+            "y": 0.0,
+            "z": -3.0
+          },
+          "pattern": "pulse_radiation",
+          "radius": 6.2
+        }
+      },
+      {
+        "id": "emotion",
+        "type": "affective",
+        "active": true,
+        "data": {
+          "stress": 0.3,
+          "calm": 0.8,
+          "focus": 0.6,
+          "dominant": "calm"
+        },
+        "visual": {
+          "color": "#ed64a6",
+          "pulse_origin": {
+            "x": -2.0,
+            "y": -3.0,
+            "z": 2.0
+          },
+          "pattern": "node_color_shift",
+          "radius": 5.0
+        }
+      }
+    ],
+    "links": [
+      {
+        "source": "breath",
+        "target": "heart",
+        "strength": 0.8,
+        "effect": "amplify",
+        "description": "Deep breath amplifies heart pulse"
+      },
+      {
+        "source": "heart",
+        "target": "emotion",
+        "strength": 0.6,
+        "effect": "modulate",
+        "description": "Heart rhythm modulates emotional state"
+      },
+      {
+        "source": "emotion",
+        "target": "breath",
+        "strength": 0.5,
+        "effect": "influence",
+        "description": "Calm emotion regulates breathing"
+      }
+    ],
+    "network_impact": {
+      "total_pulses": 3,
+      "activated_nodes_estimate": 45,
+      "energy_flow": "bidirectional",
+      "coherence": 0.75
+    }
+  }
+}
+

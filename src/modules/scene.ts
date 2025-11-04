@@ -8,6 +8,9 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { config, colorPalettes, formationNames } from './config';
 import { nodeShader, connectionShader } from './shaders';
 import { generateNeuralNetwork, type NeuralNetwork, type Node } from './network';
+import { gptLogInfo, gptLogError, gptLogSuccess, gptLogPulse } from './logger/gptLogger';
+import { simulatePulseJourney } from './pulseTracker';
+import { BiometricSimulator, createBiometricSimulator, toggleBiometricSimulation } from './biometricSimulator';
 import {
     CAMERA, RENDERER, SCENE, CONTROLS, BLOOM, FILM, STARFIELD, PULSE,
     NODE, CONNECTION, ANIMATION, UI
@@ -32,6 +35,7 @@ let lastPulseIndex = 0;
 let densityTimeout: ReturnType<typeof setTimeout>;
 let demoInterval: ReturnType<typeof setInterval> | null = null;
 let formationTitleTimeout: ReturnType<typeof setTimeout> | null = null;
+let biometricSimulator: BiometricSimulator | null = null;
 
 const pulseUniforms = {
     uTime: { value: 0.0 },
@@ -92,6 +96,7 @@ function createNetworkVisualization(formationIndex: number, densityFactor = 1.0)
     console.log(`Creating formation ${formationIndex}, density ${densityFactor}`);
     
     showFormationTitle(formationIndex);
+    gptLogInfo(`Formation: ${formationNames[formationIndex]}`, ['network', 'formation']);
     
     if (nodesMesh) {
         scene.remove(nodesMesh);
@@ -109,8 +114,11 @@ function createNetworkVisualization(formationIndex: number, densityFactor = 1.0)
     neuralNetwork = generateNeuralNetwork(formationIndex, densityFactor);
     if (!neuralNetwork || neuralNetwork.nodes.length === 0) {
         console.error("Network generation failed or resulted in zero nodes.");
+        gptLogError("Network generation failed", ['network', 'error']);
         return;
     }
+    
+    gptLogSuccess(`Network created: ${neuralNetwork.nodes.length} nodes`, ['network', 'success']);
 
     const nodesGeometry = new THREE.BufferGeometry();
     const nodePositions: number[] = [];
@@ -285,6 +293,31 @@ function updateTheme(paletteIndex: number) {
     (connectionsMaterial.uniforms.uPulseColors as { value: THREE.Color[] }).value.forEach((c, i) => c.copy(palette[i % palette.length]));
 }
 
+function triggerPulseFromPosition(position: THREE.Vector3, color: string, intensity: number): void {
+    if (!nodesMesh || !connectionsMesh) return;
+    
+    const time = clock.getElapsedTime();
+    lastPulseIndex = (lastPulseIndex + 1) % PULSE.maxPulses;
+
+    const nodesMaterial = nodesMesh.material as THREE.ShaderMaterial;
+    const connectionsMaterial = connectionsMesh.material as THREE.ShaderMaterial;
+    (nodesMaterial.uniforms.uPulsePositions as { value: THREE.Vector3[] }).value[lastPulseIndex].copy(position);
+    (nodesMaterial.uniforms.uPulseTimes as { value: number[] }).value[lastPulseIndex] = time;
+    (connectionsMaterial.uniforms.uPulsePositions as { value: THREE.Vector3[] }).value[lastPulseIndex].copy(position);
+    (connectionsMaterial.uniforms.uPulseTimes as { value: number[] }).value[lastPulseIndex] = time;
+
+    const pulseColor = new THREE.Color(color);
+    (nodesMaterial.uniforms.uPulseColors as { value: THREE.Color[] }).value[lastPulseIndex].copy(pulseColor);
+    (connectionsMaterial.uniforms.uPulseColors as { value: THREE.Color[] }).value[lastPulseIndex].copy(pulseColor);
+    
+    // Log and track
+    gptLogPulse(position.x, position.y, position.z, color, intensity);
+    
+    if (neuralNetwork) {
+        simulatePulseJourney(neuralNetwork, position, color, intensity, 50, 0.15, 0.1);
+    }
+}
+
 function triggerPulse(clientX: number, clientY: number) {
     pointer.x = (clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(clientY / window.innerHeight) * 2 + 1;
@@ -295,23 +328,11 @@ function triggerPulse(clientX: number, clientY: number) {
     interactionPlane.constant = -interactionPlane.normal.dot(camera.position) + camera.position.length() * PULSE.interactionPlaneOffset;
 
     if (raycaster.ray.intersectPlane(interactionPlane, interactionPoint)) {
-        const time = clock.getElapsedTime();
-
-        if (nodesMesh && connectionsMesh) {
-            lastPulseIndex = (lastPulseIndex + 1) % PULSE.maxPulses;
-
-            const nodesMaterial = nodesMesh.material as THREE.ShaderMaterial;
-            const connectionsMaterial = connectionsMesh.material as THREE.ShaderMaterial;
-            (nodesMaterial.uniforms.uPulsePositions as { value: THREE.Vector3[] }).value[lastPulseIndex].copy(interactionPoint);
-            (nodesMaterial.uniforms.uPulseTimes as { value: number[] }).value[lastPulseIndex] = time;
-            (connectionsMaterial.uniforms.uPulsePositions as { value: THREE.Vector3[] }).value[lastPulseIndex].copy(interactionPoint);
-            (connectionsMaterial.uniforms.uPulseTimes as { value: number[] }).value[lastPulseIndex] = time;
-
-            const palette = colorPalettes[config.activePaletteIndex];
-            const randomColor = palette[Math.floor(Math.random() * palette.length)];
-            (nodesMaterial.uniforms.uPulseColors as { value: THREE.Color[] }).value[lastPulseIndex].copy(randomColor);
-            (connectionsMaterial.uniforms.uPulseColors as { value: THREE.Color[] }).value[lastPulseIndex].copy(randomColor);
-        }
+        const palette = colorPalettes[config.activePaletteIndex];
+        const randomColor = palette[Math.floor(Math.random() * palette.length)];
+        const colorHex = '#' + randomColor.getHexString();
+        
+        triggerPulseFromPosition(interactionPoint, colorHex, 1.0);
     }
 }
 
@@ -415,6 +436,16 @@ function setupUIListeners() {
             }
             controls.autoRotate = false;
         }
+    });
+
+    const biometricModeBtn = document.getElementById('biometric-mode-btn')!;
+    biometricModeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleBiometricSimulation();
+        
+        const isActive = biometricSimulator?.getFlow().layers.some(l => l.active) || false;
+        biometricModeBtn.textContent = isActive ? '🧬 Bio ON' : '🧬 Bio';
+        biometricModeBtn.style.background = isActive ? 'rgba(100, 200, 255, .4)' : '';
     });
 }
 
@@ -526,5 +557,17 @@ export function setupScene() {
     updateTheme(config.activePaletteIndex);
 
     window.addEventListener('resize', onWindowResize);
+    
+    // Initialize biometric simulator
+    biometricSimulator = createBiometricSimulator();
+    biometricSimulator.onPulse((layer, intensity) => {
+        // Trigger pulse from biometric layer
+        triggerPulseFromPosition(
+            layer.visual.pulse_origin,
+            layer.visual.color,
+            intensity
+        );
+    });
+    
     animate();
 }
