@@ -132,14 +132,24 @@ npm run preview
 
 ## 🎮 Usage
 
+### Basic Actions
+
 1. **Create Pulses**: Click or tap anywhere on the canvas — energy will spread through the network
 2. **Rotate Camera**: Click and drag to rotate around the network
-3. **Change Formation**: Press "Formation" to switch between network types
+3. **Change Formation**: Press "Formation" button or use **F** key or **1-7** keys to switch between network types
 4. **Adjust Density**: Use the slider to control the number of nodes (20-100%)
 5. **Switch Themes**: Click theme buttons to change color palettes
-6. **🧬 Biometric Mode**: Enable automatic pulses from biometric sources
-7. **Pause/Play**: Toggle animation with the pause button
-8. **Reset Camera**: Return to the initial camera position
+6. **🧬 Biometric Mode**: Enable automatic pulses from biometric sources (button or **B** key)
+7. **Pause/Play**: Toggle animation with the pause button or **Space** key
+8. **Reset Camera**: Return to the initial camera position (button or **R** key)
+
+### ⌨️ Keyboard Shortcuts
+
+- **Space** — pause/play
+- **R** — reset camera
+- **F** — next formation
+- **B** — toggle biometric mode
+- **1-7** — direct formation switch (1 = Quantum Cortex, 2 = Hyperdimensional Mesh, etc.)
 
 ## 📁 Project Structure
 

@@ -5,6 +5,9 @@ export function initApp(root: HTMLElement) {
     <div id="instructions-container" class="ui-panel">
       <div id="instruction-title">Interactive Neural Network</div>
       <div>Click or tap to create energy pulses through the network. Drag to rotate.</div>
+      <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">
+        <div>⌨️ Shortcuts: Space (pause), R (reset), F (formation), B (bio), 1-7 (formations)</div>
+      </div>
     </div>
 
     <div id="theme-selector" class="ui-panel">

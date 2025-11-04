@@ -4,7 +4,9 @@
  */
 
 import * as THREE from 'three';
-import { gptLogInfo, gptLogSuccess } from './logger/gptLogger';
+import { gptLogInfo, gptLogSuccess, gptLogError } from './logger/gptLogger';
+import { loadPhysioCSVorJSON, loadWESADLabels, resampleStreams } from '../adapters/biometricSources';
+import { muxResampled, type MuxFrame } from '../adapters/biometricMux';
 
 export interface BiometricLayer {
     id: string;
@@ -46,11 +48,28 @@ export interface BiometricFlow {
     links: BiometricLink[];
 }
 
+type LayerUpdate = (frame: MuxFrame) => void;
+
+interface ExternalSources {
+    heart?: LayerUpdate;
+    breath?: LayerUpdate;
+    emotion?: LayerUpdate;
+}
+
 export class BiometricSimulator {
     private flow: BiometricFlow;
     private clock: THREE.Clock;
     private isRunning: boolean = false;
     private pulseCallbacks: Array<(layer: BiometricLayer, intensity: number) => void> = [];
+    
+    // External data sources
+    private externalSources: ExternalSources = {};
+    private externalPlaying: boolean = false;
+    private externalCursor: number = 0;
+    private externalFrames: MuxFrame[] = [];
+    private externalTargetHz: number = 30;
+    private externalFrameInterval: number = 0;
+    private lastExternalFrameTime: number = 0;
     
     // Frequency constants (Hz)
     private readonly BREATH_FREQ = 0.2; // ~12 breaths/min
@@ -209,30 +228,38 @@ export class BiometricSimulator {
     private update(): void {
         if (!this.isRunning) return;
 
+        // Process external data first (if available)
+        this.tickExternal();
+
         const deltaTime = this.clock.getDelta();
         const currentTime = this.clock.getElapsedTime();
 
-        // Update each layer
-        this.flow.layers.forEach(layer => {
-            if (!layer.active) return;
+        // Update each layer (only if not using external data)
+        if (!this.externalPlaying || this.externalFrames.length === 0) {
+            this.flow.layers.forEach(layer => {
+                if (!layer.active) return;
 
-            layer.phase += deltaTime;
+                layer.phase += deltaTime;
 
-            switch (layer.type) {
-                case 'respiratory':
-                    this.updateBreathLayer(layer, deltaTime, currentTime);
-                    break;
-                case 'cardiovascular':
-                    this.updateHeartLayer(layer, deltaTime, currentTime);
-                    break;
-                case 'affective':
-                    this.updateEmotionLayer(layer, deltaTime);
-                    break;
-            }
+                switch (layer.type) {
+                    case 'respiratory':
+                        this.updateBreathLayer(layer, deltaTime, currentTime);
+                        break;
+                    case 'cardiovascular':
+                        this.updateHeartLayer(layer, deltaTime, currentTime);
+                        break;
+                    case 'affective':
+                        this.updateEmotionLayer(layer, deltaTime);
+                        break;
+                }
 
-            // Apply link effects
-            this.applyLinks(layer);
-        });
+                // Apply link effects
+                this.applyLinks(layer);
+            });
+        } else {
+            // When using external data, trigger pulses based on updated layer data
+            // Pulses are triggered in tickExternal() when layers are updated
+        }
 
         requestAnimationFrame(() => this.update());
     }
@@ -370,6 +397,160 @@ export class BiometricSimulator {
      */
     getLayer(id: string): BiometricLayer | undefined {
         return this.flow.layers.find(l => l.id === id);
+    }
+
+    /**
+     * Register external data source callbacks
+     */
+    onHeart(update: LayerUpdate): void {
+        this.externalSources.heart = update;
+    }
+
+    onBreath(update: LayerUpdate): void {
+        this.externalSources.breath = update;
+    }
+
+    onEmotion(update: LayerUpdate): void {
+        this.externalSources.emotion = update;
+    }
+
+    /**
+     * Load real data from PhysioNet/WESAD datasets
+     */
+    async loadFromDatasets(opts: {
+        physioUrl: string;      // '/data/physionet_ecg_resp.csv'
+        wesadUrl?: string;      // '/data/wesad_labels.csv'
+        targetHz?: number;      // по умолчанию 30
+    }): Promise<void> {
+        try {
+            this.externalTargetHz = opts.targetHz ?? 30;
+            this.externalFrameInterval = 1000 / this.externalTargetHz;
+
+            gptLogInfo(`Loading biometric data from ${opts.physioUrl}...`, ['biometric', 'data']);
+            
+            const rows = await loadPhysioCSVorJSON(opts.physioUrl);
+            const labels = opts.wesadUrl ? await loadWESADLabels(opts.wesadUrl) : null;
+
+            if (rows.length === 0) {
+                gptLogError('No data loaded from physio source', ['biometric', 'error']);
+                return;
+            }
+
+            const res = resampleStreams(rows, labels, this.externalTargetHz);
+            this.externalFrames = Array.from(muxResampled(res));
+            this.externalCursor = 0;
+            this.lastExternalFrameTime = 0;
+
+            gptLogSuccess(`Loaded ${this.externalFrames.length} frames from real data`, ['biometric', 'data']);
+        } catch (error) {
+            gptLogError(`Failed to load biometric data: ${error}`, ['biometric', 'error']);
+            throw error;
+        }
+    }
+
+    /**
+     * Start playing external data
+     */
+    playExternal(): void {
+        this.externalPlaying = true;
+        this.lastExternalFrameTime = this.clock.getElapsedTime() * 1000;
+        gptLogInfo('Playing external biometric data', ['biometric', 'data']);
+    }
+
+    /**
+     * Pause external data playback
+     */
+    pauseExternal(): void {
+        this.externalPlaying = false;
+        gptLogInfo('Paused external biometric data', ['biometric', 'data']);
+    }
+
+    /**
+     * Process one frame of external data (call in animation loop)
+     */
+    tickExternal(): void {
+        if (!this.externalPlaying || this.externalFrames.length === 0) return;
+
+        const currentTime = this.clock.getElapsedTime() * 1000;
+        const elapsed = currentTime - this.lastExternalFrameTime;
+
+        if (elapsed >= this.externalFrameInterval) {
+            const frame = this.externalFrames[this.externalCursor];
+            if (frame) {
+                // Update layers from external data
+                if (frame.heart && this.externalSources.heart) {
+                    this.externalSources.heart(frame);
+                    
+                    // Update heart layer
+                    const heartLayer = this.getLayer('heart');
+                    if (heartLayer && heartLayer.active) {
+                        heartLayer.data.bpm = frame.heart.bpmLike;
+                        heartLayer.data.intensity = frame.heart.intensity;
+                        
+                        // Trigger pulse on significant heart activity
+                        if (frame.heart.intensity > 0.5) {
+                            this.triggerPulse(heartLayer, frame.heart.intensity);
+                        }
+                    }
+                }
+
+                if (frame.breath && this.externalSources.breath) {
+                    this.externalSources.breath(frame);
+                    
+                    // Update breath layer
+                    const breathLayer = this.getLayer('breath');
+                    if (breathLayer && breathLayer.active) {
+                        breathLayer.data.depth = frame.breath.depth;
+                        breathLayer.data.rate_bpm = frame.breath.phase === 'inhale' ? 14 : 10;
+                        breathLayer.data.intensity = frame.breath.depth;
+                        
+                        // Trigger pulse on inhale peak
+                        if (frame.breath.phase === 'inhale' && frame.breath.depth > 0.7) {
+                            this.triggerPulse(breathLayer, frame.breath.depth);
+                        }
+                    }
+                }
+
+                if (frame.emotion && this.externalSources.emotion) {
+                    this.externalSources.emotion(frame);
+                    
+                    // Update emotion layer
+                    const emotionLayer = this.getLayer('emotion');
+                    if (emotionLayer) {
+                        emotionLayer.data.dominant = frame.emotion.label;
+                        emotionLayer.data.intensity = frame.emotion.value01;
+                        
+                        // Map label to stress/calm/focus
+                        switch (frame.emotion.label) {
+                            case 'calm':
+                                emotionLayer.data.calm = 0.9;
+                                emotionLayer.data.stress = 0.1;
+                                break;
+                            case 'stress':
+                                emotionLayer.data.stress = 0.9;
+                                emotionLayer.data.calm = 0.1;
+                                break;
+                            case 'focus':
+                                emotionLayer.data.focus = 0.8;
+                                break;
+                            default:
+                                emotionLayer.data.calm = 0.5;
+                                emotionLayer.data.stress = 0.3;
+                        }
+                    }
+                }
+            }
+
+            this.externalCursor = (this.externalCursor + 1) % this.externalFrames.length; // циклическое воспроизведение
+            this.lastExternalFrameTime = currentTime;
+        }
+    }
+
+    /**
+     * Check if external data is loaded
+     */
+    hasExternalData(): boolean {
+        return this.externalFrames.length > 0;
     }
 }
 

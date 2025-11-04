@@ -447,6 +447,57 @@ function setupUIListeners() {
         biometricModeBtn.textContent = isActive ? '🧬 Bio ON' : '🧬 Bio';
         biometricModeBtn.style.background = isActive ? 'rgba(100, 200, 255, .4)' : '';
     });
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in inputs
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        
+        switch(e.key.toLowerCase()) {
+            case ' ': // Spacebar - pause/play
+                e.preventDefault();
+                config.paused = !config.paused;
+                pausePlayBtn.textContent = config.paused ? 'Play' : 'Pause';
+                controls.autoRotate = !config.paused;
+                break;
+            case 'r': // R - reset camera
+                e.preventDefault();
+                controls.reset();
+                controls.autoRotate = false;
+                setTimeout(() => { controls.autoRotate = true; }, UI.resetCameraDelay);
+                break;
+            case 'f': // F - change formation
+                e.preventDefault();
+                config.currentFormation = (config.currentFormation + 1) % config.numFormations;
+                createNetworkVisualization(config.currentFormation, config.densityFactor);
+                controls.autoRotate = false;
+                setTimeout(() => { controls.autoRotate = true; }, UI.autoRotateDelay);
+                break;
+            case 'b': // B - toggle biometric mode
+                e.preventDefault();
+                toggleBiometricSimulation();
+                const isActive = biometricSimulator?.getFlow().layers.some(l => l.active) || false;
+                biometricModeBtn.textContent = isActive ? '🧬 Bio ON' : '🧬 Bio';
+                biometricModeBtn.style.background = isActive ? 'rgba(100, 200, 255, .4)' : '';
+                break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+                e.preventDefault();
+                const formationIndex = parseInt(e.key) - 1;
+                if (formationIndex < config.numFormations) {
+                    config.currentFormation = formationIndex;
+                    createNetworkVisualization(config.currentFormation, config.densityFactor);
+                    controls.autoRotate = false;
+                    setTimeout(() => { controls.autoRotate = true; }, UI.autoRotateDelay);
+                }
+                break;
+        }
+    });
 }
 
 function animate() {
