@@ -1,8 +1,17 @@
 {
   "flow": {
     "id": "flow_001",
-    "timestamp": 1234567890,
+    "schema_version": "0.3",
+    "source": "sim",
+    "consent_id": "",
+    "start_ts": 1234567890,
+    "end_ts": 1234572890,
     "duration_ms": 5000,
+    "sampling_hz": {
+      "breath": 30,
+      "heart": 200,
+      "emotion": 10
+    },
     "layers": [
       {
         "id": "breath",
@@ -10,11 +19,26 @@
         "active": true,
         "data": {
           "phase": "inhale",
+          "cycle_phase": "inhale",
+          "phase_ts": 1234567890,
           "depth": 0.85,
           "rate_bpm": 12,
-          "intensity": 0.9
+          "intensity": 0.9,
+          "units": {
+            "phase": "categorical",
+            "depth": "relative",
+            "rate_bpm": "bpm",
+            "intensity": "0..1"
+          },
+          "confidence": 0.95
         },
-        "visual": {
+        "signal_quality": {
+          "snr": 42.5,
+          "artifacts": 0.02,
+          "missing_pct": 0.0
+        },
+        "view": {
+          "theme": "calm-gold",
           "color": "#4fd1c5",
           "pulse_origin": {
             "x": 0.0,
@@ -23,6 +47,11 @@
           },
           "pattern": "wave_expansion",
           "radius": 8.5
+        },
+        "meta": {
+          "device_id": "sim_breath_001",
+          "pipeline": "synthetic",
+          "notes": "Simulated respiratory cycle"
         }
       },
       {
@@ -33,9 +62,28 @@
           "bpm": 72,
           "hrv": 45,
           "intensity": 0.7,
-          "variability": 0.12
+          "variability": 0.12,
+          "rr_ms": [850, 820, 880, 840, 860],
+          "rmssd": 42.3,
+          "sdnn": 38.7,
+          "units": {
+            "bpm": "bpm",
+            "hrv": "ms",
+            "intensity": "0..1",
+            "variability": "0..1",
+            "rr_ms": "ms",
+            "rmssd": "ms",
+            "sdnn": "ms"
+          },
+          "confidence": 0.92
         },
-        "visual": {
+        "signal_quality": {
+          "snr": 38.2,
+          "artifacts": 0.05,
+          "missing_pct": 0.01
+        },
+        "view": {
+          "theme": "calm-gold",
           "color": "#f6ad55",
           "pulse_origin": {
             "x": 2.0,
@@ -44,6 +92,11 @@
           },
           "pattern": "pulse_radiation",
           "radius": 6.2
+        },
+        "meta": {
+          "device_id": "sim_heart_001",
+          "pipeline": "synthetic",
+          "notes": "Simulated heart rhythm"
         }
       },
       {
@@ -54,9 +107,33 @@
           "stress": 0.3,
           "calm": 0.8,
           "focus": 0.6,
-          "dominant": "calm"
+          "dominant": "calm",
+          "mask": {
+            "isOverwhelmed": 0.1,
+            "isSafe": 0.9,
+            "isMindful": 0.7,
+            "isFocused": 0.6,
+            "isConnected": 0.5,
+            "isGrateful": 0.4,
+            "isLonely": 0.2,
+            "isInspired": 0.3
+          },
+          "units": {
+            "stress": "0..1",
+            "calm": "0..1",
+            "focus": "0..1",
+            "dominant": "categorical",
+            "mask": "0..1"
+          },
+          "confidence": 0.78
         },
-        "visual": {
+        "signal_quality": {
+          "snr": 25.8,
+          "artifacts": 0.15,
+          "missing_pct": 0.05
+        },
+        "view": {
+          "theme": "calm-gold",
           "color": "#ed64a6",
           "pulse_origin": {
             "x": -2.0,
@@ -65,6 +142,11 @@
           },
           "pattern": "node_color_shift",
           "radius": 5.0
+        },
+        "meta": {
+          "device_id": "sim_emotion_001",
+          "pipeline": "synthetic",
+          "notes": "Simulated emotional state"
         }
       }
     ],
@@ -74,29 +156,55 @@
         "target": "heart",
         "strength": 0.8,
         "effect": "amplify",
-        "description": "Deep breath amplifies heart pulse"
+        "description": "Deep breath amplifies heart pulse",
+        "lag_ms": 200,
+        "function": {
+          "type": "gain",
+          "params": {
+            "k": 1.2
+          }
+        }
       },
       {
         "source": "heart",
         "target": "emotion",
         "strength": 0.6,
         "effect": "modulate",
-        "description": "Heart rhythm modulates emotional state"
+        "description": "Heart rhythm modulates emotional state",
+        "lag_ms": 150,
+        "function": {
+          "type": "sigmoid",
+          "params": {
+            "a": 2.5,
+            "b": 0.5
+          }
+        }
       },
       {
         "source": "emotion",
         "target": "breath",
         "strength": 0.5,
         "effect": "influence",
-        "description": "Calm emotion regulates breathing"
+        "description": "Calm emotion regulates breathing",
+        "lag_ms": 300,
+        "function": {
+          "type": "exp_decay",
+          "params": {
+            "tau": 500
+          }
+        }
       }
     ],
     "network_impact": {
       "total_pulses": 3,
       "activated_nodes_estimate": 45,
       "energy_flow": "bidirectional",
-      "coherence": 0.75
+      "coherence": 0.75,
+      "coherence_method": "PLV",
+      "window_ms": 1000,
+      "latency_budget_ms": 16,
+      "dropped_frames": 0,
+      "resample_strategy": "linear"
     }
   }
 }
-

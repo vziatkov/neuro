@@ -1,0 +1,69 @@
+feat: upgrade biometric flow schema to v0.3 with comprehensive validator
+
+Upgrade biometricFlow.json to schema version 0.3 with enhanced structure
+and add production-ready validator with full validation rules.
+
+## Schema Enhancements (v0.3)
+
+### Root Flow
+- Add schema_version, source (sim|recorded|mixed), consent_id
+- Add start_ts/end_ts with duration_ms consistency checks
+- Add sampling_hz per layer (breath, heart, emotion)
+
+### Layers
+- Add units and confidence fields to all data fields
+- Add signal_quality (snr, artifacts, missing_pct) with validation rules
+- Rename visual → view with theme support
+- Add meta fields (device_id, pipeline, notes) for extensibility
+
+### Respiratory Layer
+- Add cycle_phase (inhale|exhale|hold) and phase_ts
+- Validate depth, intensity, rate_bpm ranges
+
+### Cardiovascular Layer
+- Add rr_ms array with validation (3-256 elements, 250-2000ms each)
+- Add HRV metrics (rmssd, sdnn) with fallback logic
+- Cross-validate with sampling_hz.heart ≥ 100 for HRV
+
+### Affective Layer
+- Add emotion mask with 8 required keys (isOverwhelmed, isSafe, etc.)
+- Add consistency checks (dominant vs mask values)
+- Validate stress/calm/focus ranges
+
+### Links
+- Add lag_ms and function with type-specific params
+- Support gain, sigmoid, exp_decay, bandpass_mod, threshold_gate
+- Validate function parameters per type
+
+### Network Impact
+- Add coherence_method (PLV|xCorr|custom) and window_ms
+- Add diagnostic fields (latency_budget_ms, dropped_frames, resample_strategy)
+
+## Validator Implementation
+
+- Full validation suite covering all schema rules
+- Error codes (E_*) and warning codes (W_*) with structured messages
+- Format: CODE | path | message | details
+- Cross-field validation (timestamps, HRV sampling, signal quality)
+- Performance-aware (handles large JSON efficiently)
+
+## Validation Rules
+
+- Required fields and type checks
+- Range validations (0..1, bpm, ms, etc.)
+- Enum validations (types, phases, patterns, methods)
+- Consistency checks (duration_ms vs timestamps, emotion mask)
+- Signal quality thresholds (artifacts + missing_pct ≤ 1.0)
+- Link reference validation (source/target must exist)
+
+## Test Coverage
+
+Validator supports all test cases:
+- Happy path (current example passes)
+- Negative cases (time order, missing fields, invalid refs)
+- Warnings (poor signal quality, emotion inconsistencies)
+- Edge cases (empty arrays, boundary values)
+- Performance (large datasets)
+
+Schema is now production-ready with comprehensive validation.
+
