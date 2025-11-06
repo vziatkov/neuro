@@ -159,6 +159,7 @@ def main():
     
     # Эффект моргания вместо обычного fade
     print("👁️ Добавление эффекта моргания...")
+    zoomed1 = blink_open_effect(zoomed1, blink_duration=0.2)   # Открытие в начале
     zoomed1 = blink_close_effect(zoomed1, blink_duration=0.2)  # Закрытие в конце
     zoomed2 = blink_open_effect(zoomed2, blink_duration=0.2)   # Открытие в начале
     
