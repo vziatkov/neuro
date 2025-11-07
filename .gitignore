@@ -41,3 +41,6 @@ Thumbs.db
 # Vite
 .vite/
 
+
+# LLM memory privacy
+memory/sessions/private_*.json

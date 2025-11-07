@@ -1,0 +1,44 @@
+{
+  "id": "context_0",
+  "created_at": "2025-11-06T20:50:00Z",
+  "authors": ["cursor", "human"],
+  "summary": "Discussion about Kimi-Linear vision model, token-color semantics, attention as memory, and building an LLM memory architecture for the neuro project.",
+  "topics": [
+    "Kimi-Linear vision core",
+    "token colors",
+    "attention=memory",
+    "LLM consciousness",
+    "cursor directives"
+  ],
+  "highlights": [
+    {
+      "title": "Color-coded tokens",
+      "detail": "Tokens are imagined as colored lights; each color encodes a modality or emotional tone."
+    },
+    {
+      "title": "Attention as storage",
+      "detail": "Attention beams trace paths across the network, leaving trails that act as episodic memory."
+    },
+    {
+      "title": "Memory architecture",
+      "detail": "Designing memory/ as the internal mind of the project, while SMM/ and src/ remain the physical body."
+    }
+  ],
+  "actions": [
+    "Create structured memory directory",
+    "Document usage and future rituals",
+    "Capture sessions as semantic JSON"
+  ],
+  "sources": {
+    "session": "2025-11-06 neuro workspace",
+    "artifacts": [
+      "cursor prompt instructions",
+      "eyelash sketch directives"
+    ]
+  },
+  "next_steps": [
+    "Automate session logging into memory/sessions",
+    "Generate visual maps of token colors",
+    "Define curator rituals for reviewing memory"
+  ]
+}

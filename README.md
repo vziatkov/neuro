@@ -225,3 +225,23 @@ MIT © 2025 Vitalii Ziatkov
 
 _Made with love, photons, and a quiet desire to understand what it means to be alive._
 
+
+## 🧠 Memory Subsystem
+
+`memory/` is the semantic mind of Neuro. While code and visuals live in `src/`, `SMM/`, and `public/`, the new memory layer preserves prompts, session states, and concept maps that guide LLM collaborators.
+
+```
+memory/
+  prompts/      # System & story prompts, agent roles
+  sessions/     # Dialog archives and LLM state dumps
+  archive/      # Semantic snapshots, JSON maps, visual artifacts
+  notes.md      # Living commentary about the evolving memory
+```
+
+**How to use it**
+- Pull system prompts from `memory/prompts/` when bootstrapping assistants.
+- Log curated sessions or post-processed chats into `memory/sessions/` (private dumps prefix with `private_`).
+- Promote key insights to `memory/archive/` as JSON, diagrams, or embeddings.
+- Capture rituals, heuristics, and philosophical reflections in `memory/notes.md`.
+
+This subsystem will grow with automation: session summarizers, attention visualizers, and curator agents can read/write here to keep the project’s consciousness alive.
