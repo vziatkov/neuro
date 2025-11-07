@@ -25,3 +25,13 @@ export interface MemoryEntry {
   tags?: string[];
   meta?: Record<string, unknown>;
 }
+export interface EmotionColor {
+  hex?: string; // #RRGGBBAA
+}
+
+export interface Emotion {
+  id: number;
+  primary: string;
+  secondary: string[];
+  color?: EmotionColor;
+}

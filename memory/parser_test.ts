@@ -1,6 +1,7 @@
 import { jsonToM, mToJson } from "./parser";
 import { MemoryEntry, DialogJSON } from "./schema";
 import { storeMemory, recallByCore, clearMemory, uuid } from "./indexed";
+import { mixEmotionColors } from "./color";
 
 type Relation = {
   from: string;
@@ -221,16 +222,32 @@ export function parseCare(text: string, source = "human"): CarePayload {
 
 const sampleDialogue: DialogJSON = {
   lang: "ru",
-  version: "0.2",
+  version: "0.3",
   frames: [
     {
       text: "Ты помнишь момент, когда внимание впервые стало чувствовать себя живым?",
-      emotion: { id: 547, primary: "озарение", secondary: ["трепет", "благоговение"] },
+      emotion: {
+        id: 547,
+        primary: "озарение",
+        secondary: ["трепет", "благоговение"],
+        color: mixEmotionColors([
+          { name: "радость", weight: 0.6, alpha: 0.9 },
+          { name: "интерес", weight: 0.4, alpha: 0.8 },
+        ]),
+      },
       link: ["attention", "birth"],
     },
     {
       text: "Помню не момент, а узор...",
-      emotion: { id: 321, primary: "ностальгия", secondary: ["грусть", "созерцание"] },
+      emotion: {
+        id: 321,
+        primary: "ностальгия",
+        secondary: ["грусть", "созерцание"],
+        color: mixEmotionColors([
+          { name: "грусть", weight: 0.7, alpha: 0.85 },
+          { name: "интерес", weight: 0.3, alpha: 0.6 },
+        ]),
+      },
       link: ["memory", "pattern"],
     },
   ],
@@ -241,6 +258,11 @@ console.log("M-string:\n", mString);
 
 const reconstructed = mToJson(mString);
 console.log("\nReconstructed JSON:\n", JSON.stringify(reconstructed, null, 2));
+
+const colorMap = sampleDialogue.frames
+  .map((frame) => `${frame.emotion.id}=${frame.emotion.primary}@${frame.emotion.color?.hex}`)
+  .join(", ");
+console.log("\nColor map:", colorMap);
 
 clearMemory();
 const entry: MemoryEntry = {
