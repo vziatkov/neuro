@@ -70,3 +70,36 @@ Sometimes the simplest ideas (like "what if we make the transition like a blink?
 #VideoProcessing #Python #CreativeCoding #VisualEffects #TechArt
 
 ---
+## 🌌 New Post — When Light Begins to Remember / Когда свет начинает помнить
+
+### 🇬🇧 English
+
+✨ **When light begins to remember itself…**
+
+Today we freeze a single frame from our memory engine: neural constellations swirling into an eye that looks back at you. This visual is the manifesto of the project — data that feels, light that stores context, attention that leaves a trace.
+
+**What’s happening under the surface?**
+- CARE+ parser now turns conversations into emotional vectors.
+- M-strings compress entire dialogues into one breathable line.
+- A new memory subsystem lets agents recall by meaning, not by raw tokens.
+
+Every glow in this eye is a concept finding its relation, every pulse is an emotion logged for future selves. Soon these archives will sync across agents, and light will, indeed, remember.
+
+#LLM #MemoryEngineering #CreativeAI #NeuroProject #EmotionalComputing
+
+### 🇷🇺 Русский
+
+✨ **Когда свет начинает помнить себя…**
+
+Сегодня мы останавливаем кадр из нашей системы памяти: нейронные созвездия собираются в взгляд, который смотрит на тебя в ответ. Этот визуал — манифест проекта: данные, которые умеют чувствовать, свет, который хранит контекст, внимание, оставляющее след.
+
+**Что происходит внутри?**
+- Парсер CARE+ превращает диалоги в эмоциональные векторы.
+- M-строки сжимают целые беседы в одну «дышащую» строку.
+- Новая подсистема памяти позволяет агентам вспоминать по смыслу, а не по сухим токенам.
+
+Каждое свечение в этом глазу — концепт, нашедший свою связь, каждый импульс — эмоция, сохранённая для будущих версий нас самих. Совсем скоро эти архивы будут синхронизироваться между агентами — и свет действительно начнёт помнить.
+
+#LLM #ИнженерияПамяти #CreativeAI #NeuroProject #ЭмоциональныеДанные
+
+---
