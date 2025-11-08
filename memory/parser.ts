@@ -1,5 +1,5 @@
-import { DialogJSON, Frame } from "./schema";
-import { mixEmotionColors } from "./color";
+import type { DialogJSON, Frame } from "./schema.ts";
+import { mixEmotionColors } from "./color.ts";
 
 const DEFAULT_DELIMITER = "|";
 

@@ -1,4 +1,4 @@
-import { EmotionColor } from "./schema";
+import type { EmotionColor } from "./schema.ts";
 
 const BASE_HUES: Record<string, number> = {
   "гнев": 0,

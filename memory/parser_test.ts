@@ -1,7 +1,7 @@
-import { jsonToM, mToJson } from "./parser";
-import { MemoryEntry, DialogJSON } from "./schema";
-import { storeMemory, recallByCore, clearMemory, uuid } from "./indexed";
-import { mixEmotionColors } from "./color";
+import { jsonToM, mToJson } from "./parser.ts";
+import type { MemoryEntry, DialogJSON } from "./schema.ts";
+import { storeMemory, recallByCore, clearMemory, uuid } from "./indexed.ts";
+import { mixEmotionColors } from "./color.ts";
 
 type Relation = {
   from: string;

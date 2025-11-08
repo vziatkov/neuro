@@ -1,7 +1,12 @@
+export interface EmotionColor {
+  hex?: string; // #RRGGBBAA
+}
+
 export interface Emotion {
   id: number;
   primary: string;
   secondary: string[];
+  color?: EmotionColor;
 }
 
 export interface Frame {
@@ -24,14 +29,4 @@ export interface MemoryEntry {
   timestamp: number;
   tags?: string[];
   meta?: Record<string, unknown>;
-}
-export interface EmotionColor {
-  hex?: string; // #RRGGBBAA
-}
-
-export interface Emotion {
-  id: number;
-  primary: string;
-  secondary: string[];
-  color?: EmotionColor;
 }

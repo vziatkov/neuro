@@ -1,5 +1,5 @@
-import { MemoryEntry } from "./schema";
-import { storeMemory } from "./indexed";
+import type { MemoryEntry } from "./schema.ts";
+import { storeMemory } from "./indexed.ts";
 
 export type MemoryTask = () => Promise<MemoryEntry> | MemoryEntry;
 

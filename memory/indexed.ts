@@ -1,4 +1,4 @@
-import { MemoryEntry } from "./schema";
+import type { MemoryEntry } from "./schema.ts";
 
 const memoryStore: MemoryEntry[] = [];
 

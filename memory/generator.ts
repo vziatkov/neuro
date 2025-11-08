@@ -1,6 +1,6 @@
-import { DialogJSON, MemoryEntry } from "./schema";
-import { jsonToM } from "./parser";
-import { uuid } from "./indexed";
+import type { DialogJSON, MemoryEntry } from "./schema.ts";
+import { jsonToM } from "./parser.ts";
+import { uuid } from "./indexed.ts";
 
 export function generateMemoryEntry(dialog: DialogJSON, tags: string[] = []): MemoryEntry {
   const mString = jsonToM(dialog);
