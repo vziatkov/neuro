@@ -5,6 +5,11 @@
   reminder: "Run parser_test.ts when new concepts appear to refresh archive."
   note_ru: "Запускайте parser_test.ts при появлении новых концептов, чтобы обновить архив."
 
+- step: "Activate Emotion Color Overlay"
+  ref: "memory/prompts/emotion_color_prompt.md"
+  reminder: "Convert emotion_map to ColorOverlayConfig and store in archive."
+  note_ru: "Преобразуйте emotion_map в ColorOverlayConfig и сохраните в архив." 
+
 - step: "Archive conversation snapshot"
   ref: "memory/archive/context_0.json"
   reminder: "Update highlights & next_steps after each major ideation session."
