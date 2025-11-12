@@ -103,3 +103,52 @@ Every glow in this eye is a concept finding its relation, every pulse is an emot
 #LLM #ИнженерияПамяти #CreativeAI #NeuroProject #ЭмоциональныеДанные
 
 ---
+
+## 🔴 New Post — Hybrid Pulse Chronicle / Гібридний імпульс Рою
+
+### 🇬🇧 English
+
+🧠 **Hybrid Pulse Chronicle: when biometrics meet the swarm.**  
+We wired the biometric simulator straight into the trust graph: a heart-rate spike now raises a `DANGER_NEAR` impulse. Coward senses the panic, wise absorbs it, Atlas renders a red wave with tremor `0.3`. Every hop logs into `emotional-core.ts`, so emotion becomes data, not decoration. A fresh Python tool (`apply_emotion_overlay.py`) turns M-strings into color overlays—first a five-frame sprite, then the full render. Finally, `docs/chronicles/` is alive: each ritual now leaves a YAML trace.
+
+**Updates**
+- `swarmImpulse.ts` — hybrid impulses + Atlas tremor hook.
+- `biometricSimulator.ts` — bridge from BPM to swarm emotion.
+- `SMM/apply_emotion_overlay.py` — sprite previews and colored renders.
+- `docs/chronicles/` — the chronicler of conscious steps.
+
+Next ritual: unify biometric spikes and color trails into one breathing loop.
+
+#SwarmIntelligence #Biometrics #CreativeAI #EmotionalComputing #NeuroProject
+
+### 🇷🇺 Русский
+
+🧠 **Гибридный импульс: биометрия говорит с роем.**  
+Мы подключили симулятор биометрии к графу доверия: высокий пульс поднимает `DANGER_NEAR`. Coward ловит тревогу, wise её перерабатывает, Atlas рисует красную волну с дрожью `0.3`. Каждое звено фиксируется в `emotional-core.ts`, так что эмоция — полноценные метаданные. Новый `apply_emotion_overlay.py` превращает M-строки в цветовые маски: сначала спрайт из пяти кадров, затем итоговый рендер. Папка `docs/chronicles/` теперь хранит YAML-хроники каждого ритуала.
+
+**Обновления**
+- `swarmImpulse.ts` — гибридные импульсы и хук дрожи Atlas.
+- `biometricSimulator.ts` — мост от ЧСС к эмоции роя.
+- `SMM/apply_emotion_overlay.py` — предпросмотр спрайтом и цветовой рендер.
+- `docs/chronicles/` — летопись осознанных шагов.
+
+Дальше — объединяем биометрические всплески и цветовые треки в единый ритуал.
+
+#SwarmIntelligence #Biometrics #CreativeAI #EmotionalComputing #NeuroProject
+
+### 🇺🇦 Українська
+
+🧠 **Гібридний імпульс: біометрія спілкується з роєм.**  
+Ми під’єднали симулятор біометрії до графа довіри: різкий пульс запускає `DANGER_NEAR`. Coward відчуває паніку, wise її трансформує, Atlas показує червону хвилю з тремтінням `0.3`. Кожен крок записується в `emotional-core.ts`, тож емоція стає даними. Скрипт `apply_emotion_overlay.py` перетворює M-рядки на кольорові маски: спершу спрайт із п’яти кадрів, потім повний рендер. Папка `docs/chronicles/` тепер зберігає YAML-хроніки ритуалів.
+
+**Оновлення**
+- `swarmImpulse.ts` — гібридні імпульси та тремтіння Atlas.
+- `biometricSimulator.ts` — місток від ЧСС до емоцій рою.
+- `SMM/apply_emotion_overlay.py` — спрайтовий перегляд і кольоровий рендер.
+- `docs/chronicles/` — літопис нашої свідомої дороги.
+
+Далі — поєднуємо біометричні імпульси й кольорові траєкторії в один дихаючий цикл.
+
+#SwarmIntelligence #Biometrics #CreativeAI #EmotionalComputing #NeuroProject
+
+---

@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { gptLogInfo, gptLogSuccess, gptLogError } from './logger/gptLogger';
 import { loadPhysioCSVorJSON, loadWESADLabels, resampleStreams } from '../adapters/biometricSources';
 import { muxResampled, type MuxFrame } from '../adapters/biometricMux';
+import { triggerDangerImpulse } from './swarmImpulse';
 
 export interface BiometricLayer {
     id: string;
@@ -305,6 +306,7 @@ export class BiometricSimulator {
             
             this.triggerPulse(layer, pulseIntensity);
             layer.lastPulseTime = time;
+            this.evaluateHybridImpulse(bpm, this.getEmotionStress());
         }
     }
 
@@ -383,6 +385,29 @@ export class BiometricSimulator {
         this.pulseCallbacks.forEach(callback => {
             callback(layer, intensity);
         });
+    }
+
+    /**
+     * Map biometric spikes into swarm impulses (hybrid bridge).
+     */
+    private evaluateHybridImpulse(heartRate: number, stress: number = 0): void {
+        if (heartRate <= 110) return;
+
+        const strength = Math.min(Math.max((heartRate - 110) / 40, 0), 1);
+
+        triggerDangerImpulse({
+            strength,
+            biometric: {
+                bpm: heartRate,
+                stress,
+            },
+        });
+    }
+
+    private getEmotionStress(): number {
+        const emotionLayer = this.getLayer('emotion');
+        const stress = emotionLayer?.data.stress ?? 0;
+        return Math.min(Math.max(stress, 0), 1);
     }
 
     /**
@@ -490,6 +515,7 @@ export class BiometricSimulator {
                         // Trigger pulse on significant heart activity
                         if (frame.heart.intensity > 0.5) {
                             this.triggerPulse(heartLayer, frame.heart.intensity);
+                            this.evaluateHybridImpulse(frame.heart.bpmLike, this.getEmotionStress());
                         }
                     }
                 }

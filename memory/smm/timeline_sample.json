@@ -1,0 +1,5 @@
+[
+  {"emotion_id": 547, "hex": "#95DC74DB", "start_time": 0.0, "duration": 1.5, "overlay_type": "radial", "intensity": 0.4},
+  {"emotion_id": 321, "hex": "#39518EC6", "start_time": 1.5, "duration": 1.5, "overlay_type": "tint", "intensity": 0.35},
+  {"emotion_id": 777, "hex": "#26B3C2E6", "start_time": 3.0, "duration": 1.5, "overlay_type": "radial", "intensity": 0.45}
+]

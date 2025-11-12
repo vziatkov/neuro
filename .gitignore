@@ -41,6 +41,15 @@ Thumbs.db
 # Vite
 .vite/
 
+# Media artifacts
+SMM/**/*.mp4
+SMM/**/*.gif
+memory/smm/**/*.mp4
+memory/smm/**/*.gif
+
+# Storyboard outputs
+memory/smm/output/
+
 
 # LLM memory privacy
 memory/sessions/private_*.json
