@@ -35,6 +35,7 @@ notes:
   - "Интеграция с emotional-core, biometricSimulator"
   - "Примеры для игрового поведения, биометрии, эмоций"
   - "Метрики качества: silhouette score"
+  - "Визуализация: docs/chronicles/clustering-visualization.txt"
 
 cursor_prompt: |
   // Курсор, опиши:
