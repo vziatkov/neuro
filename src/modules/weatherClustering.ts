@@ -10,6 +10,11 @@
  * - k-means++ инициализация для лучшей сходимости
  * - Метрики качества кластеризации (silhouette score)
  * - Обработка edge cases
+ * - Оптимизация производительности: squaredDistance вместо euclideanDistance
+ * - Детерминированный RNG (mulberry32) для воспроизводимости экспериментов
+ * - Параметризованная фильтрация объектов (minArea)
+ * - Оптимизация silhouette (опционально или на подмножестве)
+ * - Универсальный API с feature extractor для переиспользования
  */
 
 // === Типы данных ===
@@ -48,6 +53,37 @@ export type NormalizationStats = {
   mean: number[];
   std: number[];
 };
+
+// === 0. Детерминированный RNG для воспроизводимости ===
+
+/**
+ * Mulberry32 - быстрый детерминированный генератор случайных чисел
+ * Позволяет воспроизводить результаты экспериментов через seed
+ */
+export class SeededRandom {
+  private state: number;
+
+  constructor(seed: number = Date.now()) {
+    this.state = seed;
+  }
+
+  /**
+   * Возвращает случайное число от 0 до 1
+   */
+  random(): number {
+    this.state += 0x6d2b79f5;
+    let t = Math.imul(this.state ^ (this.state >>> 15), this.state | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /**
+   * Возвращает случайное целое число от min (включительно) до max (исключительно)
+   */
+  int(min: number, max: number): number {
+    return Math.floor(this.random() * (max - min)) + min;
+  }
+}
 
 // === 1. Выделение объектов по порогу и связным компонентам ===
 
@@ -246,9 +282,10 @@ export function denormalizeFeatures(
 // === 4. K-Means с улучшениями ===
 
 /**
- * Евклидово расстояние
+ * Квадрат евклидова расстояния (без sqrt для производительности)
+ * Используется везде в алгоритме, где нужны только сравнения расстояний
  */
-export function euclideanDistance(a: number[], b: number[]): number {
+export function squaredDistance(a: number[], b: number[]): number {
   if (a.length !== b.length) {
     throw new Error("Vectors must have the same dimension");
   }
@@ -257,27 +294,38 @@ export function euclideanDistance(a: number[], b: number[]): number {
     const d = a[i] - b[i];
     sum += d * d;
   }
-  return Math.sqrt(sum);
+  return sum;
+}
+
+/**
+ * Евклидово расстояние (с sqrt)
+ * Используется только когда нужна реальная метрика расстояния
+ */
+export function euclideanDistance(a: number[], b: number[]): number {
+  return Math.sqrt(squaredDistance(a, b));
 }
 
 /**
  * k-means++ инициализация центроидов
  * Выбирает начальные центроиды так, чтобы они были далеко друг от друга
+ * @param rng - опциональный детерминированный генератор для воспроизводимости
  */
 export function kMeansPlusPlusInit(
   points: number[][],
-  k: number
+  k: number,
+  rng?: SeededRandom
 ): number[][] {
   if (points.length === 0 || k === 0) return [];
   if (k >= points.length) {
     return points.map((p) => [...p]);
   }
 
+  const random = rng || { random: () => Math.random() };
   const centroids: number[][] = [];
   const n = points.length;
 
   // Первый центроид выбираем случайно
-  const firstIdx = Math.floor(Math.random() * n);
+  const firstIdx = Math.floor(random.random() * n);
   centroids.push([...points[firstIdx]]);
 
   // Остальные k-1 центроидов выбираем с вероятностью пропорциональной расстоянию
@@ -286,19 +334,18 @@ export function kMeansPlusPlusInit(
     let sumDistances = 0;
 
     for (let i = 0; i < n; i++) {
-      // Минимальное расстояние до уже выбранных центроидов
-      let minDist = Infinity;
+      // Минимальное квадрат расстояния до уже выбранных центроидов
+      let minDistSq = Infinity;
       for (const centroid of centroids) {
-        const dist = euclideanDistance(points[i], centroid);
-        if (dist < minDist) minDist = dist;
+        const distSq = squaredDistance(points[i], centroid);
+        if (distSq < minDistSq) minDistSq = distSq;
       }
-      const distSq = minDist * minDist; // квадрат расстояния для вероятности
-      distances.push(distSq);
-      sumDistances += distSq;
+      distances.push(minDistSq);
+      sumDistances += minDistSq;
     }
 
     // Выбираем точку с вероятностью пропорциональной квадрату расстояния
-    let r = Math.random() * sumDistances;
+    let r = random.random() * sumDistances;
     let selectedIdx = 0;
     for (let i = 0; i < n; i++) {
       r -= distances[i];
@@ -316,12 +363,16 @@ export function kMeansPlusPlusInit(
 
 /**
  * K-Means кластеризация с улучшенной инициализацией
+ * @param rng - опциональный детерминированный генератор для воспроизводимости
+ * @param computeSilhouette - вычислять ли silhouette score (O(n²), может быть медленно)
  */
 export function kMeans(
   points: number[][],
   k: number,
   maxIterations = 50,
-  useKMeansPlusPlus = true
+  useKMeansPlusPlus = true,
+  rng?: SeededRandom,
+  computeSilhouette = true
 ): ClusterResult {
   if (points.length === 0) {
     return { centroids: [], assignments: [] };
@@ -338,9 +389,11 @@ export function kMeans(
     k = points.length;
   }
 
+  const random = rng || { random: () => Math.random() };
+
   // Инициализация: k-means++ или первые k точек
   const centroids: number[][] = useKMeansPlusPlus
-    ? kMeansPlusPlusInit(points, k)
+    ? kMeansPlusPlusInit(points, k, rng)
     : points.slice(0, k).map((p) => [...p]);
 
   const assignments = new Array(points.length).fill(0);
@@ -349,15 +402,15 @@ export function kMeans(
   for (let it = 0; it < maxIterations; it++) {
     let changed = false;
 
-    // Шаг E: назначить точки ближайшему центроиду
+    // Шаг E: назначить точки ближайшему центроиду (используем квадраты расстояний)
     for (let i = 0; i < points.length; i++) {
       let bestIdx = 0;
-      let bestDist = Infinity;
+      let bestDistSq = Infinity;
 
       for (let c = 0; c < k; c++) {
-        const dist = euclideanDistance(points[i], centroids[c]);
-        if (dist < bestDist) {
-          bestDist = dist;
+        const distSq = squaredDistance(points[i], centroids[c]);
+        if (distSq < bestDistSq) {
+          bestDistSq = distSq;
           bestIdx = c;
         }
       }
@@ -389,7 +442,7 @@ export function kMeans(
     for (let c = 0; c < k; c++) {
       if (counts[c] === 0) {
         // Если кластер пустой — реинициализируем случайной точкой
-        const randomIdx = Math.floor(Math.random() * points.length);
+        const randomIdx = Math.floor(random.random() * points.length);
         newCentroids[c] = [...points[randomIdx]];
       } else {
         for (let d = 0; d < dim; d++) {
@@ -406,31 +459,56 @@ export function kMeans(
   // Вычисляем метрики качества
   let inertia = 0;
   for (let i = 0; i < points.length; i++) {
-    const dist = euclideanDistance(points[i], centroids[assignments[i]]);
-    inertia += dist * dist;
+    inertia += squaredDistance(points[i], centroids[assignments[i]]);
   }
 
-  const silhouette = computeSilhouetteScore(points, assignments, k);
+  const silhouette = computeSilhouette
+    ? computeSilhouetteScore(points, assignments, k, undefined, rng)
+    : undefined;
 
-  return { centroids, assignments, metrics: { silhouette, inertia } };
+  return {
+    centroids,
+    assignments,
+    metrics: silhouette !== undefined ? { silhouette, inertia } : { inertia },
+  };
 }
 
 /**
  * Вычисление silhouette score для оценки качества кластеризации
  * Значение от -1 до 1: чем ближе к 1, тем лучше кластеризация
+ * 
+ * @param sampleSize - если указан, вычисляется только на случайном подмножестве точек (для производительности)
+ * @param rng - опциональный детерминированный генератор для воспроизводимости
  */
 export function computeSilhouetteScore(
   points: number[][],
   assignments: number[],
-  k: number
+  k: number,
+  sampleSize?: number,
+  rng?: SeededRandom
 ): number {
   if (points.length === 0) return 0;
   if (k === 1) return 0; // Для одного кластера silhouette не определен
 
   const n = points.length;
+  const random = rng || { random: () => Math.random() };
+
+  // Если указан sampleSize, выбираем случайное подмножество
+  let indices: number[];
+  if (sampleSize && sampleSize < n) {
+    indices = [];
+    const available = Array.from({ length: n }, (_, i) => i);
+    for (let i = 0; i < sampleSize && available.length > 0; i++) {
+      const idx = Math.floor(random.random() * available.length);
+      indices.push(available.splice(idx, 1)[0]);
+    }
+  } else {
+    indices = Array.from({ length: n }, (_, i) => i);
+  }
+
   let totalSilhouette = 0;
 
-  for (let i = 0; i < n; i++) {
+  for (const i of indices) {
     const clusterI = assignments[i];
 
     // a(i): среднее расстояние до других точек в том же кластере
@@ -438,7 +516,7 @@ export function computeSilhouetteScore(
     let countA = 0;
     for (let j = 0; j < n; j++) {
       if (i !== j && assignments[j] === clusterI) {
-        a += euclideanDistance(points[i], points[j]);
+        a += Math.sqrt(squaredDistance(points[i], points[j]));
         countA++;
       }
     }
@@ -453,7 +531,7 @@ export function computeSilhouetteScore(
       let countB = 0;
       for (let j = 0; j < n; j++) {
         if (assignments[j] === c) {
-          avgDist += euclideanDistance(points[i], points[j]);
+          avgDist += Math.sqrt(squaredDistance(points[i], points[j]));
           countB++;
         }
       }
@@ -468,26 +546,33 @@ export function computeSilhouetteScore(
     totalSilhouette += s;
   }
 
-  return totalSilhouette / n;
+  return totalSilhouette / indices.length;
 }
 
 // === 5. Работа с ансамблем ===
 
 /**
  * Генерация игрушечного поля осадков для демонстрации
+ * @param rng - опциональный детерминированный генератор для воспроизводимости
  */
-export function createRandomGrid(width: number, height: number): Grid {
+export function createRandomGrid(
+  width: number,
+  height: number,
+  rng?: SeededRandom
+): Grid {
+  const random = rng || { random: () => Math.random() };
   const field: number[][] = [];
   for (let y = 0; y < height; y++) {
     field[y] = [];
     for (let x = 0; x < width; x++) {
       // немного шума + пара "очагов"
-      const base = Math.random() * 5;
+      const base = random.random() * 5;
       const bump1 =
-        Math.exp(-((x - 5) ** 2 + (y - 5) ** 2) / 10) * (5 + Math.random() * 5);
+        Math.exp(-((x - 5) ** 2 + (y - 5) ** 2) / 10) *
+        (5 + random.random() * 5);
       const bump2 =
         Math.exp(-((x - 12) ** 2 + (y - 8) ** 2) / 12) *
-        (4 + Math.random() * 4);
+        (4 + random.random() * 4);
       field[y][x] = base + bump1 + bump2;
     }
   }
@@ -496,10 +581,12 @@ export function createRandomGrid(width: number, height: number): Grid {
 
 /**
  * Собираем объекты для всего ансамбля
+ * @param minArea - минимальная площадь объекта (в ячейках) для фильтрации шума
  */
 export function extractObjectsFromEnsemble(
   grids: Grid[],
-  threshold: number
+  threshold: number,
+  minArea = 2
 ): WeatherObject[] {
   const allObjects: WeatherObject[] = [];
   let globalId = 0;
@@ -510,7 +597,7 @@ export function extractObjectsFromEnsemble(
 
     for (const cells of components) {
       // Пропускаем слишком маленькие объекты (шум)
-      if (cells.length < 2) continue;
+      if (cells.length < minArea) continue;
 
       const feats = computeObjectFeatures(cells, grid);
       allObjects.push({
@@ -526,15 +613,28 @@ export function extractObjectsFromEnsemble(
 }
 
 /**
- * Основная функция кластеризации ансамбля
+ * Извлечение признаков из WeatherObject (стандартный feature extractor)
  */
-export function clusterEnsembleObjects(
-  objects: WeatherObject[],
+export function extractWeatherFeatures(o: WeatherObject): number[] {
+  return [o.centroidX, o.centroidY, o.area, o.meanValue, o.maxValue];
+}
+
+/**
+ * Универсальная функция кластеризации объектов с кастомным feature extractor
+ * @param featureExtractor - функция извлечения признаков из объекта
+ * @param rng - опциональный детерминированный генератор для воспроизводимости
+ * @param computeSilhouette - вычислять ли silhouette score
+ */
+export function clusterObjects<T>(
+  objects: T[],
+  featureExtractor: (obj: T) => number[],
   k: number,
   shouldNormalize = true,
-  useKMeansPlusPlus = true
+  useKMeansPlusPlus = true,
+  rng?: SeededRandom,
+  computeSilhouette = true
 ): {
-  clusters: WeatherObject[][];
+  clusters: T[][];
   result: ClusterResult;
   normalizedStats?: NormalizationStats;
 } {
@@ -545,14 +645,8 @@ export function clusterEnsembleObjects(
     };
   }
 
-  // Вектор признаков: [centroidX, centroidY, area, meanValue, maxValue]
-  const featureVectors: number[][] = objects.map((o) => [
-    o.centroidX,
-    o.centroidY,
-    o.area,
-    o.meanValue,
-    o.maxValue,
-  ]);
+  // Извлекаем признаки
+  const featureVectors: number[][] = objects.map(featureExtractor);
 
   // Нормализация признаков
   let normalizedVectors = featureVectors;
@@ -564,10 +658,17 @@ export function clusterEnsembleObjects(
   }
 
   // Кластеризация
-  const result = kMeans(normalizedVectors, k, 50, useKMeansPlusPlus);
+  const result = kMeans(
+    normalizedVectors,
+    k,
+    50,
+    useKMeansPlusPlus,
+    rng,
+    computeSilhouette
+  );
 
   // Группируем объекты по кластерам
-  const clusters: WeatherObject[][] = Array.from({ length: k }, () => []);
+  const clusters: T[][] = Array.from({ length: k }, () => []);
   objects.forEach((obj, i) => {
     const clusterIdx = result.assignments[i];
     clusters[clusterIdx].push(obj);
@@ -576,23 +677,54 @@ export function clusterEnsembleObjects(
   return { clusters, result, normalizedStats: stats };
 }
 
+/**
+ * Основная функция кластеризации ансамбля (удобный wrapper для WeatherObject)
+ */
+export function clusterEnsembleObjects(
+  objects: WeatherObject[],
+  k: number,
+  shouldNormalize = true,
+  useKMeansPlusPlus = true,
+  rng?: SeededRandom,
+  computeSilhouette = true
+): {
+  clusters: WeatherObject[][];
+  result: ClusterResult;
+  normalizedStats?: NormalizationStats;
+} {
+  return clusterObjects(
+    objects,
+    extractWeatherFeatures,
+    k,
+    shouldNormalize,
+    useKMeansPlusPlus,
+    rng,
+    computeSilhouette
+  );
+}
+
 // === 6. Демонстрация ===
 
 /**
  * Демонстрационная функция
+ * @param seed - опциональный seed для воспроизводимости результатов
  */
-export function demonstrateWeatherClustering() {
+export function demonstrateWeatherClustering(seed?: number) {
+  // Создаем детерминированный RNG если указан seed
+  const rng = seed !== undefined ? new SeededRandom(seed) : undefined;
+
   // Представим 3 члена ансамбля прогноза
   const ensemble: Grid[] = [
-    createRandomGrid(20, 15),
-    createRandomGrid(20, 15),
-    createRandomGrid(20, 15),
+    createRandomGrid(20, 15, rng),
+    createRandomGrid(20, 15, rng),
+    createRandomGrid(20, 15, rng),
   ];
 
   // Порог осадков — что считаем "объектом дождя"
   const threshold = 6;
+  const minArea = 2; // минимальная площадь объекта
 
-  const objects = extractObjectsFromEnsemble(ensemble, threshold);
+  const objects = extractObjectsFromEnsemble(ensemble, threshold, minArea);
   console.log("Всего объектов в ансамбле:", objects.length);
 
   if (objects.length === 0) {
@@ -606,7 +738,9 @@ export function demonstrateWeatherClustering() {
     objects,
     k,
     true, // нормализация
-    true // k-means++
+    true, // k-means++
+    rng, // детерминированный RNG
+    true // вычислять silhouette
   );
 
   console.log("\n=== Результаты кластеризации ===");
