@@ -554,7 +554,10 @@ export function setupScene() {
     renderer = new THREE.WebGLRenderer({
         canvas: canvasElement,
         antialias: RENDERER.antialias,
-        powerPreference: RENDERER.powerPreference
+        powerPreference: RENDERER.powerPreference,
+        alpha: true,
+        failIfMajorPerformanceCaveat: false,
+        preserveDrawingBuffer: false
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, RENDERER.maxPixelRatio));
