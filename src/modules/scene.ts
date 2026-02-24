@@ -551,8 +551,43 @@ export function setupScene() {
     );
     camera.position.set(CAMERA.initialPosition.x, CAMERA.initialPosition.y, CAMERA.initialPosition.z);
 
+    // Try to get a WebGL context manually first
+    let context: WebGLRenderingContext | WebGL2RenderingContext | null = null;
+    try {
+        // Try WebGL2 first
+        const contextAttributes = {
+            alpha: true,
+            antialias: RENDERER.antialias,
+            depth: true,
+            failIfMajorPerformanceCaveat: false,
+            powerPreference: RENDERER.powerPreference as WebGLPowerPreference,
+            premultipliedAlpha: true,
+            preserveDrawingBuffer: false,
+            stencil: true
+        };
+        
+        context = canvasElement.getContext('webgl2', contextAttributes) as WebGL2RenderingContext;
+        if (!context) {
+            console.warn('WebGL2 not available, falling back to WebGL1');
+            context = canvasElement.getContext('webgl', contextAttributes) as WebGLRenderingContext;
+        }
+        if (!context) {
+            console.warn('WebGL not available, trying experimental-webgl');
+            context = canvasElement.getContext('experimental-webgl', contextAttributes) as WebGLRenderingContext;
+        }
+    } catch (e) {
+        console.error('Error creating WebGL context:', e);
+    }
+
+    if (!context) {
+        console.error('Failed to get WebGL context');
+        document.body.innerHTML += '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:white;background:rgba(0,0,0,0.8);padding:20px;border-radius:10px;text-align:center;">WebGL is not available in this environment. Please ensure your browser supports WebGL.</div>';
+        throw new Error('WebGL not supported');
+    }
+
     renderer = new THREE.WebGLRenderer({
         canvas: canvasElement,
+        context: context,
         antialias: RENDERER.antialias,
         powerPreference: RENDERER.powerPreference,
         alpha: true,
