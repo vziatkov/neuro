@@ -551,50 +551,15 @@ export function setupScene() {
     );
     camera.position.set(CAMERA.initialPosition.x, CAMERA.initialPosition.y, CAMERA.initialPosition.z);
 
-    try {
-        renderer = new THREE.WebGLRenderer({
-            canvas: canvasElement,
-            antialias: RENDERER.antialias,
-            powerPreference: RENDERER.powerPreference,
-            failIfMajorPerformanceCaveat: false
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, RENDERER.maxPixelRatio));
-        renderer.setClearColor(RENDERER.clearColor);
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-    } catch (error) {
-        console.error('WebGL initialization failed:', error);
-        gptLogError('WebGL not available. Your browser/device may not support WebGL or hardware acceleration is disabled.', ['webgl', 'error']);
-        
-        // Show user-friendly error message
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 50, 50, 0.9);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 500px;
-            z-index: 1000;
-            font-family: sans-serif;
-        `;
-        errorDiv.innerHTML = `
-            <h2 style="margin-top: 0;">⚠️ WebGL Not Available</h2>
-            <p>This visualization requires WebGL support, which is not available in your current environment.</p>
-            <p style="font-size: 14px; opacity: 0.8;">Please try:</p>
-            <ul style="text-align: left; font-size: 14px; opacity: 0.8;">
-                <li>Using a different browser (Chrome, Firefox, Safari)</li>
-                <li>Enabling hardware acceleration</li>
-                <li>Updating your graphics drivers</li>
-            </ul>
-        `;
-        document.body.appendChild(errorDiv);
-        return;
-    }
+    renderer = new THREE.WebGLRenderer({
+        canvas: canvasElement,
+        antialias: RENDERER.antialias,
+        powerPreference: RENDERER.powerPreference
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, RENDERER.maxPixelRatio));
+    renderer.setClearColor(RENDERER.clearColor);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     if (STARFIELD.enabled) {
         starField = createStarfield();
