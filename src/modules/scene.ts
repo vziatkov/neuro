@@ -336,7 +336,7 @@ function triggerPulse(clientX: number, clientY: number) {
         triggerPulseFromPosition(interactionPoint, colorHex, 1.0);
 
         if (neuralNetwork) {
-            const hit = findClosestNode(neuralNetwork.nodes, interactionPoint);
+            const hit = findClosestNode(neuralNetwork.nodes, interactionPoint, 8.0);
             if (hit) {
                 showNodeIntel(hit.node, hit.index, camera, config.currentFormation);
             } else {
