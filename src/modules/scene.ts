@@ -487,6 +487,7 @@ function setupUIListeners() {
             case '5':
             case '6':
             case '7':
+            case '8':
                 e.preventDefault();
                 const formationIndex = parseInt(e.key) - 1;
                 if (formationIndex < config.numFormations) {
