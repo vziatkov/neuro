@@ -4,7 +4,7 @@ export const config = {
     paused: false,
     activePaletteIndex: 1,
     currentFormation: 0,
-    numFormations: 7,  // Now includes grid, sphere, and ASCII formations
+    numFormations: 8,
     densityFactor: 1,
     demoMode: false
 };
@@ -16,7 +16,8 @@ export const formationNames = [
     'Synaptic Cloud',
     'Grid Network',
     'Sphere Formation',
-    'ASCII Neural Network'
+    'ASCII Neural Network',
+    'TSP Solver'
 ];
 
 export const colorPalettes = [

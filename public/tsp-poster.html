@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSP Solver — When Networks Race</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #0a0a0f;
+    font-family: 'Inter', sans-serif;
+    color: #eee;
+    overflow-x: hidden;
+  }
+
+  /* === LAYOUT === */
+  .poster {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+    position: relative;
+  }
+
+  /* Animated gradient background */
+  .bg-glow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 50% 60% at 30% 50%, rgba(255,120,30,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 50% at 75% 45%, rgba(255,60,100,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 40% at 50% 80%, rgba(100,80,255,0.05) 0%, transparent 70%);
+  }
+
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* === TEXT PANEL === */
+  .content {
+    position: relative;
+    z-index: 10;
+    padding: 50px 45px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+  }
+
+  .badge {
+    display: inline-block;
+    background: rgba(255,215,0,0.12);
+    border: 1px solid rgba(255,215,0,0.3);
+    color: #FFD700;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 20px;
+    width: fit-content;
+  }
+
+  h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+  }
+  h1 .accent {
+    background: linear-gradient(135deg, #FFD700, #ff6b35);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 1.6vw, 17px);
+    line-height: 1.65;
+    color: rgba(255,255,255,0.6);
+    max-width: 520px;
+  }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+  .stat-value {
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #FFD700, #ff8c00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Insight */
+  .insight {
+    background: rgba(255,215,0,0.04);
+    border-left: 3px solid rgba(255,215,0,0.4);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+  }
+  .insight p {
+    font-size: clamp(13px, 1.4vw, 15px);
+    line-height: 1.55;
+    color: rgba(255,255,255,0.7);
+  }
+  .insight strong { color: #FFD700; font-weight: 600; }
+
+  /* Footer */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .author-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD700, #ff6b35);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: #0a0a0f;
+    flex-shrink: 0;
+  }
+  .author-name { font-size: 13px; font-weight: 600; }
+  .author-handle { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .tech-stack {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 6px 14px;
+    border-radius: 6px;
+  }
+
+  /* === VISUALIZATION PANEL === */
+  .viz-panel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgba(255,215,0,0.1);
+  }
+
+  .network-canvas {
+    width: 90%;
+    max-width: 560px;
+    height: auto;
+  }
+
+  .viz-label {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+  }
+
+  .legend {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+  }
+  .legend-line { width: 18px; height: 2px; border-radius: 1px; }
+  .legend-line.optimal { background: #FFD700; }
+  .legend-line.sub { background: #ff6b35; opacity: 0.4; }
+  .legend-line.possible { background: rgba(255,120,50,0.2); }
+  .legend-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #FFD700; box-shadow: 0 0 6px rgba(255,215,0,0.5);
+  }
+
+  /* === SVG ANIMATIONS === */
+  .route-optimal {
+    stroke: #FFD700; stroke-width: 2.5; fill: none; opacity: 0.9;
+    stroke-dasharray: 1200; stroke-dashoffset: 1200;
+    animation: draw-route 4s ease-out 0.5s forwards;
+    filter: url(#glow-gold);
+  }
+  .route-sub {
+    stroke: #ff6b35; stroke-width: 1; fill: none;
+    opacity: 0.15; stroke-dasharray: 5 8;
+  }
+  .edge-dim {
+    stroke: rgba(255,120,50,0.06); stroke-width: 0.5; fill: none;
+  }
+  .city-core {
+    animation: pulse-city 3s ease-in-out infinite;
+  }
+  .pulse-dot {
+    fill: #fff; filter: url(#glow-white);
+    animation: travel-pulse 4s ease-in-out 1.5s infinite;
+  }
+  @keyframes draw-route { to { stroke-dashoffset: 0; } }
+  @keyframes pulse-city { 0%,100%{opacity:.9} 50%{opacity:1} }
+  @keyframes travel-pulse { 0%{opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{opacity:0} }
+
+  /* ==============================================
+     PORTRAIT MODE — stack vertically
+     ============================================== */
+  @media (max-aspect-ratio: 4/5) {
+    .poster {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    .viz-panel {
+      order: -1;
+      border-left: none;
+      border-bottom: 1px solid rgba(255,215,0,0.1);
+      padding: 30px 20px 10px;
+      min-height: 45vh;
+      min-height: 45dvh;
+    }
+
+    .network-canvas {
+      width: 85%;
+      max-width: 400px;
+    }
+
+    .content {
+      padding: 28px 28px 32px;
+      gap: 20px;
+    }
+
+    .viz-label {
+      top: 12px;
+      right: 16px;
+      font-size: 9px;
+    }
+
+    .legend {
+      bottom: 10px;
+      left: 16px;
+      right: auto;
+    }
+
+    h1 { font-size: clamp(24px, 7vw, 34px); }
+    .subtitle { font-size: 14px; }
+    .stats { gap: 20px; }
+    .stat-value { font-size: clamp(20px, 6vw, 28px); }
+    .insight p { font-size: 13px; }
+  }
+
+  /* Extra narrow (phones < 380px) */
+  @media (max-width: 380px) {
+    .content { padding: 20px 20px 28px; gap: 16px; }
+    .badge { font-size: 10px; padding: 5px 10px; }
+    .stats { gap: 14px; }
+    .footer { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* === FIXED LANDSCAPE (for headless screenshot / OG image) === */
+  @media (min-aspect-ratio: 16/10) and (min-width: 1100px) {
+    html, body { height: 630px; overflow: hidden; }
+    .poster {
+      grid-template-columns: 52% 48%;
+      height: 630px;
+    }
+    .content { padding: 44px 42px 36px; }
+    h1 { font-size: 38px; }
+    .subtitle { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+<div class="grid-overlay"></div>
+
+<div class="poster">
+
+  <!-- Text Content -->
+  <div class="content">
+    <div>
+      <div class="badge">P vs NP Visualization</div>
+    </div>
+    <h1>What if all routes<br>could <span class="accent">race at once?</span></h1>
+    <p class="subtitle">
+      The Travelling Salesman Problem asks: what's the shortest path through N cities?
+      Instead of checking one route at a time, this network fires a pulse through
+      every path simultaneously. The optimal route glows brightest.
+    </p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-value">362,880</span>
+        <span class="stat-label">Possible Routes</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">10</span>
+        <span class="stat-label">Cities</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">&lt;1ms</span>
+        <span class="stat-label">Solve Time</span>
+      </div>
+    </div>
+
+    <div class="insight">
+      <p>
+        <strong>The strongest connections carry the most energy.</strong>
+        When a pulse races through the network, the optimal tour — with
+        connection strength 1.0 — glows 10x brighter than alternatives.
+        The answer emerges as light.
+      </p>
+    </div>
+
+    <div class="footer">
+      <div class="author">
+        <div class="author-avatar">VZ</div>
+        <div class="author-info">
+          <span class="author-name">Vitalii Ziatkov</span>
+          <span class="author-handle">github.com/vziatkov/neuro</span>
+        </div>
+      </div>
+      <span class="tech-stack">Three.js &middot; TypeScript &middot; GLSL</span>
+    </div>
+  </div>
+
+  <!-- Network Visualization -->
+  <div class="viz-panel">
+    <span class="viz-label">Live visualization &middot; press 8 in app</span>
+
+    <svg class="network-canvas" viewBox="0 0 620 630" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-white" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Complete graph (dim) -->
+      <g class="edges-dim">
+        <line class="edge-dim" x1="310" y1="80" x2="500" y2="130"/>
+        <line class="edge-dim" x1="310" y1="80" x2="560" y2="290"/>
+        <line class="edge-dim" x1="310" y1="80" x2="510" y2="460"/>
+        <line class="edge-dim" x1="310" y1="80" x2="380" y2="550"/>
+        <line class="edge-dim" x1="310" y1="80" x2="220" y2="520"/>
+        <line class="edge-dim" x1="310" y1="80" x2="120" y2="400"/>
+        <line class="edge-dim" x1="310" y1="80" x2="90" y2="240"/>
+        <line class="edge-dim" x1="310" y1="80" x2="400" y2="310"/>
+        <line class="edge-dim" x1="500" y1="130" x2="560" y2="290"/>
+        <line class="edge-dim" x1="500" y1="130" x2="510" y2="460"/>
+        <line class="edge-dim" x1="500" y1="130" x2="380" y2="550"/>
+        <line class="edge-dim" x1="500" y1="130" x2="220" y2="520"/>
+        <line class="edge-dim" x1="500" y1="130" x2="120" y2="400"/>
+        <line class="edge-dim" x1="500" y1="130" x2="90" y2="240"/>
+        <line class="edge-dim" x1="500" y1="130" x2="400" y2="310"/>
+        <line class="edge-dim" x1="560" y1="290" x2="510" y2="460"/>
+        <line class="edge-dim" x1="560" y1="290" x2="380" y2="550"/>
+        <line class="edge-dim" x1="560" y1="290" x2="220" y2="520"/>
+        <line class="edge-dim" x1="560" y1="290" x2="120" y2="400"/>
+        <line class="edge-dim" x1="560" y1="290" x2="90" y2="240"/>
+        <line class="edge-dim" x1="560" y1="290" x2="400" y2="310"/>
+        <line class="edge-dim" x1="510" y1="460" x2="380" y2="550"/>
+        <line class="edge-dim" x1="510" y1="460" x2="220" y2="520"/>
+        <line class="edge-dim" x1="510" y1="460" x2="120" y2="400"/>
+        <line class="edge-dim" x1="510" y1="460" x2="90" y2="240"/>
+        <line class="edge-dim" x1="510" y1="460" x2="400" y2="310"/>
+        <line class="edge-dim" x1="380" y1="550" x2="220" y2="520"/>
+        <line class="edge-dim" x1="380" y1="550" x2="120" y2="400"/>
+        <line class="edge-dim" x1="380" y1="550" x2="90" y2="240"/>
+        <line class="edge-dim" x1="380" y1="550" x2="400" y2="310"/>
+        <line class="edge-dim" x1="220" y1="520" x2="120" y2="400"/>
+        <line class="edge-dim" x1="220" y1="520" x2="90" y2="240"/>
+        <line class="edge-dim" x1="220" y1="520" x2="400" y2="310"/>
+        <line class="edge-dim" x1="120" y1="400" x2="90" y2="240"/>
+        <line class="edge-dim" x1="120" y1="400" x2="400" y2="310"/>
+        <line class="edge-dim" x1="90" y1="240" x2="400" y2="310"/>
+        <line class="edge-dim" x1="310" y1="80" x2="170" y2="120"/>
+        <line class="edge-dim" x1="500" y1="130" x2="170" y2="120"/>
+        <line class="edge-dim" x1="560" y1="290" x2="170" y2="120"/>
+        <line class="edge-dim" x1="510" y1="460" x2="170" y2="120"/>
+        <line class="edge-dim" x1="380" y1="550" x2="170" y2="120"/>
+        <line class="edge-dim" x1="220" y1="520" x2="170" y2="120"/>
+        <line class="edge-dim" x1="120" y1="400" x2="170" y2="120"/>
+        <line class="edge-dim" x1="90" y1="240" x2="170" y2="120"/>
+        <line class="edge-dim" x1="400" y1="310" x2="170" y2="120"/>
+      </g>
+
+      <!-- Sub-optimal route -->
+      <polyline class="route-sub" points="310,80 560,290 500,130 400,310 510,460 380,550 220,520 120,400 90,240 170,120 310,80"/>
+
+      <!-- Optimal route -->
+      <polyline class="route-optimal" points="310,80 170,120 90,240 120,400 220,520 380,550 510,460 560,290 400,310 500,130 310,80"/>
+
+      <!-- Pulse -->
+      <circle class="pulse-dot" r="5">
+        <animateMotion dur="4s" begin="1.5s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear">
+          <mpath href="#optimal-path"/>
+        </animateMotion>
+      </circle>
+      <path id="optimal-path" d="M310,80 L170,120 L90,240 L120,400 L220,520 L380,550 L510,460 L560,290 L400,310 L500,130 L310,80" fill="none" stroke="none"/>
+
+      <!-- Cities -->
+      <g class="cities">
+        <circle cx="310" cy="80" r="14" fill="none" stroke="rgba(255,215,0,0.2)" stroke-width="1">
+          <animate attributeName="r" values="14;18;14" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.3;0.1;0.3" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <circle class="city-core" cx="310" cy="80" r="7" fill="#FFD700" filter="url(#glow)"/>
+        <text x="310" y="65" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="Inter" font-weight="600">START</text>
+        <circle class="city-core" cx="500" cy="130" r="5" fill="#ff8c00" filter="url(#glow)"/>
+        <circle class="city-core" cx="560" cy="290" r="5" fill="#ff6b35" filter="url(#glow)"/>
+        <circle class="city-core" cx="510" cy="460" r="5" fill="#ff4757" filter="url(#glow)"/>
+        <circle class="city-core" cx="380" cy="550" r="5" fill="#ff6b81" filter="url(#glow)"/>
+        <circle class="city-core" cx="220" cy="520" r="5" fill="#e84393" filter="url(#glow)"/>
+        <circle class="city-core" cx="120" cy="400" r="5" fill="#a855f7" filter="url(#glow)"/>
+        <circle class="city-core" cx="90" cy="240" r="5" fill="#8b5cf6" filter="url(#glow)"/>
+        <circle class="city-core" cx="170" cy="120" r="5" fill="#FFD700" filter="url(#glow)"/>
+        <circle class="city-core" cx="400" cy="310" r="5.5" fill="#ff8c00" filter="url(#glow)"/>
+      </g>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-line optimal"></span> Optimal route</div>
+      <div class="legend-item"><span class="legend-line sub"></span> Alternative routes</div>
+      <div class="legend-item"><span class="legend-line possible"></span> All 362,880 possibilities</div>
+      <div class="legend-item"><div class="legend-dot"></div> City node</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

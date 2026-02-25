@@ -10,6 +10,7 @@ import { nodeShader, connectionShader } from './shaders';
 import { generateNeuralNetwork, type NeuralNetwork, type Node } from './network';
 import { gptLogInfo, gptLogError, gptLogSuccess, gptLogPulse } from './logger/gptLogger';
 import { simulatePulseJourney } from './pulseTracker';
+import { showNodeIntel, hidePanel, findClosestNode } from './nodeIntel';
 import { BiometricSimulator, createBiometricSimulator, toggleBiometricSimulation } from './biometricSimulator';
 import {
     CAMERA, RENDERER, SCENE, CONTROLS, BLOOM, FILM, STARFIELD, PULSE,
@@ -333,6 +334,15 @@ function triggerPulse(clientX: number, clientY: number) {
         const colorHex = '#' + randomColor.getHexString();
         
         triggerPulseFromPosition(interactionPoint, colorHex, 1.0);
+
+        if (neuralNetwork) {
+            const hit = findClosestNode(neuralNetwork.nodes, interactionPoint, 8.0);
+            if (hit) {
+                showNodeIntel(hit.node, hit.index, camera, config.currentFormation);
+            } else {
+                hidePanel();
+            }
+        }
     }
 }
 
@@ -383,6 +393,7 @@ function setupUIListeners() {
 
     changeFormationBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        hidePanel();
         config.currentFormation = (config.currentFormation + 1) % config.numFormations;
         createNetworkVisualization(config.currentFormation, config.densityFactor);
         controls.autoRotate = false;
@@ -487,6 +498,7 @@ function setupUIListeners() {
             case '5':
             case '6':
             case '7':
+            case '8':
                 e.preventDefault();
                 const formationIndex = parseInt(e.key) - 1;
                 if (formationIndex < config.numFormations) {

@@ -3,6 +3,7 @@ import { NODE, QUANTUM_CORTEX, HYPERDIMENSIONAL_MESH, NEURAL_VORTEX, SYNAPTIC_CL
 import { generateGridNetwork } from './gridFormation';
 import { generateSphereNetwork } from './sphereFormation';
 import { generateAsciiNetwork } from './asciiFormation';
+import { generateTspNetwork } from './tspFormation';
 
 export class Node {
     position: THREE.Vector3;
@@ -549,7 +550,7 @@ export function generateNeuralNetwork(formationIndex: number, densityFactor = 1.
     let nodes: Node[] = [];
     let rootNode: Node;
 
-    switch (formationIndex % 7) {
+    switch (formationIndex % 8) {
         case 0:
             rootNode = new Node(new THREE.Vector3(0, 0, 0), 0, 0);
             rootNode.size = NODE.rootNodeSizes.quantumCortex;
@@ -575,14 +576,13 @@ export function generateNeuralNetwork(formationIndex: number, densityFactor = 1.
             generateSynapticCloud(nodes, rootNode, densityFactor);
             break;
         case 4:
-            // Grid formation - imported separately to keep it isolated
             return generateGridNetwork(densityFactor);
         case 5:
-            // Sphere formation - uniform distribution on sphere
             return generateSphereNetwork(densityFactor);
         case 6:
-            // ASCII formation - my neural network signature pattern
             return generateAsciiNetwork(densityFactor);
+        case 7:
+            return generateTspNetwork(densityFactor);
     }
 
     if (densityFactor < 1.0) {

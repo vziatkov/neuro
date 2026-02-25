@@ -276,6 +276,130 @@ body {
     }
 }
 
+/* ============================================================
+   Node Intel Panel — WorldMonitor-style floating card
+   ============================================================ */
+#node-intel-panel {
+    position: fixed;
+    z-index: 50;
+    width: 260px;
+    background: rgba(10, 10, 10, .92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 10px;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 11px;
+    color: #e8e8e8;
+    pointer-events: auto;
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .6), 0 0 1px rgba(255, 120, 50, .3);
+    overflow: hidden;
+}
+
+#node-intel-panel.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+.nip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    background: rgba(255, 255, 255, .03);
+}
+
+.nip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.nip-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.nip-close {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color .15s;
+}
+
+.nip-close:hover {
+    color: #ff4444;
+}
+
+.nip-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nip-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.nip-value {
+    font-size: 11px;
+    color: #ccc;
+}
+
+.nip-threat {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.nip-bar-wrap {
+    width: 80px;
+    height: 4px;
+    background: rgba(255, 255, 255, .08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.nip-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .4s ease;
+}
+
+.nip-footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, .06);
+    font-size: 9px;
+    color: #555;
+}
+
 @media (max-width: 400px) {
     #theme-selector {
         flex-direction: column;
