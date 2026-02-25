@@ -356,3 +356,9 @@ export function setupCognitiveTrace3D() {
 
   animate();
 }
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupCognitiveTrace3D);
+} else {
+  setupCognitiveTrace3D();
+}
