@@ -202,26 +202,14 @@
 
         function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
-        // Circle center computation
-        // The circle is tangent to the diagonal (from top-left to bottom-right)
-        // and tangent to the line from top-left to mid-bottom
-        // Center is at distance r from both lines
+        // Circle center: lies ON the midpoint line (y=2x), tangent to the diagonal (y=x)
+        // Center = (r√2, 2r√2), distance to diagonal = r, distance from origin = r√10 = √2(1-r)
+        const circleCX = R * Math.sqrt(2);
+        const circleCY = 2 * R * Math.sqrt(2);
 
-        // Diagonal: from (0,0) to (1,1) → line x - y = 0
-        // Line to mid-bottom: from (0,0) to (0.5,1)
-        // The circle center: computed from the geometry
-        const diagAngle = Math.PI / 4;
-        const midAngle = Math.atan2(1, 0.5);
-        const bisectAngle = (diagAngle + midAngle) / 2;
-
-        // Center of circle sits on the angle bisector from (0,0)
-        // at distance d such that the perpendicular distance to the diagonal = R
-        // Distance from point on bisector at distance d to line x-y=0:
-        // |d*cos(bisectAngle) - d*sin(bisectAngle)| / sqrt(2) = R
-        const distFactor = Math.abs(Math.cos(bisectAngle) - Math.sin(bisectAngle)) / Math.sqrt(2);
-        const d = R / distFactor;
-        const circleCX = d * Math.cos(bisectAngle);
-        const circleCY = d * Math.sin(bisectAngle);
+        // Tangent point on diagonal: projection of center onto y=x
+        const tangentX = (circleCX + circleCY) / 2;
+        const tangentY = tangentX;
 
         function draw() {
             const w = window.innerWidth;
@@ -288,26 +276,44 @@
             if (step3 > 0) {
                 ctx.globalAlpha = step3 * 0.5;
 
-                // Perpendicular from circle center to diagonal
-                const projDiag = (circleCX + circleCY) / 2;
-                drawLine(circleCX, circleCY, projDiag, projDiag, 'rgba(68,136,255,0.5)', 1, [4, 4]);
-                drawLabel(projDiag, projDiag, 'r', 'rgba(238,68,68,0.6)', 10, 4, 12);
+                // Perpendicular from circle center to diagonal (radius line)
+                drawLine(circleCX, circleCY, tangentX, tangentY, 'rgba(238,68,68,0.6)', 1, [4, 4]);
+                drawLabel((circleCX + tangentX) / 2, (circleCY + tangentY) / 2, 'r', 'rgba(238,68,68,0.6)', 10, 6, -4);
 
-                // Distance label on green line
-                const greenDist = Math.sqrt(2) - Math.sqrt(2) * R;
-                const gx = greenDist / Math.sqrt(5) * 0.5;
-                const gy = greenDist / Math.sqrt(5) * 1.0;
-                drawLine(0, 0, gx, gy, 'rgba(68,204,102,0.3)', 1, [4, 4]);
-                drawLabel(gx * 0.4, gy * 0.4, '√2−√2r', 'rgba(68,204,102,0.4)', 9, 8, -4);
+                // Right angle mark at tangent point
+                const markSize = 0.025;
+                const [tsx, tsy] = toScreen(tangentX, tangentY);
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(tsx + markSize * scale * 0.707, tsy - markSize * scale * 0.707);
+                ctx.lineTo(tsx + markSize * scale * 1.414, tsy);
+                ctx.lineTo(tsx + markSize * scale * 0.707, tsy + markSize * scale * 0.707);
+                ctx.stroke();
 
-                // Angle arc
+                // Line from origin to center (along midpoint line), labeled √2−√2r
+                drawLine(0, 0, circleCX, circleCY, 'rgba(68,204,102,0.35)', 1, [4, 4]);
+                drawLabel(circleCX * 0.35, circleCY * 0.35, '√2−√2r', 'rgba(68,204,102,0.45)', 9, -50, -4);
+
+                // Tangent point on diagonal, show distance from origin
+                drawFilledCircle(tangentX, tangentY, 0.005, 'rgba(255,255,255,0.4)');
+
+                // Angle arc at origin between diagonal and midpoint line
+                const diagAngle = Math.PI / 4;
+                const midAngle = Math.atan2(1, 0.5);
                 const [aox, aoy] = toScreen(0, 0);
                 ctx.strokeStyle = 'rgba(255,255,255,0.2)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.arc(aox, aoy, 35, diagAngle, midAngle, false);
                 ctx.stroke();
-                drawLabel(0.06, 0.12, 'a', 'rgba(255,255,255,0.3)', 10, 0, 0);
+                drawLabel(0.07, 0.13, 'a', 'rgba(255,255,255,0.3)', 10, 0, 0);
+
+                // Perpendicular from midpoint (0.5,1) to diagonal
+                const footX = 0.75, footY = 0.75;
+                drawLine(0.5, 1, footX, footY, 'rgba(68,136,255,0.3)', 1, [3, 3]);
+                drawLabel(0.6, 0.9, '√2/4', 'rgba(68,136,255,0.4)', 9, 4, 0);
 
                 ctx.globalAlpha = 1;
             }
@@ -324,21 +330,15 @@
                 // Center dot
                 drawFilledCircle(circleCX, circleCY, 0.005, `rgba(238,68,68,${step4})`);
 
-                // Radius line
-                ctx.globalAlpha = step4 * 0.6;
-                const projDiag2 = (circleCX + circleCY) / 2;
-                drawLine(circleCX, circleCY, projDiag2, projDiag2, 'rgba(238,68,68,0.6)', 1, [3, 3]);
-                ctx.globalAlpha = 1;
-
                 // r value near center
                 if (step4 > 0.8) {
-                    drawLabel(circleCX, circleCY, `r ≈ ${R.toFixed(3)}`, 'rgba(238,68,68,0.7)', 10, 10, -12);
+                    drawLabel(circleCX, circleCY, `r ≈ ${R.toFixed(3)}`, 'rgba(238,68,68,0.7)', 10, -65, -12);
                 }
 
                 // Golden ratio badge
                 if (step4 > 0.95) {
                     const badgeAlpha = 0.3 + pulse * 0.2;
-                    drawLabel(circleCX, circleCY, `r = 1/2φ`, `rgba(255,140,66,${badgeAlpha})`, 11, 10, 6);
+                    drawLabel(circleCX, circleCY, `r = 1/2φ`, `rgba(255,140,66,${badgeAlpha})`, 11, -55, 6);
                 }
             }
         }
