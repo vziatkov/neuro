@@ -105,37 +105,15 @@
         // f(u) = 8u^5 + u^4 - 6u^3 + 2u^2 - 2u + 1
         function f(u) { return 8*u**5 + u**4 - 6*u**3 + 2*u**2 - 2*u + 1; }
 
-        // Robust bisection in (0.5, 1) — avoids Newton grabbing wrong root
-        function solveU_bisect() {
-            let a = 0.5 + 1e-6, b = 1 - 1e-6;
+        // Bisection in a given range with bracket scan
+        function solveU_range(a0, b0) {
+            let a = a0, b = b0;
             let fa = f(a), fb = f(b);
             if (fa * fb > 0) {
-                const N = 2000;
+                const N = 4000;
                 let prevU = a, prevF = fa;
                 for (let i = 1; i <= N; i++) {
-                    const u = a + (b - a) * (i / N);
-                    const fu = f(u);
-                    if (prevF * fu <= 0) { a = prevU; fa = prevF; b = u; fb = fu; break; }
-                    prevU = u; prevF = fu;
-                }
-            }
-            for (let i = 0; i < 200; i++) {
-                const m = (a + b) / 2;
-                const fm = f(m);
-                if (Math.abs(fm) < 1e-15) return m;
-                if (fa * fm <= 0) { b = m; fb = fm; } else { a = m; fa = fm; }
-            }
-            return (a + b) / 2;
-        }
-
-        // Find root by bisection in a given range
-        function solveU_range(a, b) {
-            let fa = f(a), fb = f(b);
-            if (fa * fb > 0) {
-                const N = 2000;
-                let prevU = a, prevF = fa;
-                for (let i = 1; i <= N; i++) {
-                    const uu = a + (b - a) * (i / N);
+                    const uu = a0 + (b0 - a0) * (i / N);
                     const fu = f(uu);
                     if (prevF * fu <= 0) { a = prevU; fa = prevF; b = uu; fb = fu; break; }
                     prevU = uu; prevF = fu;
@@ -158,13 +136,18 @@
             return { u, t, r, Cx: r, Cy: L - r, Px: t, Py: (t * t) / L };
         }
 
-        // Two solutions: inscribed (u in 0.6-0.7) and outer tangent (u in 0.5-0.6)
-        const uInscribed = solveU_bisect();
+        // Two solutions from the SAME quintic:
+        // Inscribed (u ≈ 0.6466, in range 0.6–0.8) — circle fits inside square
+        // Outer tangent (u ≈ 0.55, in range 0.5–0.6) — circle escapes the square
+        const uInscribed = solveU_range(0.6, 0.8);
         const uOuter = solveU_range(0.5 + 1e-6, 0.6);
 
+        console.log('Inscribed u:', uInscribed, '→ r:', uInscribed ? getGeometry(uInscribed).r : null);
+        console.log('Outer u:', uOuter, '→ r:', uOuter ? getGeometry(uOuter).r : null);
+
         const solutions = {
-            inscribed: getGeometry(uInscribed),
-            outer: uOuter ? getGeometry(uOuter) : null
+            inscribed: uInscribed ? getGeometry(uInscribed) : getGeometry(0.6466),
+            outer: uOuter ? getGeometry(uOuter) : getGeometry(0.5510)
         };
 
         let currentMode = 'inscribed';
