@@ -36,6 +36,26 @@
         }
         .legend-item { display: flex; align-items: center; gap: 8px; font-size: 10px; color: rgba(255,255,255,0.35); }
         .legend-dot { width: 12px; height: 3px; border-radius: 1px; flex-shrink: 0; }
+        .toggle {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 10; display: flex; gap: 2px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px; padding: 3px;
+        }
+        .toggle-btn {
+            background: none; border: none; color: rgba(255,255,255,0.35);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
+            padding: 6px 16px; border-radius: 4px; cursor: pointer; transition: all 0.25s;
+        }
+        .toggle-btn:hover { color: rgba(255,255,255,0.6); }
+        .toggle-btn.active {
+            background: rgba(238,68,68,0.15); color: #ee6644; border: 1px solid rgba(238,68,68,0.3);
+        }
+        .toggle-hint {
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+            z-index: 10; font-size: 9px; color: rgba(255,255,255,0.15);
+            letter-spacing: 0.5px; font-style: italic; pointer-events: none;
+        }
         .back {
             position: fixed; bottom: 28px; right: 28px; z-index: 10;
             font-size: 10px; color: rgba(255,255,255,0.2); text-decoration: none; transition: color 0.2s;
@@ -65,6 +85,12 @@
         <div class="line">C = (r, L − r)</div>
         <div class="result" id="result"></div>
     </div>
+
+    <div class="toggle" id="toggle">
+        <button class="toggle-btn active" data-mode="inscribed">Inscribed</button>
+        <button class="toggle-btn" data-mode="outer">Outer tangent</button>
+    </div>
+    <div class="toggle-hint" id="toggle-hint">Same equation — different geometry</div>
 
     <a href="/neuro/" class="back">← Neuro</a>
 
@@ -102,19 +128,79 @@
             return (a + b) / 2;
         }
 
-        const u = solveU_bisect();
-        const t = u * L;
-        const denom = L * (2 * t - L);
-        const r = (t * (L*L - 2*t*t)) / denom;
-        const Cx = r, Cy = L - r;
-        const Px = t, Py = (t*t) / L;
+        // Find root by bisection in a given range
+        function solveU_range(a, b) {
+            let fa = f(a), fb = f(b);
+            if (fa * fb > 0) {
+                const N = 2000;
+                let prevU = a, prevF = fa;
+                for (let i = 1; i <= N; i++) {
+                    const uu = a + (b - a) * (i / N);
+                    const fu = f(uu);
+                    if (prevF * fu <= 0) { a = prevU; fa = prevF; b = uu; fb = fu; break; }
+                    prevU = uu; prevF = fu;
+                }
+                if (fa * fb > 0) return null;
+            }
+            for (let i = 0; i < 200; i++) {
+                const m = (a + b) / 2;
+                const fm = f(m);
+                if (Math.abs(fm) < 1e-15) return m;
+                if (fa * fm <= 0) { b = m; fb = fm; } else { a = m; fa = fm; }
+            }
+            return (a + b) / 2;
+        }
 
-        document.getElementById('result').textContent =
-            `u ≈ ${u.toFixed(6)}  ·  r ≈ ${r.toFixed(6)}`;
+        function getGeometry(u) {
+            const t = u * L;
+            const denom = L * (2 * t - L);
+            const r = (t * (L * L - 2 * t * t)) / denom;
+            return { u, t, r, Cx: r, Cy: L - r, Px: t, Py: (t * t) / L };
+        }
+
+        // Two solutions: inscribed (u in 0.6-0.7) and outer tangent (u in 0.5-0.6)
+        const uInscribed = solveU_bisect();
+        const uOuter = solveU_range(0.5 + 1e-6, 0.6);
+
+        const solutions = {
+            inscribed: getGeometry(uInscribed),
+            outer: uOuter ? getGeometry(uOuter) : null
+        };
+
+        let currentMode = 'inscribed';
+        let geo = solutions.inscribed;
+        let transitionProgress = 1;
+        let targetGeo = geo;
+        let fromGeo = geo;
+
+        function updateResult() {
+            document.getElementById('result').textContent =
+                `u ≈ ${geo.u.toFixed(6)}  ·  r ≈ ${geo.r.toFixed(6)}`;
+        }
+        updateResult();
+
+        // Toggle logic
+        document.getElementById('toggle').addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-btn');
+            if (!btn) return;
+            const mode = btn.dataset.mode;
+            if (mode === currentMode) return;
+            if (mode === 'outer' && !solutions.outer) return;
+
+            currentMode = mode;
+            fromGeo = { ...geo };
+            targetGeo = solutions[mode];
+            transitionProgress = 0;
+
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
 
         let sz, ox, oy, scale;
         let animT = 0;
         let buildProgress = 0;
+
+        let viewScale = 1;
 
         function resize() {
             canvas.width = window.innerWidth * dpr;
@@ -122,7 +208,13 @@
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            sz = Math.min(window.innerWidth, window.innerHeight) * 0.55;
+            updateView();
+        }
+
+        function updateView() {
+            const maxR = Math.abs(geo.r);
+            viewScale += ((maxR > L * 0.5 ? 0.3 : 1) - viewScale) * 0.04;
+            sz = Math.min(window.innerWidth, window.innerHeight) * 0.55 * viewScale;
             ox = window.innerWidth / 2 - sz / 2;
             oy = window.innerHeight / 2 - sz / 2;
             scale = sz;
@@ -164,8 +256,24 @@
         }
 
         function easeOut(v) { return 1 - Math.pow(1 - v, 3); }
+        function lerp(a, b, t) { return a + (b - a) * t; }
 
         function draw() {
+            // Smooth transition between solutions
+            if (transitionProgress < 1) {
+                transitionProgress = Math.min(1, transitionProgress + 0.025);
+                const et = easeOut(transitionProgress);
+                geo = {
+                    u: lerp(fromGeo.u, targetGeo.u, et),
+                    t: lerp(fromGeo.t, targetGeo.t, et),
+                    r: lerp(fromGeo.r, targetGeo.r, et),
+                    Cx: lerp(fromGeo.Cx, targetGeo.Cx, et),
+                    Cy: lerp(fromGeo.Cy, targetGeo.Cy, et),
+                    Px: lerp(fromGeo.Px, targetGeo.Px, et),
+                    Py: lerp(fromGeo.Py, targetGeo.Py, et),
+                };
+                updateResult();
+            }
             const w = window.innerWidth, h = window.innerHeight;
             ctx.clearRect(0, 0, w, h);
 
@@ -233,67 +341,59 @@
             if (s3 > 0) {
                 ctx.globalAlpha = s3 * 0.5;
 
-                // Tangent lines from center to walls
-                sLine(Cx, Cy, 0, Cy, 'rgba(68,136,255,0.5)', 1, [4, 4]);
-                sLabel(Cx / 2, Cy, 'r', 'rgba(68,136,255,0.5)', 9, -3, -8);
+                const isOuter = geo.r > L * 0.5;
 
-                sLine(Cx, Cy, Cx, L, 'rgba(68,136,255,0.5)', 1, [4, 4]);
-                sLabel(Cx, (Cy + L) / 2, 'r', 'rgba(68,136,255,0.5)', 9, 6, 0);
+                // Tangent lines from center to walls
+                if (!isOuter || geo.Cx > 0) {
+                    sLine(geo.Cx, geo.Cy, 0, geo.Cy, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                    sLabel(Math.max(0, geo.Cx / 2), geo.Cy, 'r', 'rgba(68,136,255,0.5)', 9, -3, -8);
+                }
+
+                sLine(geo.Cx, geo.Cy, geo.Cx, L, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                sLabel(geo.Cx, (geo.Cy + L) / 2, 'r', 'rgba(68,136,255,0.5)', 9, 6, 0);
 
                 // Line from center to contact point
-                sLine(Cx, Cy, Px, Py, 'rgba(68,204,102,0.6)', 1, [4, 4]);
-                sLabel((Cx + Px) / 2, (Cy + Py) / 2, 'r', 'rgba(68,204,102,0.5)', 9, 6, -6);
+                sLine(geo.Cx, geo.Cy, geo.Px, geo.Py, 'rgba(68,204,102,0.6)', 1, [4, 4]);
+                sLabel((geo.Cx + geo.Px) / 2, (geo.Cy + geo.Py) / 2, 'r', 'rgba(68,204,102,0.5)', 9, 6, -6);
 
                 // Contact point
-                sDot(Px, Py, 0.006, 'rgba(68,204,102,0.9)');
-                sLabel(Px, Py, `P(${Px.toFixed(2)}, ${Py.toFixed(2)})`, 'rgba(68,204,102,0.5)', 9, 8, 10);
+                sDot(geo.Px, geo.Py, 0.006, 'rgba(68,204,102,0.9)');
+                sLabel(geo.Px, geo.Py, `P(${geo.Px.toFixed(2)}, ${geo.Py.toFixed(2)})`, 'rgba(68,204,102,0.5)', 9, 8, 10);
 
-                // Tangent line at contact point (perpendicular to radius)
-                const slope = (2 * Px) / L;
+                // Tangent line at contact point
+                const slope = (2 * geo.Px) / L;
                 const tanLen = 0.15;
                 const tdx = tanLen / Math.sqrt(1 + slope * slope);
                 const tdy = slope * tdx;
-                sLine(Px - tdx, Py - tdy, Px + tdx, Py + tdy, 'rgba(68,204,102,0.3)', 1);
+                sLine(geo.Px - tdx, geo.Py - tdy, geo.Px + tdx, geo.Py + tdy, 'rgba(68,204,102,0.3)', 1);
 
                 // Center dot
-                sDot(Cx, Cy, 0.005, 'rgba(68,136,255,0.7)');
-                sLabel(Cx, Cy, 'C', 'rgba(68,136,255,0.5)', 10, -14, -8);
-
-                // Right angle marks at tangent points on walls
-                const m = 0.02;
-                // Left wall
-                const [lx, ly] = toS(0, Cy);
-                ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(lx + m*scale, ly - m*scale);
-                ctx.lineTo(lx + m*scale, ly);
-                ctx.lineTo(lx, ly + m*scale);
-                ctx.stroke();
-                // Top wall
-                const [tx, ty] = toS(Cx, L);
-                ctx.beginPath();
-                ctx.moveTo(tx - m*scale, ty + m*scale);
-                ctx.lineTo(tx, ty + m*scale);
-                ctx.lineTo(tx + m*scale, ty);
-                ctx.stroke();
+                sDot(geo.Cx, geo.Cy, 0.005, 'rgba(68,136,255,0.7)');
+                sLabel(geo.Cx, geo.Cy, 'C', 'rgba(68,136,255,0.5)', 10, -14, -8);
 
                 ctx.globalAlpha = 1;
             }
 
             // Step 4: The circle
             if (s4 > 0) {
-                const cr = r * s4;
+                const cr = Math.abs(geo.r) * s4;
                 const ga = 0.15 + pulse * 0.1;
+                const isOuter = geo.r > L * 0.5;
+                const circColor = isOuter ? '255,140,50' : '238,68,68';
 
                 // Glow
-                sCirc(Cx, Cy, cr + 0.008, `rgba(238,68,68,${ga * s4})`, 6);
+                sCirc(geo.Cx, geo.Cy, cr + 0.008, `rgba(${circColor},${ga * s4})`, 6);
                 // Main
-                sCirc(Cx, Cy, cr, `rgba(238,68,68,${0.8 * s4})`, 2);
+                sCirc(geo.Cx, geo.Cy, cr, `rgba(${circColor},${0.8 * s4})`, 2);
                 // Center
-                sDot(Cx, Cy, 0.004, `rgba(238,68,68,${s4})`);
+                sDot(geo.Cx, geo.Cy, 0.004, `rgba(${circColor},${s4})`);
 
                 if (s4 > 0.8) {
-                    sLabel(Cx, Cy, `r ≈ ${r.toFixed(4)}`, 'rgba(238,68,68,0.7)', 10, 10, 5);
+                    sLabel(geo.Cx, geo.Cy, `r ≈ ${Math.abs(geo.r).toFixed(4)}`, `rgba(${circColor},0.7)`, 10, 10, 5);
+
+                    if (isOuter) {
+                        sLabel(geo.Cx, geo.Cy, 'OUTER', `rgba(${circColor},0.4)`, 9, 10, 18);
+                    }
                 }
             }
         }
@@ -301,6 +401,7 @@
         function animate() {
             animT += 0.016;
             if (buildProgress < 1.2) buildProgress += 0.005;
+            updateView();
             draw();
             requestAnimationFrame(animate);
         }
