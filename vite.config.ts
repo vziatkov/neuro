@@ -10,6 +10,7 @@ export default defineConfig({
         'cognitive-trace-3d': resolve(__dirname, 'cognitive-trace-3d.html'),
         'cognitive-trace-artifact': resolve(__dirname, 'cognitive-trace-artifact.html'),
         'cursor-2025': resolve(__dirname, 'cursor-2025.html'),
+        'golden-ratio-geometry': resolve(__dirname, 'golden-ratio-geometry.html'),
       },
     },
   },

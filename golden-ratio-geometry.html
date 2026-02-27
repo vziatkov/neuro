@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Ratio Geometry — Hidden φ in a Square</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050508;
+            color: #e5e5e5;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        .header {
+            position: fixed;
+            top: 24px;
+            left: 28px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .header h1 {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+        }
+        .header .sub {
+            font-size: 10px;
+            color: rgba(255,255,255,0.25);
+            margin-top: 4px;
+        }
+        .formula {
+            position: fixed;
+            bottom: 28px;
+            left: 28px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .formula .line {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            line-height: 1.8;
+        }
+        .formula .result {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ff8c42;
+            margin-top: 8px;
+        }
+        .legend {
+            position: fixed;
+            top: 28px;
+            right: 28px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: none;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.35);
+        }
+        .legend-dot {
+            width: 12px;
+            height: 3px;
+            border-radius: 1px;
+            flex-shrink: 0;
+        }
+        .back {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 10;
+            font-size: 10px;
+            color: rgba(255,255,255,0.2);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back:hover { color: rgba(255,95,31,0.8); }
+        .hint {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: rgba(255,255,255,0.12);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="c"></canvas>
+
+    <div class="header">
+        <h1>Golden Ratio Geometry</h1>
+        <div class="sub">Hidden φ in a unit square · r = (√5 − 1) / 4 = 1 / 2φ</div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#e8e8e8"></div>Unit square + diagonal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#44cc66"></div>Line to midpoint (√5/2)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ee4444"></div>Inscribed circle (r)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4488ff;opacity:.5"></div>Construction lines</div>
+    </div>
+
+    <div class="formula">
+        <div class="line">cos(a) = (√2/4) / (√5/2) = r / (√2 − √2r)</div>
+        <div class="line">r · (5 + √5) = √5</div>
+        <div class="result">r = (√5 − 1) / 4 ≈ 0.309</div>
+    </div>
+
+    <a href="/neuro/" class="back">← Neuro</a>
+    <div class="hint">drag to rotate · scroll to zoom</div>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const dpr = Math.min(window.devicePixelRatio, 2);
+
+        const PHI = (1 + Math.sqrt(5)) / 2;
+        const R = (Math.sqrt(5) - 1) / 4;
+
+        let size, ox, oy, scale;
+        let animT = 0;
+        let buildProgress = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            size = Math.min(window.innerWidth, window.innerHeight) * 0.55;
+            ox = window.innerWidth / 2 - size * 0.15;
+            oy = window.innerHeight / 2;
+            scale = size;
+        }
+
+        function toScreen(x, y) {
+            return [ox + (x - 0.5) * scale, oy + (y - 0.5) * scale];
+        }
+
+        function drawLine(x1, y1, x2, y2, color, width, dash) {
+            const [sx1, sy1] = toScreen(x1, y1);
+            const [sx2, sy2] = toScreen(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.setLineDash(dash || []);
+            ctx.beginPath();
+            ctx.moveTo(sx1, sy1);
+            ctx.lineTo(sx2, sy2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawCircle(cx, cy, r, color, width, dash) {
+            const [scx, scy] = toScreen(cx, cy);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.setLineDash(dash || []);
+            ctx.beginPath();
+            ctx.arc(scx, scy, r * scale, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawFilledCircle(cx, cy, r, color) {
+            const [scx, scy] = toScreen(cx, cy);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(scx, scy, r * scale, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawLabel(x, y, text, color, fontSize, offsetX, offsetY) {
+            const [sx, sy] = toScreen(x, y);
+            ctx.fillStyle = color;
+            ctx.font = `${fontSize || 11}px 'JetBrains Mono', monospace`;
+            ctx.fillText(text, sx + (offsetX || 6), sy + (offsetY || -6));
+        }
+
+        function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+        // Circle center computation
+        // The circle is tangent to the diagonal (from top-left to bottom-right)
+        // and tangent to the line from top-left to mid-bottom
+        // Center is at distance r from both lines
+
+        // Diagonal: from (0,0) to (1,1) → line x - y = 0
+        // Line to mid-bottom: from (0,0) to (0.5,1)
+        // The circle center: computed from the geometry
+        const diagAngle = Math.PI / 4;
+        const midAngle = Math.atan2(1, 0.5);
+        const bisectAngle = (diagAngle + midAngle) / 2;
+
+        // Center of circle sits on the angle bisector from (0,0)
+        // at distance d such that the perpendicular distance to the diagonal = R
+        // Distance from point on bisector at distance d to line x-y=0:
+        // |d*cos(bisectAngle) - d*sin(bisectAngle)| / sqrt(2) = R
+        const distFactor = Math.abs(Math.cos(bisectAngle) - Math.sin(bisectAngle)) / Math.sqrt(2);
+        const d = R / distFactor;
+        const circleCX = d * Math.cos(bisectAngle);
+        const circleCY = d * Math.sin(bisectAngle);
+
+        function draw() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const bp = Math.min(buildProgress, 1);
+            const step1 = easeOut(Math.min(1, bp * 4));
+            const step2 = easeOut(Math.max(0, Math.min(1, (bp - 0.25) * 4)));
+            const step3 = easeOut(Math.max(0, Math.min(1, (bp - 0.5) * 3)));
+            const step4 = easeOut(Math.max(0, Math.min(1, (bp - 0.7) * 3.3)));
+
+            const pulse = 0.5 + 0.5 * Math.sin(animT * 1.5);
+
+            // Step 1: Unit square
+            if (step1 > 0) {
+                const a = step1;
+                ctx.globalAlpha = a;
+
+                // Square
+                drawLine(0, 0, 1, 0, 'rgba(255,255,255,0.3)', 1);
+                drawLine(1, 0, 1, 1, 'rgba(255,255,255,0.3)', 1);
+                drawLine(1, 1, 0, 1, 'rgba(255,255,255,0.3)', 1);
+                drawLine(0, 1, 0, 0, 'rgba(255,255,255,0.3)', 1);
+
+                // Grid dots
+                for (let gx = 0; gx <= 1; gx += 0.25) {
+                    for (let gy = 0; gy <= 1; gy += 0.25) {
+                        drawFilledCircle(gx, gy, 0.003, 'rgba(255,255,255,0.08)');
+                    }
+                }
+
+                // Corner dots
+                [[0,0],[1,0],[1,1],[0,1]].forEach(([px, py]) => {
+                    drawFilledCircle(px, py, 0.006, 'rgba(255,255,255,0.5)');
+                });
+
+                drawLabel(0.5, 0, '1', 'rgba(255,255,255,0.2)', 10, -3, -10);
+
+                ctx.globalAlpha = 1;
+            }
+
+            // Step 2: Diagonal + line to midpoint
+            if (step2 > 0) {
+                ctx.globalAlpha = step2;
+
+                // Diagonal (top-left to bottom-right)
+                drawLine(0, 0, step2, step2, 'rgba(255,255,255,0.6)', 1.5);
+                drawLabel(0.55, 0.45, '√2', 'rgba(255,255,255,0.3)', 10, -20, -8);
+
+                // Line to midpoint of bottom (0,0) to (0.5, 1)
+                drawLine(0, 0, 0.5 * step2, 1 * step2, 'rgba(68,204,102,0.7)', 1.5);
+                drawLabel(0.18, 0.55, '√5/2', 'rgba(68,204,102,0.5)', 10, -40, 0);
+
+                // Midpoint dot
+                if (step2 > 0.9) {
+                    drawFilledCircle(0.5, 1, 0.006, 'rgba(68,204,102,0.8)');
+                }
+
+                ctx.globalAlpha = 1;
+            }
+
+            // Step 3: Construction lines (dashed)
+            if (step3 > 0) {
+                ctx.globalAlpha = step3 * 0.5;
+
+                // Perpendicular from circle center to diagonal
+                const projDiag = (circleCX + circleCY) / 2;
+                drawLine(circleCX, circleCY, projDiag, projDiag, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                drawLabel(projDiag, projDiag, 'r', 'rgba(238,68,68,0.6)', 10, 4, 12);
+
+                // Distance label on green line
+                const greenDist = Math.sqrt(2) - Math.sqrt(2) * R;
+                const gx = greenDist / Math.sqrt(5) * 0.5;
+                const gy = greenDist / Math.sqrt(5) * 1.0;
+                drawLine(0, 0, gx, gy, 'rgba(68,204,102,0.3)', 1, [4, 4]);
+                drawLabel(gx * 0.4, gy * 0.4, '√2−√2r', 'rgba(68,204,102,0.4)', 9, 8, -4);
+
+                // Angle arc
+                const [aox, aoy] = toScreen(0, 0);
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(aox, aoy, 35, diagAngle, midAngle, false);
+                ctx.stroke();
+                drawLabel(0.06, 0.12, 'a', 'rgba(255,255,255,0.3)', 10, 0, 0);
+
+                ctx.globalAlpha = 1;
+            }
+
+            // Step 4: The circle
+            if (step4 > 0) {
+                const circleR = R * step4;
+                const glowAlpha = 0.15 + pulse * 0.1;
+
+                // Glow
+                drawCircle(circleCX, circleCY, circleR + 0.008, `rgba(238,68,68,${glowAlpha * step4})`, 6);
+                // Main circle
+                drawCircle(circleCX, circleCY, circleR, `rgba(238,68,68,${0.8 * step4})`, 2);
+                // Center dot
+                drawFilledCircle(circleCX, circleCY, 0.005, `rgba(238,68,68,${step4})`);
+
+                // Radius line
+                ctx.globalAlpha = step4 * 0.6;
+                const projDiag2 = (circleCX + circleCY) / 2;
+                drawLine(circleCX, circleCY, projDiag2, projDiag2, 'rgba(238,68,68,0.6)', 1, [3, 3]);
+                ctx.globalAlpha = 1;
+
+                // r value near center
+                if (step4 > 0.8) {
+                    drawLabel(circleCX, circleCY, `r ≈ ${R.toFixed(3)}`, 'rgba(238,68,68,0.7)', 10, 10, -12);
+                }
+
+                // Golden ratio badge
+                if (step4 > 0.95) {
+                    const badgeAlpha = 0.3 + pulse * 0.2;
+                    drawLabel(circleCX, circleCY, `r = 1/2φ`, `rgba(255,140,66,${badgeAlpha})`, 11, 10, 6);
+                }
+            }
+        }
+
+        function animate() {
+            animT += 0.016;
+            if (buildProgress < 1.3) buildProgress += 0.004;
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    })();
+    </script>
+</body>
+</html>
