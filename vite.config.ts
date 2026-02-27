@@ -11,6 +11,7 @@ export default defineConfig({
         'cognitive-trace-artifact': resolve(__dirname, 'cognitive-trace-artifact.html'),
         'cursor-2025': resolve(__dirname, 'cursor-2025.html'),
         'golden-ratio-geometry': resolve(__dirname, 'golden-ratio-geometry.html'),
+        'parabola-circle': resolve(__dirname, 'parabola-circle.html'),
       },
     },
   },

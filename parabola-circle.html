@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parabola & Circle — Tangent Geometry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050508;
+            color: #e5e5e5;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas { display: block; cursor: crosshair; }
+        .header {
+            position: fixed; top: 24px; left: 28px; z-index: 10; pointer-events: none;
+        }
+        .header h1 { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+        .header .sub { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 4px; }
+        .formula {
+            position: fixed; bottom: 28px; left: 28px; z-index: 10; pointer-events: none;
+        }
+        .formula .line { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.8; }
+        .formula .result { font-size: 14px; font-weight: 600; color: #ee6644; margin-top: 8px; }
+        .legend {
+            position: fixed; top: 28px; right: 28px; z-index: 10;
+            display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 10px; color: rgba(255,255,255,0.35); }
+        .legend-dot { width: 12px; height: 3px; border-radius: 1px; flex-shrink: 0; }
+        .back {
+            position: fixed; bottom: 28px; right: 28px; z-index: 10;
+            font-size: 10px; color: rgba(255,255,255,0.2); text-decoration: none; transition: color 0.2s;
+        }
+        .back:hover { color: rgba(255,95,31,0.8); }
+    </style>
+</head>
+<body>
+    <canvas id="c"></canvas>
+
+    <div class="header">
+        <h1>Parabola & Circle</h1>
+        <div class="sub">Circle tangent to x=0, y=L, and y=x²/L — Newton's method on a quintic</div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#e8e8e8"></div>Unit square</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e8e8e8"></div>Parabola y = x²</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ee4444"></div>Inscribed circle</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#44cc66"></div>Tangent point & radius</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4488ff;opacity:.5"></div>Construction lines</div>
+    </div>
+
+    <div class="formula">
+        <div class="line">f(u) = 8u⁵ + u⁴ − 6u³ + 2u² − 2u + 1 = 0</div>
+        <div class="line">r = t(L² − 2t²) / L(2t − L)</div>
+        <div class="line">C = (r, L − r)</div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <a href="/neuro/" class="back">← Neuro</a>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const dpr = Math.min(window.devicePixelRatio, 2);
+
+        const L = 1;
+
+        // Polynomial: 8u^5 + u^4 - 6u^3 + 2u^2 - 2u + 1
+        function f(u) { return 8*u**5 + u**4 - 6*u**3 + 2*u**2 - 2*u + 1; }
+        function df(u) { return 40*u**4 + 4*u**3 - 18*u**2 + 4*u - 2; }
+
+        function solveU(u0, iters, eps) {
+            u0 = u0 || 0.65; iters = iters || 40; eps = eps || 1e-14;
+            let u = u0;
+            for (let i = 0; i < iters; i++) {
+                const du = f(u) / df(u);
+                u -= du;
+                if (Math.abs(du) < eps) break;
+            }
+            return u;
+        }
+
+        const u = solveU();
+        const t = u * L;
+        const r = (t * (L*L - 2*t*t)) / (L * (2*t - L));
+        const Cx = r, Cy = L - r;
+        const Px = t, Py = (t*t) / L;
+
+        document.getElementById('result').textContent =
+            `u ≈ ${u.toFixed(6)}  ·  r ≈ ${r.toFixed(6)}`;
+
+        let sz, ox, oy, scale;
+        let animT = 0;
+        let buildProgress = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            sz = Math.min(window.innerWidth, window.innerHeight) * 0.55;
+            ox = window.innerWidth / 2 - sz / 2;
+            oy = window.innerHeight / 2 - sz / 2;
+            scale = sz;
+        }
+
+        // Math coords (origin bottom-left) → screen
+        function toS(x, y) {
+            return [ox + x * scale, oy + (L - y) * scale];
+        }
+
+        function sLine(x1, y1, x2, y2, color, width, dash) {
+            const [a, b] = toS(x1, y1);
+            const [c, d] = toS(x2, y2);
+            ctx.strokeStyle = color; ctx.lineWidth = width;
+            ctx.setLineDash(dash || []); ctx.beginPath();
+            ctx.moveTo(a, b); ctx.lineTo(c, d); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function sCirc(cx, cy, cr, color, width, dash) {
+            const [a, b] = toS(cx, cy);
+            ctx.strokeStyle = color; ctx.lineWidth = width;
+            ctx.setLineDash(dash || []); ctx.beginPath();
+            ctx.arc(a, b, cr * scale, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function sDot(cx, cy, cr, color) {
+            const [a, b] = toS(cx, cy);
+            ctx.fillStyle = color; ctx.beginPath();
+            ctx.arc(a, b, cr * scale, 0, Math.PI * 2); ctx.fill();
+        }
+
+        function sLabel(x, y, text, color, size, dx, dy) {
+            const [a, b] = toS(x, y);
+            ctx.fillStyle = color;
+            ctx.font = `${size || 11}px 'JetBrains Mono', monospace`;
+            ctx.fillText(text, a + (dx || 6), b + (dy || -6));
+        }
+
+        function easeOut(v) { return 1 - Math.pow(1 - v, 3); }
+
+        function draw() {
+            const w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const bp = Math.min(buildProgress, 1);
+            const s1 = easeOut(Math.min(1, bp * 3.5));
+            const s2 = easeOut(Math.max(0, Math.min(1, (bp - 0.2) * 3)));
+            const s3 = easeOut(Math.max(0, Math.min(1, (bp - 0.45) * 3)));
+            const s4 = easeOut(Math.max(0, Math.min(1, (bp - 0.65) * 2.8)));
+            const pulse = 0.5 + 0.5 * Math.sin(animT * 1.5);
+
+            // Step 1: Square
+            if (s1 > 0) {
+                ctx.globalAlpha = s1;
+
+                // Grid
+                for (let g = 0; g <= 1; g += 0.25) {
+                    for (let h = 0; h <= 1; h += 0.25) {
+                        sDot(g, h, 0.003, 'rgba(255,255,255,0.06)');
+                    }
+                }
+
+                // Square edges
+                sLine(0, 0, L, 0, 'rgba(255,255,255,0.3)', 1);
+                sLine(L, 0, L, L, 'rgba(255,255,255,0.3)', 1);
+                sLine(L, L, 0, L, 'rgba(255,255,255,0.3)', 1);
+                sLine(0, L, 0, 0, 'rgba(255,255,255,0.3)', 1);
+
+                // Corner dots
+                [[0,0],[L,0],[L,L],[0,L]].forEach(([px,py]) => {
+                    sDot(px, py, 0.005, 'rgba(255,255,255,0.5)');
+                });
+
+                sLabel(0.5, L, 'L', 'rgba(255,255,255,0.2)', 10, -3, -10);
+                ctx.globalAlpha = 1;
+            }
+
+            // Step 2: Parabola y = x²/L + diagonal
+            if (s2 > 0) {
+                ctx.globalAlpha = s2;
+
+                // Parabola
+                const [p0x, p0y] = toS(0, 0);
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(p0x, p0y);
+                const steps = 80;
+                for (let i = 1; i <= steps; i++) {
+                    const px = (i / steps) * L * s2;
+                    const py = (px * px) / L;
+                    const [sx, sy] = toS(px, py);
+                    ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+
+                sLabel(0.55, 0.25, 'y = x²', 'rgba(255,255,255,0.35)', 11, 0, 8);
+
+                // Diagonal hint (parabola approaches this at x=L)
+                ctx.globalAlpha = s2 * 0.15;
+                sLine(0, 0, L, L, 'rgba(255,255,255,0.3)', 1, [4, 4]);
+                ctx.globalAlpha = 1;
+            }
+
+            // Step 3: Construction
+            if (s3 > 0) {
+                ctx.globalAlpha = s3 * 0.5;
+
+                // Tangent lines from center to walls
+                sLine(Cx, Cy, 0, Cy, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                sLabel(Cx / 2, Cy, 'r', 'rgba(68,136,255,0.5)', 9, -3, -8);
+
+                sLine(Cx, Cy, Cx, L, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                sLabel(Cx, (Cy + L) / 2, 'r', 'rgba(68,136,255,0.5)', 9, 6, 0);
+
+                // Line from center to contact point
+                sLine(Cx, Cy, Px, Py, 'rgba(68,204,102,0.6)', 1, [4, 4]);
+                sLabel((Cx + Px) / 2, (Cy + Py) / 2, 'r', 'rgba(68,204,102,0.5)', 9, 6, -6);
+
+                // Contact point
+                sDot(Px, Py, 0.006, 'rgba(68,204,102,0.9)');
+                sLabel(Px, Py, `P(${Px.toFixed(2)}, ${Py.toFixed(2)})`, 'rgba(68,204,102,0.5)', 9, 8, 10);
+
+                // Tangent line at contact point (perpendicular to radius)
+                const slope = (2 * Px) / L;
+                const tanLen = 0.15;
+                const tdx = tanLen / Math.sqrt(1 + slope * slope);
+                const tdy = slope * tdx;
+                sLine(Px - tdx, Py - tdy, Px + tdx, Py + tdy, 'rgba(68,204,102,0.3)', 1);
+
+                // Center dot
+                sDot(Cx, Cy, 0.005, 'rgba(68,136,255,0.7)');
+                sLabel(Cx, Cy, 'C', 'rgba(68,136,255,0.5)', 10, -14, -8);
+
+                // Right angle marks at tangent points on walls
+                const m = 0.02;
+                // Left wall
+                const [lx, ly] = toS(0, Cy);
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(lx + m*scale, ly - m*scale);
+                ctx.lineTo(lx + m*scale, ly);
+                ctx.lineTo(lx, ly + m*scale);
+                ctx.stroke();
+                // Top wall
+                const [tx, ty] = toS(Cx, L);
+                ctx.beginPath();
+                ctx.moveTo(tx - m*scale, ty + m*scale);
+                ctx.lineTo(tx, ty + m*scale);
+                ctx.lineTo(tx + m*scale, ty);
+                ctx.stroke();
+
+                ctx.globalAlpha = 1;
+            }
+
+            // Step 4: The circle
+            if (s4 > 0) {
+                const cr = r * s4;
+                const ga = 0.15 + pulse * 0.1;
+
+                // Glow
+                sCirc(Cx, Cy, cr + 0.008, `rgba(238,68,68,${ga * s4})`, 6);
+                // Main
+                sCirc(Cx, Cy, cr, `rgba(238,68,68,${0.8 * s4})`, 2);
+                // Center
+                sDot(Cx, Cy, 0.004, `rgba(238,68,68,${s4})`);
+
+                if (s4 > 0.8) {
+                    sLabel(Cx, Cy, `r ≈ ${r.toFixed(4)}`, 'rgba(238,68,68,0.7)', 10, 10, 5);
+                }
+            }
+        }
+
+        function animate() {
+            animT += 0.016;
+            if (buildProgress < 1.2) buildProgress += 0.005;
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    })();
+    </script>
+</body>
+</html>
