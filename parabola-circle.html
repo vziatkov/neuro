@@ -88,9 +88,10 @@
 
     <div class="toggle" id="toggle">
         <button class="toggle-btn active" data-mode="inscribed">Inscribed</button>
-        <button class="toggle-btn" data-mode="outer">Outer tangent</button>
+        <button class="toggle-btn" data-mode="mirror">Mirror</button>
+        <button class="toggle-btn" data-mode="outer">Outer</button>
     </div>
-    <div class="toggle-hint" id="toggle-hint">Same equation — different geometry</div>
+    <div class="toggle-hint" id="toggle-hint">Same law — different frame — different form</div>
 
     <a href="/neuro/" class="back">← Neuro</a>
 
@@ -145,8 +146,15 @@
         console.log('Inscribed u:', uInscribed, '→ r:', uInscribed ? getGeometry(uInscribed).r : null);
         console.log('Outer u:', uOuter, '→ r:', uOuter ? getGeometry(uOuter).r : null);
 
+        // Mirror: reflect across diagonal y=x → swap Cx↔Cy, Px↔Py
+        function mirrorGeo(g) {
+            return { u: g.u, t: g.t, r: g.r, Cx: g.Cy, Cy: g.Cx, Px: g.Py, Py: g.Px, mirrored: true };
+        }
+
+        const inscribedGeo = uInscribed ? getGeometry(uInscribed) : getGeometry(0.6466);
         const solutions = {
-            inscribed: uInscribed ? getGeometry(uInscribed) : getGeometry(0.6466),
+            inscribed: inscribedGeo,
+            mirror: mirrorGeo(inscribedGeo),
             outer: uOuter ? getGeometry(uOuter) : getGeometry(0.5510)
         };
 
@@ -254,6 +262,7 @@
                     Cy: lerp(fromGeo.Cy, targetGeo.Cy, et),
                     Px: lerp(fromGeo.Px, targetGeo.Px, et),
                     Py: lerp(fromGeo.Py, targetGeo.Py, et),
+                    mirrored: targetGeo.mirrored,
                 };
                 updateResult();
             }
@@ -297,7 +306,8 @@
             if (s2 > 0) {
                 ctx.globalAlpha = s2;
 
-                // Parabola
+                // Parabola — y=x² or mirrored x=y² (both from origin to (L,L))
+                const isMirror = geo.mirrored;
                 const [p0x, p0y] = toS(0, 0);
                 ctx.strokeStyle = 'rgba(255,255,255,0.7)';
                 ctx.lineWidth = 2;
@@ -305,14 +315,23 @@
                 ctx.moveTo(p0x, p0y);
                 const steps = 80;
                 for (let i = 1; i <= steps; i++) {
-                    const px = (i / steps) * L * s2;
-                    const py = (px * px) / L;
+                    const param = (i / steps) * L * s2;
+                    let px, py;
+                    if (isMirror) {
+                        py = param; px = (param * param) / L;
+                    } else {
+                        px = param; py = (param * param) / L;
+                    }
                     const [sx, sy] = toS(px, py);
                     ctx.lineTo(sx, sy);
                 }
                 ctx.stroke();
 
-                sLabel(0.55, 0.25, 'y = x²', 'rgba(255,255,255,0.35)', 11, 0, 8);
+                if (isMirror) {
+                    sLabel(0.2, 0.6, 'x = y²', 'rgba(255,255,255,0.35)', 11, 0, 0);
+                } else {
+                    sLabel(0.55, 0.25, 'y = x²', 'rgba(255,255,255,0.35)', 11, 0, 8);
+                }
 
                 // Diagonal hint (parabola approaches this at x=L)
                 ctx.globalAlpha = s2 * 0.15;
@@ -325,15 +344,24 @@
                 ctx.globalAlpha = s3 * 0.5;
 
                 const isOuter = geo.r > L * 0.5;
+                const isMir = geo.mirrored;
 
                 // Tangent lines from center to walls
-                if (!isOuter || geo.Cx > 0) {
-                    sLine(geo.Cx, geo.Cy, 0, geo.Cy, 'rgba(68,136,255,0.5)', 1, [4, 4]);
-                    sLabel(Math.max(0, geo.Cx / 2), geo.Cy, 'r', 'rgba(68,136,255,0.5)', 9, -3, -8);
+                if (isMir) {
+                    // Mirror: tangent to right side (x=L) and bottom (y=0)
+                    sLine(geo.Cx, geo.Cy, L, geo.Cy, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                    sLabel((geo.Cx + L) / 2, geo.Cy, 'r', 'rgba(68,136,255,0.5)', 9, -3, -8);
+                    sLine(geo.Cx, geo.Cy, geo.Cx, 0, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                    sLabel(geo.Cx, geo.Cy / 2, 'r', 'rgba(68,136,255,0.5)', 9, 6, 0);
+                } else {
+                    // Original: tangent to left side (x=0) and top (y=L)
+                    if (!isOuter || geo.Cx > 0) {
+                        sLine(geo.Cx, geo.Cy, 0, geo.Cy, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                        sLabel(Math.max(0, geo.Cx / 2), geo.Cy, 'r', 'rgba(68,136,255,0.5)', 9, -3, -8);
+                    }
+                    sLine(geo.Cx, geo.Cy, geo.Cx, L, 'rgba(68,136,255,0.5)', 1, [4, 4]);
+                    sLabel(geo.Cx, (geo.Cy + L) / 2, 'r', 'rgba(68,136,255,0.5)', 9, 6, 0);
                 }
-
-                sLine(geo.Cx, geo.Cy, geo.Cx, L, 'rgba(68,136,255,0.5)', 1, [4, 4]);
-                sLabel(geo.Cx, (geo.Cy + L) / 2, 'r', 'rgba(68,136,255,0.5)', 9, 6, 0);
 
                 // Line from center to contact point
                 sLine(geo.Cx, geo.Cy, geo.Px, geo.Py, 'rgba(68,204,102,0.6)', 1, [4, 4]);
@@ -362,7 +390,7 @@
                 const cr = Math.abs(geo.r) * s4;
                 const ga = 0.15 + pulse * 0.1;
                 const isOuter = geo.r > L * 0.5;
-                const circColor = isOuter ? '255,140,50' : '238,68,68';
+                const circColor = isOuter ? '255,140,50' : geo.mirrored ? '68,136,255' : '238,68,68';
 
                 // Glow
                 sCirc(geo.Cx, geo.Cy, cr + 0.008, `rgba(${circColor},${ga * s4})`, 6);
@@ -376,6 +404,8 @@
 
                     if (isOuter) {
                         sLabel(geo.Cx, geo.Cy, 'OUTER', `rgba(${circColor},0.4)`, 9, 10, 18);
+                    } else if (geo.mirrored) {
+                        sLabel(geo.Cx, geo.Cy, 'MIRROR', `rgba(${circColor},0.4)`, 9, 10, 18);
                     }
                 }
             }
