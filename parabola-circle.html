@@ -76,24 +76,36 @@
 
         const L = 1;
 
-        // Polynomial: 8u^5 + u^4 - 6u^3 + 2u^2 - 2u + 1
+        // f(u) = 8u^5 + u^4 - 6u^3 + 2u^2 - 2u + 1
         function f(u) { return 8*u**5 + u**4 - 6*u**3 + 2*u**2 - 2*u + 1; }
-        function df(u) { return 40*u**4 + 4*u**3 - 18*u**2 + 4*u - 2; }
 
-        function solveU(u0, iters, eps) {
-            u0 = u0 || 0.65; iters = iters || 40; eps = eps || 1e-14;
-            let u = u0;
-            for (let i = 0; i < iters; i++) {
-                const du = f(u) / df(u);
-                u -= du;
-                if (Math.abs(du) < eps) break;
+        // Robust bisection in (0.5, 1) — avoids Newton grabbing wrong root
+        function solveU_bisect() {
+            let a = 0.5 + 1e-6, b = 1 - 1e-6;
+            let fa = f(a), fb = f(b);
+            if (fa * fb > 0) {
+                const N = 2000;
+                let prevU = a, prevF = fa;
+                for (let i = 1; i <= N; i++) {
+                    const u = a + (b - a) * (i / N);
+                    const fu = f(u);
+                    if (prevF * fu <= 0) { a = prevU; fa = prevF; b = u; fb = fu; break; }
+                    prevU = u; prevF = fu;
+                }
             }
-            return u;
+            for (let i = 0; i < 200; i++) {
+                const m = (a + b) / 2;
+                const fm = f(m);
+                if (Math.abs(fm) < 1e-15) return m;
+                if (fa * fm <= 0) { b = m; fb = fm; } else { a = m; fa = fm; }
+            }
+            return (a + b) / 2;
         }
 
-        const u = solveU();
+        const u = solveU_bisect();
         const t = u * L;
-        const r = (t * (L*L - 2*t*t)) / (L * (2*t - L));
+        const denom = L * (2 * t - L);
+        const r = (t * (L*L - 2*t*t)) / denom;
         const Cx = r, Cy = L - r;
         const Px = t, Py = (t*t) / L;
 
