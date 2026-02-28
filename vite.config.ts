@@ -14,6 +14,7 @@ export default defineConfig({
         'parabola-circle': resolve(__dirname, 'parabola-circle.html'),
         'yin-yang-preloader': resolve(__dirname, 'yin-yang-preloader.html'),
         'hollow-point': resolve(__dirname, 'hollow-point.html'),
+        'landing-with-art-cards': resolve(__dirname, 'landing-with-art-cards.html'),
       },
     },
   },
