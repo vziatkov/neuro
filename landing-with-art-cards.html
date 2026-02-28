@@ -275,9 +275,23 @@
             .container { padding: 40px 16px; }
             h1 { font-size: 24px; }
         }
+
+        #bg {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background: radial-gradient(1200px 800px at 20% 10%, rgba(120,80,255,.10), transparent 60%),
+                        radial-gradient(900px 700px at 80% 90%, rgba(0,200,255,.08), transparent 55%),
+                        radial-gradient(800px 600px at 70% 25%, rgba(255,120,80,.06), transparent 55%);
+            filter: saturate(1.1) contrast(1.05);
+        }
     </style>
 </head>
 <body>
+    <canvas id="bg"></canvas>
     <div class="container">
         <h1>Vitalii Ziatkov</h1>
         <div class="tagline">Senior Frontend Engineer — Pixi.js, Three.js, WebGL, Game Development · 15+ years in gaming</div>
@@ -437,6 +451,17 @@
         </div>
 
         <div class="section">
+            <div class="section-title">Games & philosophy</div>
+            <a class="project" href="https://ai.studio/apps/drive/1h3PojWmncu0yCiYQWrk5cWLDhpbVL6wj?fullscreenApplet=true" target="_blank" rel="noopener noreferrer">
+                <div class="project-header">
+                    <span class="project-name">AI Studio — детская игра</span>
+                    <span class="project-arrow">→</span>
+                </div>
+                <div class="project-desc">Интерактивный эксперимент для детей. Открывается в AI Studio (Google).</div>
+            </a>
+        </div>
+
+        <div class="section">
             <div class="section-title">Connect</div>
             <div class="links">
                 <a class="link" href="https://github.com/vziatkov" target="_blank" rel="noopener noreferrer me">GitHub</a>
@@ -449,60 +474,151 @@
     </div>
 
     <script>
-// Canvas: init once (ResizeObserver), resize only on layout change. Loop uses S(id) — no getBoundingClientRect per frame.
-// All target="_blank" links have rel="noopener noreferrer".
-(() => {
-  const DPR = () => Math.min(window.devicePixelRatio || 1, 2);
+(function(){
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d', { alpha: true });
 
-  const canvases = new Map();
+  let w=0,h=0,dpr=1,t=0,raf=0;
+  const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function setupCanvas(id) {
-    const c = document.getElementById(id);
-    if (!c) return null;
+  function resize(){
+    dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    w = Math.floor(innerWidth);
+    h = Math.floor(innerHeight);
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  addEventListener('resize', resize, { passive:true });
+  resize();
 
-    const ctx = c.getContext("2d", { alpha: true, desynchronized: true });
-    const state = { c, ctx, w: 0, h: 0, dpr: 1 };
-    canvases.set(id, state);
-
-    const resize = () => {
-      const r = c.parentElement.getBoundingClientRect();
-      const dpr = DPR();
-
-      state.w = r.width;
-      state.h = r.height;
-      state.dpr = dpr;
-
-      const nextW = Math.max(1, Math.round(r.width * dpr));
-      const nextH = Math.max(1, Math.round(r.height * dpr));
-      if (c.width !== nextW || c.height !== nextH) {
-        c.width = nextW;
-        c.height = nextH;
-      }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
-    };
-
-    resize();
-
-    if ("ResizeObserver" in window) {
-      const ro = new ResizeObserver(resize);
-      ro.observe(c.parentElement);
-      state._ro = ro;
-    } else {
-      window.addEventListener("resize", resize, { passive: true });
-      state._onResize = resize;
-    }
-
-    return state;
+  const fract = (x)=> x - Math.floor(x);
+  const hash = (x,y)=> fract(Math.sin(x*127.1 + y*311.7)*43758.5453123);
+  function vnoise(x,y){
+    const xi = Math.floor(x), yi = Math.floor(y);
+    const xf = x - xi, yf = y - yi;
+    const a = hash(xi,yi);
+    const b = hash(xi+1,yi);
+    const c = hash(xi,yi+1);
+    const d = hash(xi+1,yi+1);
+    const u = xf*xf*(3-2*xf);
+    const v = yf*yf*(3-2*yf);
+    const ab = a + (b-a)*u;
+    const cd = c + (d-c)*u;
+    return ab + (cd-ab)*v;
   }
 
-  function S(id) {
-    return canvases.get(id) || setupCanvas(id);
+  const particles = [];
+  const P = Math.min(1400, Math.floor((w*h)/1800));
+  const scale = 0.0022;
+  const speed = 0.55;
+  const fade = 0.06;
+  const line = 0.9;
+
+  function seed(){
+    particles.length = 0;
+    const n = Math.max(400, P);
+    for(let i=0;i<n;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        vx: 0, vy: 0,
+        life: Math.random()*300 + 60
+      });
+    }
+  }
+  seed();
+
+  const colors = [
+    [140, 90, 255],
+    [0, 205, 255],
+    [255, 120, 90],
+    [170, 255, 140]
+  ];
+
+  function step(){
+    raf = requestAnimationFrame(step);
+    if(prefersReduced) return;
+
+    t += 0.0035;
+
+    ctx.fillStyle = 'rgba(10,10,10,' + fade + ')';
+    ctx.fillRect(0,0,w,h);
+
+    ctx.lineWidth = line;
+    ctx.lineCap = 'round';
+
+    for(let i=0;i<particles.length;i++){
+      const p = particles[i];
+      const nx = p.x * scale;
+      const ny = p.y * scale;
+
+      const n1 = vnoise(nx + t, ny - t);
+      const n2 = vnoise(nx*1.7 - t*0.6, ny*1.7 + t*0.7);
+      const ang = (n1*0.65 + n2*0.35) * Math.PI * 2.0;
+
+      const ax = Math.cos(ang) * speed;
+      const ay = Math.sin(ang) * speed;
+
+      p.vx = p.vx*0.86 + ax*0.14;
+      p.vy = p.vy*0.86 + ay*0.14;
+
+      const x0 = p.x, y0 = p.y;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 1;
+
+      const cidx = Math.floor(vnoise(nx*1.1 + 10, ny*1.1 + 20) * colors.length) % colors.length;
+      const c = colors[cidx];
+      const alpha = 0.22;
+
+      ctx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + alpha + ')';
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+
+      if(p.x < -20 || p.x > w+20 || p.y < -20 || p.y > h+20 || p.life <= 0){
+        p.x = Math.random()*w;
+        p.y = Math.random()*h;
+        p.vx = p.vy = 0;
+        p.life = Math.random()*320 + 80;
+      }
+    }
+  }
+
+  ctx.fillStyle = 'rgb(10,10,10)';
+  ctx.fillRect(0,0,w,h);
+
+  step();
+
+  addEventListener('click', function(){ seed(); }, { passive:true });
+})();
+    </script>
+
+    <script>
+// Canvas: init per frame (getBoundingClientRect + resize), no observers. All cards draw every frame so animations always start.
+(() => {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function initCanvas(id) {
+    const c = document.getElementById(id);
+    if (!c) return null;
+    const r = c.parentElement.getBoundingClientRect();
+    const w = r.width;
+    const h = r.height;
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    const ctx = c.getContext("2d", { alpha: true });
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    return { ctx, w, h };
   }
 
   function drawNeuro(t) {
-    const s = S("art-neuro");
+    const s = initCanvas("art-neuro");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -545,7 +661,7 @@
   }
 
   function drawHelix(t) {
-    const s = S("art-helix");
+    const s = initCanvas("art-helix");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -571,7 +687,7 @@
   }
 
   function drawBaccarat(t) {
-    const s = S("art-baccarat");
+    const s = initCanvas("art-baccarat");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -599,7 +715,7 @@
   }
 
   function drawStats(t) {
-    const s = S("art-stats");
+    const s = initCanvas("art-stats");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -621,7 +737,7 @@
   }
 
   function drawGolden(t) {
-    const s = S("art-golden");
+    const s = initCanvas("art-golden");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -672,7 +788,7 @@
   }
 
   function drawParabola(t) {
-    const s = S("art-parabola");
+    const s = initCanvas("art-parabola");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -719,7 +835,7 @@
   }
 
   function drawYinYang(t) {
-    const s = S("art-yinyang");
+    const s = initCanvas("art-yinyang");
     if (!s) return;
     const { ctx, w, h } = s;
     ctx.clearRect(0, 0, w, h);
@@ -758,19 +874,20 @@
   }
 
   function drawHollow(t) {
-    const s = S("art-hollow");
+    const s = initCanvas("art-hollow");
     if (!s) return;
     const { ctx, w, h } = s;
+    if (w <= 0 || h <= 0) return;
     ctx.clearRect(0, 0, w, h);
 
     const cx = w / 2, cy = h / 2;
     const breath = 0.5 + 0.5 * Math.sin(t * (Math.PI * 2 / 5));
-    const R = Math.min(w, h) * 0.18 * (0.85 + breath * 0.3);
+    const R = Math.max(0, Math.min(w, h) * 0.18 * (0.85 + breath * 0.3));
 
     const ringT = t % 3;
-    const ringR = ringT * (Math.min(w, h) * 0.12);
+    const ringR = Math.max(0, ringT * (Math.min(w, h) * 0.12));
     const ringAlpha = Math.max(0, (1 - ringT / 3) * 0.5);
-    if (ringAlpha > 0) {
+    if (ringAlpha > 0 && ringR > 0) {
       ctx.strokeStyle = `rgba(255, 95, 31, ${ringAlpha})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -778,24 +895,27 @@
       ctx.stroke();
     }
 
-    ctx.strokeStyle = "rgba(255, 95, 31, 0.9)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.stroke();
+    if (R > 0) {
+      ctx.strokeStyle = "rgba(255, 95, 31, 0.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 
   function drawTsp(t) {
-    const s = S("art-tsp");
+    const s = initCanvas("art-tsp");
     if (!s) return;
     const { ctx, w, h } = s;
+    if (w <= 0 || h <= 0) return;
     ctx.clearRect(0, 0, w, h);
 
     const n = 6;
     const cities = [];
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2 + t * 0.15;
-      const r = Math.min(w, h) * 0.28;
+      const r = Math.max(0, Math.min(w, h) * 0.28);
       cities.push({ x: w / 2 + Math.cos(a) * r, y: h / 2 + Math.sin(a) * r * 0.6 });
     }
 
@@ -812,18 +932,22 @@
     const pulseT = (t * 0.8) % 1;
     const seg = Math.floor(pulseT * n);
     const frac = (pulseT * n) % 1;
-    const i0 = seg % n;
-    const i1 = (seg + 1) % n;
-    const px = cities[i0].x + (cities[i1].x - cities[i0].x) * frac;
-    const py = cities[i0].y + (cities[i1].y - cities[i0].y) * frac;
+    const i0 = ((seg % n) + n) % n;
+    const i1 = ((seg + 1) % n + n) % n;
+    const c0 = cities[i0];
+    const c1 = cities[i1];
+    if (c0 && c1) {
+      const px = c0.x + (c1.x - c0.x) * frac;
+      const py = c0.y + (c1.y - c0.y) * frac;
 
-    ctx.shadowColor = "rgba(255, 95, 31, 0.8)";
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = "#ff8c42";
-    ctx.beginPath();
-    ctx.arc(px, py, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+      ctx.shadowColor = "rgba(255, 95, 31, 0.8)";
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = "#ff8c42";
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
 
     for (let i = 0; i < cities.length; i++) {
       const c = cities[i];
@@ -834,44 +958,20 @@
     }
   }
 
-  ["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"].forEach(setupCanvas);
-
   const start = performance.now();
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const visibleIds = new Set(["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"]);
-
-  if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const card = entry.target;
-          const canvas = card.querySelector(".art-canvas");
-          if (!canvas || !canvas.id) return;
-          if (entry.isIntersecting) visibleIds.add(canvas.id);
-          else visibleIds.delete(canvas.id);
-        });
-      },
-      { rootMargin: "50px", threshold: 0 }
-    );
-    ["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"].forEach((id) => {
-      const c = document.getElementById(id);
-      if (c && c.parentElement) observer.observe(c.parentElement);
-    });
-  } else {
-    ["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"].forEach((id) => visibleIds.add(id));
-  }
 
   function loop(now) {
     const t = (now - start) / 1000;
-    if (visibleIds.has("art-neuro")) drawNeuro(t);
-    if (visibleIds.has("art-helix")) drawHelix(t);
-    if (visibleIds.has("art-baccarat")) drawBaccarat(t);
-    if (visibleIds.has("art-stats")) drawStats(t);
-    if (visibleIds.has("art-golden")) drawGolden(t);
-    if (visibleIds.has("art-parabola")) drawParabola(t);
-    if (visibleIds.has("art-yinyang")) drawYinYang(t);
-    if (visibleIds.has("art-hollow")) drawHollow(t);
-    if (visibleIds.has("art-tsp")) drawTsp(t);
+    drawNeuro(t);
+    drawHelix(t);
+    drawBaccarat(t);
+    drawStats(t);
+    drawGolden(t);
+    drawParabola(t);
+    drawYinYang(t);
+    drawHollow(t);
+    drawTsp(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 
