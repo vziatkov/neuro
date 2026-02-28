@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vitalii Ziatkov — Frontend Engineer</title>
+    <meta name="description" content="Senior Frontend Engineer — Pixi.js, Three.js, WebGL. Interactive neural network viz, live demos, real-time systems where math becomes motion.">
+    <meta property="og:title" content="Vitalii Ziatkov — Frontend Engineer">
+    <meta property="og:description" content="Senior Frontend Engineer — Pixi.js, Three.js, WebGL. Interactive demos, real-time systems where math becomes motion.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Vitalii Ziatkov — Frontend Engineer">
+    <meta name="twitter:description" content="Senior Frontend Engineer — Pixi.js, Three.js, WebGL. Interactive demos, real-time systems where math becomes motion.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -95,6 +102,11 @@
             transform: translateY(-2px);
         }
 
+        .project:focus-visible {
+            outline: 2px solid rgba(255, 120, 50, 0.6);
+            outline-offset: 2px;
+        }
+
         .project-header {
             display: flex;
             justify-content: space-between;
@@ -138,7 +150,6 @@
             color: #666;
         }
 
-        /* Art grid */
         .art-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -160,6 +171,11 @@
             border-color: rgba(255, 120, 50, .5);
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 95, 31, 0.15);
+        }
+
+        .art-card:focus-visible {
+            outline: 2px solid rgba(255, 120, 50, 0.6);
+            outline-offset: 2px;
         }
 
         .art-canvas {
@@ -217,68 +233,23 @@
             box-shadow: 0 0 0 1px rgba(68, 255, 136, 0.25);
         }
 
-        /* Helix animation for Cognitive Trace 3D */
-        .art-helix {
-            background: #050508;
-        }
-        .art-helix canvas { display: block; }
-
-        /* Baccarat grid for Trace v1 */
-        .art-baccarat {
-            background: #050505;
-        }
-
-        /* Stats dashboard for Cursor 2025 */
-        .art-stats {
-            background: #0a0a0a;
-        }
-
-        /* Golden ratio */
-        .art-golden {
-            background: #050508;
-        }
-
-        /* Parabola & circle */
-        .art-parabola {
-            background: #050508;
-        }
-
-        /* Yin-Yang Preloader */
-        .art-yinyang {
-            background: radial-gradient(circle at center, #111 0%, #000 70%);
-        }
-
-        /* Hollow Point */
-        .art-hollow {
-            background: #050508;
-        }
-
-        /* TSP / P vs NP */
-        .art-tsp {
-            background: #050508;
-        }
-
-        /* Main neuro scene */
-        .art-neuro {
-            background: #000;
-            grid-column: 1 / -1;
-            aspect-ratio: 21/9;
-        }
-        .art-neuro .art-sub::after {
-            content: ' · Core experiment';
-            color: rgba(255, 95, 31, 0.6);
-            font-weight: 500;
-        }
+        .art-neuro { background: #000; grid-column: 1 / -1; aspect-ratio: 21/9; }
+        .art-neuro .art-sub::after { content: ' · Core experiment'; color: rgba(255, 95, 31, 0.6); font-weight: 500; }
+        .art-helix { background: #050508; }
+        .art-baccarat { background: #050505; }
+        .art-stats { background: #0a0a0a; }
+        .art-golden { background: #050508; }
+        .art-parabola { background: #050508; }
+        .art-yinyang { background: radial-gradient(circle at center, #111 0%, #000 70%); }
+        .art-hollow { background: #050508; }
+        .art-tsp { background: #050508; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
             .art-neuro { aspect-ratio: 16/10; }
         }
 
-        .links {
-            display: flex;
-            gap: 20px;
-        }
+        .links { display: flex; gap: 20px; }
 
         .link {
             font-size: 13px;
@@ -335,81 +306,81 @@
             <div class="section-title">Interactive Art — Live Demos</div>
             <div class="art-grid">
 
-                <a class="art-card art-neuro" href="https://vziatkov.github.io/neuro/" target="_blank">
+                <a class="art-card art-neuro" href="https://vziatkov.github.io/neuro/" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-neuro"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Neuro — Neural Network</span>
                         <span class="art-sub">Three.js · GLSL · 7 formations · click to pulse</span>
                     </div>
                 </a>
 
-                <a class="art-card art-helix" href="https://vziatkov.github.io/neuro/cognitive-trace-3d.html" target="_blank">
+                <a class="art-card art-helix" href="https://vziatkov.github.io/neuro/cognitive-trace-3d.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-helix"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Cognitive Trace — 3D Helix</span>
                         <span class="art-sub">797 steps · 134.6M tokens · spiral through time</span>
                     </div>
                 </a>
 
-                <a class="art-card art-baccarat" href="https://vziatkov.github.io/neuro/cognitive-trace-artifact.html" target="_blank">
+                <a class="art-card art-baccarat" href="https://vziatkov.github.io/neuro/cognitive-trace-artifact.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-baccarat"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Cognitive Trace — Signal Grid</span>
                         <span class="art-sub">Baccarat road · WiFi wave · DensePose skeleton</span>
                     </div>
                 </a>
 
-                <a class="art-card art-stats" href="https://vziatkov.github.io/neuro/cursor-2025.html" target="_blank">
+                <a class="art-card art-stats" href="https://vziatkov.github.io/neuro/cursor-2025.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-stats"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Cursor 2025 — Year in Review</span>
                         <span class="art-sub">797 messages · 168 chats · 79 active days</span>
                     </div>
                 </a>
 
-                <a class="art-card art-golden" href="https://vziatkov.github.io/neuro/golden-ratio-geometry.html" target="_blank">
+                <a class="art-card art-golden" href="https://vziatkov.github.io/neuro/golden-ratio-geometry.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-golden"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Golden Ratio Geometry</span>
                         <span class="art-sub">Hidden φ in a square · r = (√5−1)/4 = 1/2φ</span>
                     </div>
                 </a>
 
-                <a class="art-card art-parabola" href="https://vziatkov.github.io/neuro/parabola-circle.html" target="_blank">
+                <a class="art-card art-parabola" href="https://vziatkov.github.io/neuro/parabola-circle.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-parabola"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Parabola & Circle</span>
                         <span class="art-sub">Quintic tangent · Newton's method · y = x²</span>
                     </div>
                 </a>
 
-                <a class="art-card art-yinyang" href="https://vziatkov.github.io/neuro/yin-yang-preloader.html" target="_blank">
+                <a class="art-card art-yinyang" href="https://vziatkov.github.io/neuro/yin-yang-preloader.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-yinyang"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Yin-Yang Preloader</span>
                         <span class="art-sub">Breath & Pulse · triquetra + Yin-Yang burst</span>
                     </div>
                 </a>
 
-                <a class="art-card art-hollow" href="https://vziatkov.github.io/neuro/hollow-point.html" target="_blank">
+                <a class="art-card art-hollow" href="https://vziatkov.github.io/neuro/hollow-point.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-hollow"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Hollow Point</span>
                         <span class="art-sub">The gap is the view · one circle, one pulse</span>
                     </div>
                 </a>
 
-                <a class="art-card art-tsp" href="https://vziatkov.github.io/neuro/tsp-poster.html" target="_blank">
+                <a class="art-card art-tsp" href="https://vziatkov.github.io/neuro/tsp-poster.html" target="_blank" rel="noopener noreferrer">
                     <canvas class="art-canvas" id="art-tsp"></canvas>
-                    <span class="art-live">LIVE</span>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">TSP Solver — P vs NP</span>
                         <span class="art-sub">When networks race · shortest path through N cities</span>
@@ -422,7 +393,7 @@
         <div class="section">
             <div class="section-title">Projects</div>
 
-            <a class="project" href="https://github.com/vziatkov/Game" target="_blank">
+            <a class="project" href="https://github.com/vziatkov/Game" target="_blank" rel="noopener noreferrer">
                 <div class="project-header">
                     <span class="project-name">Game Engine</span>
                     <span class="project-arrow">→</span>
@@ -437,7 +408,7 @@
                 </div>
             </a>
 
-            <a class="project" href="https://github.com/vziatkov/ARPixiJs" target="_blank">
+            <a class="project" href="https://github.com/vziatkov/ARPixiJs" target="_blank" rel="noopener noreferrer">
                 <div class="project-header">
                     <span class="project-name">AR Pixi.js</span>
                     <span class="project-arrow">→</span>
@@ -451,7 +422,7 @@
                 </div>
             </a>
 
-            <a class="project" href="https://github.com/vziatkov/wifi-densepose" target="_blank">
+            <a class="project" href="https://github.com/vziatkov/wifi-densepose" target="_blank" rel="noopener noreferrer">
                 <div class="project-header">
                     <span class="project-name">WiFi DensePose</span>
                     <span class="project-arrow">→</span>
@@ -468,8 +439,8 @@
         <div class="section">
             <div class="section-title">Connect</div>
             <div class="links">
-                <a class="link" href="https://github.com/vziatkov" target="_blank">GitHub</a>
-                <a class="link" href="https://www.linkedin.com/in/vitalii-ziatkov-457556106/" target="_blank">LinkedIn</a>
+                <a class="link" href="https://github.com/vziatkov" target="_blank" rel="noopener noreferrer me">GitHub</a>
+                <a class="link" href="https://www.linkedin.com/in/vitalii-ziatkov-457556106/" target="_blank" rel="noopener noreferrer me">LinkedIn</a>
                 <a class="link" href="mailto:zyatkovvv87@gmail.com">Email</a>
             </div>
         </div>
@@ -478,393 +449,438 @@
     </div>
 
     <script>
-    (function() {
-        const dpr = Math.min(window.devicePixelRatio, 2);
+// Canvas: init once (ResizeObserver), resize only on layout change. Loop uses S(id) — no getBoundingClientRect per frame.
+// All target="_blank" links have rel="noopener noreferrer".
+(() => {
+  const DPR = () => Math.min(window.devicePixelRatio || 1, 2);
 
-        function initCanvas(id) {
-            const c = document.getElementById(id);
-            if (!c) return null;
-            const r = c.parentElement.getBoundingClientRect();
-            c.width = r.width * dpr;
-            c.height = r.height * dpr;
-            const ctx = c.getContext('2d');
-            ctx.scale(dpr, dpr);
-            return { c, ctx, w: r.width, h: r.height };
+  const canvases = new Map();
+
+  function setupCanvas(id) {
+    const c = document.getElementById(id);
+    if (!c) return null;
+
+    const ctx = c.getContext("2d", { alpha: true, desynchronized: true });
+    const state = { c, ctx, w: 0, h: 0, dpr: 1 };
+    canvases.set(id, state);
+
+    const resize = () => {
+      const r = c.parentElement.getBoundingClientRect();
+      const dpr = DPR();
+
+      state.w = r.width;
+      state.h = r.height;
+      state.dpr = dpr;
+
+      const nextW = Math.max(1, Math.round(r.width * dpr));
+      const nextH = Math.max(1, Math.round(r.height * dpr));
+      if (c.width !== nextW || c.height !== nextH) {
+        c.width = nextW;
+        c.height = nextH;
+      }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    };
+
+    resize();
+
+    if ("ResizeObserver" in window) {
+      const ro = new ResizeObserver(resize);
+      ro.observe(c.parentElement);
+      state._ro = ro;
+    } else {
+      window.addEventListener("resize", resize, { passive: true });
+      state._onResize = resize;
+    }
+
+    return state;
+  }
+
+  function S(id) {
+    return canvases.get(id) || setupCanvas(id);
+  }
+
+  function drawNeuro(t) {
+    const s = S("art-neuro");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+
+    const nodes = [];
+    const count = 40;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + t * 0.3;
+      const r = 60 + Math.sin(i * 1.7 + t) * 30;
+      nodes.push({
+        x: w / 2 + Math.cos(a) * r + Math.sin(t + i) * 10,
+        y: h / 2 + Math.sin(a) * r * 0.5 + Math.cos(t * 0.7 + i) * 8,
+        s: 1.5 + Math.sin(i + t * 2) * 0.8,
+      });
+    }
+
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+        if (d < 80) {
+          ctx.strokeStyle = `rgba(255,120,50,${(1 - d / 80) * 0.15})`;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.stroke();
         }
+      }
+    }
 
-        // Neuro — network nodes + connections
-        function drawNeuro(t) {
-            const s = initCanvas('art-neuro');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+    ctx.shadowColor = "rgba(255,100,30,.5)";
+    ctx.shadowBlur = 8;
+    for (const n of nodes) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.s, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,140,50,${0.6 + n.s * 0.15})`;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
 
-            const nodes = [];
-            const count = 40;
-            for (let i = 0; i < count; i++) {
-                const a = (i / count) * Math.PI * 2 + t * 0.3;
-                const r = 60 + Math.sin(i * 1.7 + t) * 30;
-                nodes.push({
-                    x: w/2 + Math.cos(a) * r + Math.sin(t + i) * 10,
-                    y: h/2 + Math.sin(a) * r * 0.5 + Math.cos(t * 0.7 + i) * 8,
-                    s: 1.5 + Math.sin(i + t * 2) * 0.8
-                });
-            }
+  function drawHelix(t) {
+    const s = S("art-helix");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            ctx.lineWidth = 0.5;
-            for (let i = 0; i < nodes.length; i++) {
-                for (let j = i + 1; j < nodes.length; j++) {
-                    const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
-                    if (d < 80) {
-                        ctx.strokeStyle = `rgba(255,120,50,${(1 - d/80) * 0.15})`;
-                        ctx.beginPath();
-                        ctx.moveTo(nodes[i].x, nodes[i].y);
-                        ctx.lineTo(nodes[j].x, nodes[j].y);
-                        ctx.stroke();
-                    }
-                }
-            }
+    const colors = ["#DC143C", "#FF5F1F", "#FF8C42", "#2F2F2F"];
+    for (let i = 0; i < 120; i++) {
+      const p = i / 120;
+      const a = p * Math.PI * 8 + t * 0.5;
+      const r = 30 + Math.sin(p * 6 + t) * 8;
+      const x = w / 2 + Math.cos(a) * r;
+      const y = h * 0.1 + p * h * 0.8;
+      const z = Math.sin(a) * 0.5 + 0.5;
+      const ci = i % 7 === 0 ? 0 : i % 13 === 0 ? 1 : i % 5 === 0 ? 2 : 3;
+      const sz = ci < 3 ? 2 + z * 1.5 : 1;
 
-            nodes.forEach(n => {
-                ctx.beginPath();
-                ctx.arc(n.x, n.y, n.s, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255,140,50,${0.6 + n.s * 0.15})`;
-                ctx.shadowColor = 'rgba(255,100,30,.5)';
-                ctx.shadowBlur = 8;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-        }
+      ctx.beginPath();
+      ctx.arc(x, y, sz, 0, Math.PI * 2);
+      ctx.fillStyle = colors[ci];
+      if (ci < 3) { ctx.shadowColor = colors[ci]; ctx.shadowBlur = 6; } else { ctx.shadowBlur = 0; }
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
 
-        // Helix — 3D spiral
-        function drawHelix(t) {
-            const s = initCanvas('art-helix');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+  function drawBaccarat(t) {
+    const s = S("art-baccarat");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            const colors = ['#DC143C', '#FF5F1F', '#FF8C42', '#2F2F2F'];
-            for (let i = 0; i < 120; i++) {
-                const p = i / 120;
-                const a = p * Math.PI * 8 + t * 0.5;
-                const r = 30 + Math.sin(p * 6 + t) * 8;
-                const x = w/2 + Math.cos(a) * r;
-                const y = h * 0.1 + p * h * 0.8;
-                const z = Math.sin(a) * 0.5 + 0.5;
-                const ci = i % 7 === 0 ? 0 : i % 13 === 0 ? 1 : i % 5 === 0 ? 2 : 3;
-                const sz = ci < 3 ? 2 + z * 1.5 : 1;
+    const cols = 24, rows = 8;
+    const gx = w / (cols + 2), gy = h / (rows + 2);
+    const colors = ["#DC143C", "#FF5F1F", "#FF8C42", "#2F2F2F"];
 
-                ctx.beginPath();
-                ctx.arc(x, y, sz, 0, Math.PI * 2);
-                ctx.fillStyle = colors[ci];
-                if (ci < 3) { ctx.shadowColor = colors[ci]; ctx.shadowBlur = 6; }
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-        }
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const m = (c * 3 + r * 7) % 11;
+        const ci = m < 2 ? 0 : m < 4 ? 2 : 3;
+        const wave = Math.sin(t * 1.5 + c * 0.3) * 2;
+        const x = gx + c * gx + wave;
+        const y = gy + r * gy + Math.sin(t * 0.7 + r * 0.2) * 1;
 
-        // Baccarat — grid dots
-        function drawBaccarat(t) {
-            const s = initCanvas('art-baccarat');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+        ctx.beginPath();
+        ctx.arc(x, y, ci < 3 ? 2.5 : 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = colors[ci];
+        if (ci === 0) { ctx.shadowColor = "#DC143C"; ctx.shadowBlur = 5; } else { ctx.shadowBlur = 0; }
+        ctx.fill();
+      }
+    }
+    ctx.shadowBlur = 0;
+  }
 
-            const cols = 24, rows = 8;
-            const gx = w / (cols + 2), gy = h / (rows + 2);
-            const colors = ['#DC143C', '#FF5F1F', '#FF8C42', '#2F2F2F'];
+  function drawStats(t) {
+    const s = S("art-stats");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            for (let c = 0; c < cols; c++) {
-                for (let r = 0; r < rows; r++) {
-                    const ci = (c * 3 + r * 7) % 11 < 2 ? 0 : (c * 3 + r * 7) % 11 < 4 ? 2 : 3;
-                    const wave = Math.sin(t * 1.5 + c * 0.3) * 2;
-                    const x = gx + c * gx + wave;
-                    const y = gy + r * gy + Math.sin(t * 0.7 + r * 0.2) * 1;
+    const data = [0, 0, 0, 0, 103, 325, 54, 0, 0, 94, 186, 35];
+    const max = 325;
+    const bw = (w - 40) / 12;
 
-                    ctx.beginPath();
-                    ctx.arc(x, y, ci < 3 ? 2.5 : 1.5, 0, Math.PI * 2);
-                    ctx.fillStyle = colors[ci];
-                    if (ci === 0) { ctx.shadowColor = '#DC143C'; ctx.shadowBlur = 5; }
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                }
-            }
-        }
+    data.forEach((v, i) => {
+      const ease = Math.min(1, Math.max(0, t * 0.5 - i * 0.05));
+      const bh = (v / max) * (h - 30) * (0.5 + 0.5 * ease);
+      const x = 20 + i * bw;
+      const y = h - 15 - Math.max(bh, 2);
+      ctx.fillStyle = i === 5 ? "#ff6b35" : v > 0 ? "#333" : "#1a1a1a";
+      if (i === 5) { ctx.shadowColor = "#ff6b35"; ctx.shadowBlur = 8; } else { ctx.shadowBlur = 0; }
+      ctx.fillRect(x + 2, y, bw - 4, Math.max(bh, 2));
+    });
+    ctx.shadowBlur = 0;
+  }
 
-        // Stats — bar chart
-        function drawStats(t) {
-            const s = initCanvas('art-stats');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+  function drawGolden(t) {
+    const s = S("art-golden");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            const data = [0,0,0,0,103,325,54,0,0,94,186,35];
-            const max = 325;
-            const bw = (w - 40) / 12;
+    const sz = Math.min(w, h) * 0.65;
+    const ox = w * 0.45 - sz / 2, oy = h * 0.5 - sz / 2;
 
-            data.forEach((v, i) => {
-                const bh = (v / max) * (h - 30) * (0.5 + 0.5 * Math.min(1, t * 0.5 - i * 0.05));
-                const x = 20 + i * bw;
-                const y = h - 15 - Math.max(bh, 2);
-                ctx.fillStyle = i === 5 ? '#ff6b35' : v > 0 ? '#333' : '#1a1a1a';
-                if (i === 5) { ctx.shadowColor = '#ff6b35'; ctx.shadowBlur = 8; }
-                ctx.fillRect(x + 2, y, bw - 4, Math.max(bh, 2));
-                ctx.shadowBlur = 0;
-            });
-        }
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ox, oy, sz, sz);
 
-        // Golden Ratio — square + circle + lines
-        function drawGolden(t) {
-            const s = initCanvas('art-golden');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox + sz, oy + sz);
+    ctx.stroke();
 
-            const sz = Math.min(w, h) * 0.65;
-            const ox = w * 0.45 - sz/2, oy = h * 0.5 - sz/2;
+    ctx.strokeStyle = "rgba(68,204,102,0.5)";
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox + sz * 0.5, oy + sz);
+    ctx.stroke();
 
-            // Square
-            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(ox, oy, sz, sz);
+    const R = (Math.sqrt(5) - 1) / 4;
+    const diagA = Math.PI / 4;
+    const midA = Math.atan2(1, 0.5);
+    const bisA = (diagA + midA) / 2;
+    const dFactor = Math.abs(Math.cos(bisA) - Math.sin(bisA)) / Math.sqrt(2);
+    const d = R / dFactor;
+    const ccx = ox + d * Math.cos(bisA) * sz;
+    const ccy = oy + d * Math.sin(bisA) * sz;
+    const cr = R * sz;
+    const pulse = 0.5 + 0.3 * Math.sin(t * 2);
 
-            // Diagonal
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-            ctx.beginPath();
-            ctx.moveTo(ox, oy);
-            ctx.lineTo(ox + sz, oy + sz);
-            ctx.stroke();
+    ctx.strokeStyle = `rgba(238,68,68,${0.4 + pulse * 0.3})`;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = "rgba(238,68,68,0.4)";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(ccx, ccy, cr, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
-            // Line to midpoint
-            ctx.strokeStyle = 'rgba(68,204,102,0.5)';
-            ctx.beginPath();
-            ctx.moveTo(ox, oy);
-            ctx.lineTo(ox + sz * 0.5, oy + sz);
-            ctx.stroke();
+    ctx.fillStyle = "rgba(238,68,68,0.8)";
+    ctx.beginPath();
+    ctx.arc(ccx, ccy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-            // Circle
-            const R = (Math.sqrt(5) - 1) / 4;
-            const diagA = Math.PI / 4;
-            const midA = Math.atan2(1, 0.5);
-            const bisA = (diagA + midA) / 2;
-            const dFactor = Math.abs(Math.cos(bisA) - Math.sin(bisA)) / Math.sqrt(2);
-            const d = R / dFactor;
-            const ccx = ox + d * Math.cos(bisA) * sz;
-            const ccy = oy + d * Math.sin(bisA) * sz;
-            const cr = R * sz;
-            const pulse = 0.5 + 0.3 * Math.sin(t * 2);
+  function drawParabola(t) {
+    const s = S("art-parabola");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            ctx.strokeStyle = `rgba(238,68,68,${0.4 + pulse * 0.3})`;
-            ctx.lineWidth = 1.5;
-            ctx.shadowColor = 'rgba(238,68,68,0.4)';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(ccx, ccy, cr, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
+    const sz = Math.min(w, h) * 0.7;
+    const ox = w * 0.5 - sz / 2, oy = h * 0.5 - sz / 2;
 
-            // Center dot
-            ctx.fillStyle = 'rgba(238,68,68,0.8)';
-            ctx.beginPath();
-            ctx.arc(ccx, ccy, 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ox, oy, sz, sz);
 
-        // Parabola & Circle — square + parabola + inscribed circle
-        function drawParabola(t) {
-            const s = initCanvas('art-parabola');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const px = i / 60;
+      const py = px * px;
+      const sx = ox + px * sz;
+      const sy = oy + (1 - py) * sz;
+      if (i === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
 
-            const sz = Math.min(w, h) * 0.7;
-            const ox = w * 0.5 - sz/2, oy = h * 0.5 - sz/2;
+    const r = 0.361;
+    const ccx = ox + r * sz;
+    const ccy = oy + r * sz;
+    const pulse = 0.5 + 0.3 * Math.sin(t * 2);
 
-            // Square
-            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(ox, oy, sz, sz);
+    ctx.strokeStyle = `rgba(238,68,68,${0.4 + pulse * 0.3})`;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = "rgba(238,68,68,0.4)";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(ccx, ccy, r * sz, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
-            // Parabola y=x² (screen: from bottom-left up)
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            for (let i = 0; i <= 60; i++) {
-                const px = i / 60;
-                const py = px * px;
-                const sx = ox + px * sz;
-                const sy = oy + (1 - py) * sz;
-                if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
-            }
-            ctx.stroke();
+    ctx.fillStyle = "rgba(68,204,102,0.8)";
+    const cpx = 0.6466, cpy = 0.6466 * 0.6466;
+    ctx.beginPath();
+    ctx.arc(ox + cpx * sz, oy + (1 - cpy) * sz, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-            // Circle (r ≈ 0.3610, center at (r, 1-r))
-            const r = 0.3610;
-            const ccx = ox + r * sz;
-            const ccy = oy + r * sz;
-            const pulse = 0.5 + 0.3 * Math.sin(t * 2);
+  function drawYinYang(t) {
+    const s = S("art-yinyang");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            ctx.strokeStyle = `rgba(238,68,68,${0.4 + pulse * 0.3})`;
-            ctx.lineWidth = 1.5;
-            ctx.shadowColor = 'rgba(238,68,68,0.4)';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(ccx, ccy, r * sz, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
+    const cx = w / 2, cy = h / 2;
+    const breath = 0.5 + 0.5 * Math.sin(t * (Math.PI * 2 / 5));
+    const rot = t * 0.25 * (0.8 + breath * 0.4);
+    const R = Math.min(w, h) * 0.2;
 
-            // Contact point
-            ctx.fillStyle = 'rgba(68,204,102,0.8)';
-            const cpx = 0.6466, cpy = 0.6466 * 0.6466;
-            ctx.beginPath();
-            ctx.arc(ox + cpx * sz, oy + (1 - cpy) * sz, 2.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
+    const colors = ["#FF5F1F", "rgba(255,255,255,0.9)", "#2F2F2F"];
+    for (let i = 0; i < 3; i++) {
+      const a = rot + (i * Math.PI * 2) / 3;
+      const dx = Math.cos(a) * R * 0.5;
+      const dy = Math.sin(a) * R * 0.5;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, R * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = colors[i];
+      ctx.strokeStyle = colors[i];
+      ctx.lineWidth = 1;
+      ctx.fill();
+      ctx.stroke();
+    }
 
-        // Yin-Yang Preloader — central triquetra (3 circles) + orbiting dots (breath rhythm)
-        function drawYinYang(t) {
-            const s = initCanvas('art-yinyang');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+    const n = 5;
+    for (let i = 0; i < n; i++) {
+      const phase = (i / n) * Math.PI * 2 + t * 0.8;
+      const dist = 12 + ((t * 8 + i * 15) % 45);
+      const x = cx + Math.cos(phase) * dist * (w / 100);
+      const y = cy + Math.sin(phase) * dist * (h / 100);
+      const alpha = Math.max(0, 1 - dist / 50);
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 95, 31, ${alpha * 0.9})`;
+      ctx.fill();
+    }
+  }
 
-            const cx = w / 2, cy = h / 2;
-            const breath = 0.5 + 0.5 * Math.sin(t * (Math.PI * 2 / 5));
-            const rot = t * 0.25 * (0.8 + breath * 0.4);
-            const R = Math.min(w, h) * 0.2;
+  function drawHollow(t) {
+    const s = S("art-hollow");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            // Triquetra: 3 overlapping circles at 120°
-            const colors = ['#FF5F1F', 'rgba(255,255,255,0.9)', '#2F2F2F'];
-            for (let i = 0; i < 3; i++) {
-                const a = rot + (i * Math.PI * 2 / 3);
-                const dx = Math.cos(a) * R * 0.5;
-                const dy = Math.sin(a) * R * 0.5;
-                ctx.beginPath();
-                ctx.arc(cx + dx, cy + dy, R * 0.55, 0, Math.PI * 2);
-                ctx.fillStyle = colors[i];
-                ctx.strokeStyle = colors[i];
-                ctx.lineWidth = 1;
-                ctx.fill();
-                ctx.stroke();
-            }
+    const cx = w / 2, cy = h / 2;
+    const breath = 0.5 + 0.5 * Math.sin(t * (Math.PI * 2 / 5));
+    const R = Math.min(w, h) * 0.18 * (0.85 + breath * 0.3);
 
-            // Small orbiting dots (burst feel)
-            const n = 5;
-            for (let i = 0; i < n; i++) {
-                const phase = (i / n) * Math.PI * 2 + t * 0.8;
-                const dist = 12 + (t * 8 + i * 15) % 45;
-                const x = cx + Math.cos(phase) * dist * (w / 100);
-                const y = cy + Math.sin(phase) * dist * (h / 100);
-                const alpha = Math.max(0, 1 - dist / 50);
-                ctx.beginPath();
-                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 95, 31, ${alpha * 0.9})`;
-                ctx.fill();
-            }
-        }
+    const ringT = t % 3;
+    const ringR = ringT * (Math.min(w, h) * 0.12);
+    const ringAlpha = Math.max(0, (1 - ringT / 3) * 0.5);
+    if (ringAlpha > 0) {
+      ctx.strokeStyle = `rgba(255, 95, 31, ${ringAlpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
-        // Hollow Point — one circle, breath pulse + looping wave
-        function drawHollow(t) {
-            const s = initCanvas('art-hollow');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(255, 95, 31, 0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
-            const cx = w / 2, cy = h / 2;
-            const breath = 0.5 + 0.5 * Math.sin(t * (Math.PI * 2 / 5));
-            const R = Math.min(w, h) * 0.18 * (0.85 + breath * 0.3);
+  function drawTsp(t) {
+    const s = S("art-tsp");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
 
-            // Expanding ring (loop every ~3s)
-            const ringT = t % 3;
-            const ringR = ringT * (Math.min(w, h) * 0.12);
-            const ringAlpha = Math.max(0, (1 - ringT / 3) * 0.5);
-            if (ringAlpha > 0) {
-                ctx.strokeStyle = `rgba(255, 95, 31, ${ringAlpha})`;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
-                ctx.stroke();
-            }
+    const n = 6;
+    const cities = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2 + t * 0.15;
+      const r = Math.min(w, h) * 0.28;
+      cities.push({ x: w / 2 + Math.cos(a) * r, y: h / 2 + Math.sin(a) * r * 0.6 });
+    }
 
-            // Main circle
-            ctx.strokeStyle = 'rgba(255, 95, 31, 0.9)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(cx, cy, R, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+    ctx.strokeStyle = "rgba(255, 120, 50, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cities[0].x, cities[0].y);
+    for (let i = 1; i <= n; i++) {
+      const c = cities[i % n];
+      ctx.lineTo(c.x, c.y);
+    }
+    ctx.stroke();
 
-        // TSP / P vs NP — cities + path with pulse
-        function drawTsp(t) {
-            const s = initCanvas('art-tsp');
-            if (!s) return;
-            const { ctx, w, h } = s;
-            ctx.clearRect(0, 0, w, h);
+    const pulseT = (t * 0.8) % 1;
+    const seg = Math.floor(pulseT * n);
+    const frac = (pulseT * n) % 1;
+    const i0 = seg % n;
+    const i1 = (seg + 1) % n;
+    const px = cities[i0].x + (cities[i1].x - cities[i0].x) * frac;
+    const py = cities[i0].y + (cities[i1].y - cities[i0].y) * frac;
 
-            const n = 6;
-            const cities = [];
-            for (let i = 0; i < n; i++) {
-                const a = (i / n) * Math.PI * 2 - Math.PI / 2 + t * 0.15;
-                const r = Math.min(w, h) * 0.28;
-                cities.push({
-                    x: w/2 + Math.cos(a) * r,
-                    y: h/2 + Math.sin(a) * r * 0.6
-                });
-            }
+    ctx.shadowColor = "rgba(255, 95, 31, 0.8)";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#ff8c42";
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
-            // path order (simple cycle 0,1,2,...,n-1)
-            ctx.strokeStyle = 'rgba(255, 120, 50, 0.25)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(cities[0].x, cities[0].y);
-            for (let i = 1; i <= n; i++) {
-                const c = cities[i % n];
-                ctx.lineTo(c.x, c.y);
-            }
-            ctx.stroke();
+    for (let i = 0; i < cities.length; i++) {
+      const c = cities[i];
+      ctx.fillStyle = i === 0 ? "rgba(255, 140, 66, 0.9)" : "rgba(255, 120, 50, 0.5)";
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
-            // pulse along path
-            const pulseT = (t * 0.8) % 1;
-            const seg = Math.floor(pulseT * n);
-            const frac = (pulseT * n) % 1;
-            const i0 = seg % n;
-            const i1 = (seg + 1) % n;
-            const px = cities[i0].x + (cities[i1].x - cities[i0].x) * frac;
-            const py = cities[i0].y + (cities[i1].y - cities[i0].y) * frac;
+  ["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"].forEach(setupCanvas);
 
-            ctx.shadowColor = 'rgba(255, 95, 31, 0.8)';
-            ctx.shadowBlur = 10;
-            ctx.fillStyle = '#ff8c42';
-            ctx.beginPath();
-            ctx.arc(px, py, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
+  const start = performance.now();
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const visibleIds = new Set(["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"]);
 
-            // city nodes
-            cities.forEach((c, i) => {
-                ctx.fillStyle = i === 0 ? 'rgba(255, 140, 66, 0.9)' : 'rgba(255, 120, 50, 0.5)';
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const card = entry.target;
+          const canvas = card.querySelector(".art-canvas");
+          if (!canvas || !canvas.id) return;
+          if (entry.isIntersecting) visibleIds.add(canvas.id);
+          else visibleIds.delete(canvas.id);
+        });
+      },
+      { rootMargin: "50px", threshold: 0 }
+    );
+    ["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"].forEach((id) => {
+      const c = document.getElementById(id);
+      if (c && c.parentElement) observer.observe(c.parentElement);
+    });
+  } else {
+    ["art-neuro", "art-helix", "art-baccarat", "art-stats", "art-golden", "art-parabola", "art-yinyang", "art-hollow", "art-tsp"].forEach((id) => visibleIds.add(id));
+  }
 
-        let start = performance.now();
-        function loop() {
-            const t = (performance.now() - start) / 1000;
-            drawNeuro(t);
-            drawHelix(t);
-            drawBaccarat(t);
-            drawStats(t);
-            drawGolden(t);
-            drawParabola(t);
-            drawYinYang(t);
-            drawHollow(t);
-            drawTsp(t);
-            requestAnimationFrame(loop);
-        }
-        loop();
-    })();
+  function loop(now) {
+    const t = (now - start) / 1000;
+    if (visibleIds.has("art-neuro")) drawNeuro(t);
+    if (visibleIds.has("art-helix")) drawHelix(t);
+    if (visibleIds.has("art-baccarat")) drawBaccarat(t);
+    if (visibleIds.has("art-stats")) drawStats(t);
+    if (visibleIds.has("art-golden")) drawGolden(t);
+    if (visibleIds.has("art-parabola")) drawParabola(t);
+    if (visibleIds.has("art-yinyang")) drawYinYang(t);
+    if (visibleIds.has("art-hollow")) drawHollow(t);
+    if (visibleIds.has("art-tsp")) drawTsp(t);
+    if (!prefersReducedMotion) requestAnimationFrame(loop);
+  }
+
+  if (prefersReducedMotion) {
+    loop(start + 1200);
+  } else {
+    requestAnimationFrame(loop);
+  }
+})();
     </script>
 </body>
 </html>
