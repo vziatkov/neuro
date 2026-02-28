@@ -34,6 +34,11 @@ export function initApp(root: HTMLElement) {
 
     <div id="formation-title" class="formation-title"></div>
 
+    <div id="soda-card" class="ui-panel soda-card" role="link" aria-disabled="true">
+      <span class="soda-icon">🥤</span>
+      <span class="soda-label">Soda</span>
+    </div>
+
     <canvas id="neural-network-canvas"></canvas>
   `;
   
