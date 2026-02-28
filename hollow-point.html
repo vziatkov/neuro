@@ -76,6 +76,7 @@
         let circleRadius = 80;
         let hover = false;
         let pulsePhase = 0;
+        let lastT = 0;
         let waves = [];
 
         function resize() {
@@ -97,32 +98,38 @@
         });
 
         function draw() {
-            const t = performance.now() * 0.001;
+            const now = performance.now();
+            const dt = lastT ? (now - lastT) / 1000 : 0;
+            lastT = now;
+
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.clearRect(0, 0, width, height);
 
             if (hover) {
-                pulsePhase += 0.016;
+                pulsePhase += dt;
                 const breath = 0.5 + 0.5 * Math.sin(pulsePhase * (Math.PI * 2 / (BREATH_PERIOD_MS / 1000)));
                 circleRadius = 80 + breath * 8;
             } else {
                 circleRadius = 80;
             }
 
-            waves.forEach((w, i) => {
+            for (let i = waves.length - 1; i >= 0; i--) {
+                const w = waves[i];
                 const age = (performance.now() - w.start) / 1000;
                 w.r = age * 180;
                 w.alpha = Math.max(0, 1 - age * 1.2);
+
                 if (w.alpha <= 0) {
                     waves.splice(i, 1);
-                    return;
+                    continue;
                 }
+
                 ctx.strokeStyle = `rgba(255, 95, 31, ${w.alpha * 0.7})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
                 ctx.stroke();
-            });
+            }
 
             ctx.strokeStyle = ORANGE;
             ctx.lineWidth = 2;

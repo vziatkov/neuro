@@ -302,6 +302,13 @@ body {
     color: rgba(255, 95, 31, 0.9);
 }
 
+.portfolio-link:focus-visible,
+.portfolio-link:focus {
+    outline: 2px solid rgba(255, 95, 31, 0.9);
+    outline-offset: 2px;
+    color: rgba(255, 95, 31, 0.9);
+}
+
 @media (max-width: 640px) {
     .portfolio-links {
         bottom: 70px;
