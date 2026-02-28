@@ -400,6 +400,41 @@ body {
     color: #555;
 }
 
+/* Soda card — placeholder project link */
+.soda-card {
+    position: absolute;
+    bottom: 80px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #eee;
+    cursor: default;
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.soda-icon {
+    font-size: 20px;
+}
+
+.soda-label {
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+@media (max-width: 640px) {
+    .soda-card {
+        bottom: 70px;
+        right: 10px;
+        padding: 10px 12px;
+    }
+    .soda-icon { font-size: 16px; }
+    .soda-label { font-size: 12px; }
+}
+
 @media (max-width: 400px) {
     #theme-selector {
         flex-direction: column;
