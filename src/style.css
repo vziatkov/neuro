@@ -269,6 +269,55 @@ body {
     transform: translate(-50%, -50%) scale(1);
 }
 
+/* ============================================================
+   Portfolio / Cards links — main page
+   ============================================================ */
+.portfolio-links {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+    font-family: 'Inter', sans-serif;
+}
+
+.portfolio-links-label {
+    margin-right: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.portfolio-link {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.portfolio-link:hover {
+    color: rgba(255, 95, 31, 0.9);
+}
+
+.portfolio-link:focus-visible,
+.portfolio-link:focus {
+    outline: 2px solid rgba(255, 95, 31, 0.9);
+    outline-offset: 2px;
+    color: rgba(255, 95, 31, 0.9);
+}
+
+@media (max-width: 640px) {
+    .portfolio-links {
+        bottom: 70px;
+        left: 10px;
+        font-size: 10px;
+        gap: 4px 8px;
+    }
+}
+
 @media (max-width: 768px) {
     .formation-title {
         font-size: 32px;
