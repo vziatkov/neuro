@@ -12,6 +12,8 @@ export default defineConfig({
         'cursor-2025': resolve(__dirname, 'cursor-2025.html'),
         'golden-ratio-geometry': resolve(__dirname, 'golden-ratio-geometry.html'),
         'parabola-circle': resolve(__dirname, 'parabola-circle.html'),
+        'yin-yang-preloader': resolve(__dirname, 'yin-yang-preloader.html'),
+        'hollow-point': resolve(__dirname, 'hollow-point.html'),
       },
     },
   },

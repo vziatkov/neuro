@@ -34,6 +34,15 @@ export function initApp(root: HTMLElement) {
 
     <div id="formation-title" class="formation-title"></div>
 
+    <div id="portfolio-links" class="portfolio-links">
+      <span class="portfolio-links-label">Cards</span>
+      <a href="/neuro/hollow-point.html" class="portfolio-link">Hollow Point</a>
+      <a href="/neuro/golden-ratio-geometry.html" class="portfolio-link">Golden Ratio</a>
+      <a href="/neuro/parabola-circle.html" class="portfolio-link">Parabola & Circle</a>
+      <a href="/neuro/cognitive-trace-3d.html" class="portfolio-link">Cognitive Trace 3D</a>
+      <a href="/neuro/yin-yang-preloader.html" class="portfolio-link">Yin-Yang Preloader</a>
+    </div>
+
     <canvas id="neural-network-canvas"></canvas>
   `;
   

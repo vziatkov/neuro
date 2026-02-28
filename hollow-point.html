@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hollow Point — The gap is the view</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050508;
+            color: #e5e5e5;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #c {
+            display: block;
+            cursor: pointer;
+        }
+        .header {
+            position: fixed;
+            top: 24px;
+            left: 28px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .header h1 {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+        }
+        .header .sub {
+            font-size: 10px;
+            color: rgba(255,255,255,0.25);
+            margin-top: 4px;
+            font-style: italic;
+        }
+        .back {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 10;
+            font-size: 10px;
+            color: rgba(255,255,255,0.2);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back:hover { color: rgba(255,95,31,0.8); }
+    </style>
+</head>
+<body>
+    <canvas id="c"></canvas>
+    <div class="header">
+        <h1>Hollow Point</h1>
+        <div class="sub">The gap is the view.</div>
+    </div>
+    <a href="/neuro/" class="back">← Neuro</a>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const dpr = Math.min(window.devicePixelRatio, 2);
+
+        const ORANGE = '#FF5F1F';
+        const BREATH_PERIOD_MS = 5000;
+        let width, height, centerX, centerY;
+        let circleRadius = 80;
+        let hover = false;
+        let pulsePhase = 0;
+        let waves = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+
+        canvas.addEventListener('mouseenter', () => { hover = true; });
+        canvas.addEventListener('mouseleave', () => { hover = false; });
+
+        canvas.addEventListener('click', () => {
+            waves.push({ x: centerX, y: centerY, r: 0, alpha: 1, start: performance.now() });
+        });
+
+        function draw() {
+            const t = performance.now() * 0.001;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, width, height);
+
+            if (hover) {
+                pulsePhase += 0.016;
+                const breath = 0.5 + 0.5 * Math.sin(pulsePhase * (Math.PI * 2 / (BREATH_PERIOD_MS / 1000)));
+                circleRadius = 80 + breath * 8;
+            } else {
+                circleRadius = 80;
+            }
+
+            waves.forEach((w, i) => {
+                const age = (performance.now() - w.start) / 1000;
+                w.r = age * 180;
+                w.alpha = Math.max(0, 1 - age * 1.2);
+                if (w.alpha <= 0) {
+                    waves.splice(i, 1);
+                    return;
+                }
+                ctx.strokeStyle = `rgba(255, 95, 31, ${w.alpha * 0.7})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+
+            ctx.strokeStyle = ORANGE;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        draw();
+    })();
+    </script>
+</body>
+</html>
