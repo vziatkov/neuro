@@ -36,6 +36,15 @@
             padding: 80px 24px;
         }
 
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 16px;
+        }
+
         h1 {
             font-size: 32px;
             font-weight: 700;
@@ -61,6 +70,38 @@
             margin-bottom: 48px;
         }
 
+        .section-subdued .section-title {
+            color: #404040;
+            font-size: 9px;
+            letter-spacing: 1.5px;
+        }
+        .section-subdued .section-title .section-num {
+            color: rgba(255, 140, 66, 0.25);
+        }
+        .section-subdued .project {
+            border-color: #1a1a1a;
+            padding: 14px 18px;
+        }
+        .section-subdued .project:hover {
+            border-color: rgba(255, 120, 50, 0.25);
+        }
+        .section-subdued .project-name {
+            font-size: 15px;
+            color: #bbb;
+        }
+        .section-subdued .project-desc {
+            font-size: 12px;
+            color: #555;
+        }
+        .section-subdued .project-tag {
+            color: #444;
+            background: #151515;
+        }
+        @media (min-width: 900px) {
+            .section-subdued .section-title .section-num { color: rgba(255, 140, 66, 0.2); }
+            .section-subdued .project-name { font-size: 15px; }
+        }
+
         .section-title {
             font-size: 10px;
             font-weight: 700;
@@ -68,6 +109,65 @@
             text-transform: uppercase;
             color: #555;
             margin-bottom: 16px;
+        }
+
+        .section-title .section-num {
+            display: none;
+        }
+
+        /* Desktop: readability + section markers */
+        @media (min-width: 900px) {
+            .container {
+                max-width: 780px;
+                padding: 100px 48px;
+            }
+            h1 {
+                font-size: 38px;
+                margin-bottom: 8px;
+                letter-spacing: -0.02em;
+            }
+            .tagline {
+                font-size: 16px;
+                color: #999;
+                margin-bottom: 14px;
+                line-height: 1.5;
+            }
+            .hero-line {
+                font-size: 15px;
+                margin-bottom: 48px;
+                color: #666;
+            }
+            .section {
+                margin-bottom: 56px;
+            }
+            .section-title {
+                font-size: 11px;
+                letter-spacing: 2.5px;
+                margin-bottom: 18px;
+            }
+            .section-title .section-num {
+                display: inline;
+                margin-right: 12px;
+                color: rgba(255, 140, 66, 0.45);
+                font-variant-numeric: tabular-nums;
+            }
+            .project-name {
+                font-size: 17px;
+            }
+            .project-desc {
+                font-size: 14px;
+                line-height: 1.55;
+                color: #8a8a8a;
+            }
+            .art-name {
+                font-size: 13px;
+            }
+            .art-sub {
+                font-size: 10px;
+            }
+            .link {
+                font-size: 14px;
+            }
         }
 
         .skills {
@@ -303,7 +403,7 @@
         <p class="hero-line">I build real-time systems where math becomes motion.</p>
 
         <div class="section">
-            <div class="section-title">Core Stack</div>
+            <div class="section-title"><span class="section-num">01</span> Core Stack</div>
             <div class="skills">
                 <span class="skill primary">Pixi.js v8</span>
                 <span class="skill primary">Pixi-Spine</span>
@@ -322,7 +422,7 @@
         </div>
 
         <div class="section">
-            <div class="section-title">Interactive Art — Live Demos</div>
+            <div class="section-title"><span class="section-num">02</span> Interactive Art — Live Demos</div>
             <div class="art-grid">
 
                 <a class="art-card art-neuro" href="https://vziatkov.github.io/neuro/" target="_blank" rel="noopener noreferrer">
@@ -410,7 +510,18 @@
         </div>
 
         <div class="section">
-            <div class="section-title">Projects</div>
+            <div class="section-title"><span class="section-num">03</span> Philosophy & children's play</div>
+            <a class="project" href="https://ai.studio/apps/drive/1h3PojWmncu0yCiYQWrk5cWLDhpbVL6wj?fullscreenApplet=true" target="_blank" rel="noopener noreferrer">
+                <div class="project-header">
+                    <span class="project-name">AI Studio — children's game</span>
+                    <span class="project-arrow">→</span>
+                </div>
+                <div class="project-desc">Interactive experiment for kids. Opens in AI Studio (Google). Coming soon: storytelling with Gemini, fairy tales.</div>
+            </a>
+        </div>
+
+        <div class="section section-subdued">
+            <div class="section-title"><span class="section-num">04</span> Projects</div>
 
             <a class="project" href="https://github.com/vziatkov/Game" target="_blank" rel="noopener noreferrer">
                 <div class="project-header">
@@ -427,6 +538,19 @@
                 </div>
             </a>
 
+            <a class="project" href="https://vziatkov.github.io/neuro/cognitive-trace-artifact.html" target="_blank" rel="noopener noreferrer">
+                <div class="project-header">
+                    <span class="project-name">Cognitive Trace — Signal Grid</span>
+                    <span class="project-arrow">→</span>
+                </div>
+                <div class="project-desc">Live demo: Baccarat road, WiFi wave, DensePose skeleton — cognitive trace visualization in a single grid.</div>
+                <div class="project-tags">
+                    <span class="project-tag">Cognitive Trace</span>
+                    <span class="project-tag">DensePose</span>
+                    <span class="project-tag">Visualization</span>
+                </div>
+            </a>
+
             <a class="project" href="https://github.com/vziatkov/ARPixiJs" target="_blank" rel="noopener noreferrer">
                 <div class="project-header">
                     <span class="project-name">AR Pixi.js</span>
@@ -440,34 +564,10 @@
                     <span class="project-tag">JavaScript</span>
                 </div>
             </a>
-
-            <a class="project" href="https://github.com/vziatkov/wifi-densepose" target="_blank" rel="noopener noreferrer">
-                <div class="project-header">
-                    <span class="project-name">WiFi DensePose</span>
-                    <span class="project-arrow">→</span>
-                </div>
-                <div class="project-desc">WiFi-based dense human pose estimation — full-body tracking through walls using commodity mesh routers.</div>
-                <div class="project-tags">
-                    <span class="project-tag">Signal Processing</span>
-                    <span class="project-tag">Computer Vision</span>
-                    <span class="project-tag">Research</span>
-                </div>
-            </a>
         </div>
 
         <div class="section">
-            <div class="section-title">Games & philosophy</div>
-            <a class="project" href="https://ai.studio/apps/drive/1h3PojWmncu0yCiYQWrk5cWLDhpbVL6wj?fullscreenApplet=true" target="_blank" rel="noopener noreferrer">
-                <div class="project-header">
-                    <span class="project-name">AI Studio — детская игра</span>
-                    <span class="project-arrow">→</span>
-                </div>
-                <div class="project-desc">Интерактивный эксперимент для детей. Открывается в AI Studio (Google).</div>
-            </a>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Connect</div>
+            <div class="section-title"><span class="section-num">05</span> Connect</div>
             <div class="links">
                 <a class="link" href="https://github.com/vziatkov" target="_blank" rel="noopener noreferrer me">GitHub</a>
                 <a class="link" href="https://www.linkedin.com/in/vitalii-ziatkov-457556106/" target="_blank" rel="noopener noreferrer me">LinkedIn</a>
@@ -544,8 +644,8 @@
   ];
 
   function step(){
-    raf = requestAnimationFrame(step);
     if(prefersReduced) return;
+    raf = requestAnimationFrame(step);
 
     t += 0.0035;
 
