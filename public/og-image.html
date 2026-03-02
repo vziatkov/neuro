@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1200, height=630">
+  <title>OG Image</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 30% 50%, rgba(120,80,255,.12), transparent 55%),
+                  radial-gradient(ellipse 50% 40% at 75% 45%, rgba(0,200,255,.08), transparent 55%);
+      pointer-events: none;
+    }
+    h1 {
+      font-size: 56px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .tagline {
+      font-size: 22px;
+      color: #888;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .hero-line {
+      font-size: 20px;
+      font-style: italic;
+      color: #555;
+      position: relative;
+    }
+    .badge {
+      position: absolute;
+      top: 40px;
+      right: 40px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ff8c42;
+      border: 1px solid rgba(255,120,50,.4);
+      padding: 8px 16px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <span class="badge">FRONTEND ENGINEER</span>
+  <h1>Vitalii Ziatkov</h1>
+  <p class="tagline">Pixi.js · Three.js · WebGL · 15+ years in gaming</p>
+  <p class="hero-line">I build real-time systems where math becomes motion.</p>
+</body>
+</html>
