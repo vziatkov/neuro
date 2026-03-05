@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4 Gym Pigs — Changelog & Contributions</title>
+  <meta name="description" content="Contributions summary: out-of-feature tasks (infra, QA, integration) and feature work. For reference.">
+  <meta property="og:title" content="4 Gym Pigs — Changelog & Contributions">
+  <meta property="og:description" content="Contributions summary: infra, stability, QA, backend integration, and feature work (animations, gameplay).">
+  <meta property="og:type" content="website">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #2c3e50;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #fff;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 0.5rem;
+      border-bottom: 2px solid #e8e8e8;
+      padding-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #5a6c7d;
+      font-style: italic;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #34495e;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin: 0.5rem 0 1rem;
+      color: #4a5568;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 10pt;
+    }
+
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    th {
+      font-weight: 600;
+      color: #2c3e50;
+      background: #f8f9fa;
+    }
+
+    tr:hover td {
+      background: #fafbfc;
+    }
+
+    td:first-child {
+      font-weight: 500;
+      color: #5a6c7d;
+      width: 3rem;
+    }
+
+    strong {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    ul {
+      margin: 0.75rem 0 1rem;
+      padding-left: 1.5rem;
+      color: #4a5568;
+    }
+
+    li {
+      margin-bottom: 0.35rem;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #e8e8e8;
+      margin: 2rem 0;
+    }
+
+    .footer {
+      font-size: 0.9rem;
+      color: #95a5a6;
+      margin-top: 2rem;
+    }
+
+    @media print {
+      body { padding: 1rem; }
+      h2 { page-break-after: avoid; }
+      table { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>4 Gym Pigs — Changelog & Contributions</h1>
+  <p class="subtitle">Commits from <code>develop</code> branch (no pull). Focus on <strong>out-of-feature</strong> tasks — everything that is not animations/characters/gameplay.</p>
+
+  <hr>
+
+  <h2>Out-of-Feature Tasks (infrastructure, stability, QA)</h2>
+  <p>These tasks are not about the game's "look" but about code quality, stability, testing, and integration.</p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Task</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>54</td><td><strong>tech-001</strong> Check static usage when animating reels</td><td>Remove redundant static calls during reel animation — less overhead, cleaner code</td></tr>
+      <tr><td>45</td><td><strong>Tech/1</strong></td><td>Technical refactoring</td></tr>
+      <tr><td>41</td><td><strong>POR-000</strong> Add base line automation report</td><td>Baseline report for Eagle Eye — metrics for regressions and QA</td></tr>
+      <tr><td>38</td><td><strong>fix</strong> H&W boardForMultiplier, collectors/multipliers gold, validateScale</td><td>Fix Hold & Win bugs: multiplier calculation logic, collector gold</td></tr>
+      <tr><td>30</td><td><strong>POR-117</strong> Adjust backend integration</td><td>Backend integration — correct data exchange</td></tr>
+      <tr><td>28</td><td><strong>POR-000</strong> Temporary colorized text on coins for play testing</td><td>Debug visualization — testing coin values</td></tr>
+      <tr><td>27</td><td><strong>POR-86</strong> Use coins only during h&w</td><td>Coins only in H&W — simpler logic, fewer redundant states</td></tr>
+      <tr><td>26</td><td><strong>POR-90</strong> Simplify calculation final board with mult</td><td>Simplify final board calculation with multiplier</td></tr>
+      <tr><td>25</td><td><strong>POR-90</strong> Use initially coin board without updates, then apply diff</td><td>Optimization: initial board + diff instead of full recalc</td></tr>
+      <tr><td>24</td><td><strong>POR-90</strong> Adjust collecting logic for blue and yellow pigs</td><td>Correct collection logic for blue and yellow pigs</td></tr>
+      <tr><td>17</td><td><strong>Por 32</strong></td><td>Integration</td></tr>
+      <tr><td>16</td><td><strong>POR-31</strong> Add cheats</td><td>Cheats for testing and QA</td></tr>
+      <tr><td>6</td><td><strong>POR-15</strong> Backend integration polish</td><td>Backend integration polish</td></tr>
+      <tr><td>—</td><td><strong>Adjust logo assets naming</strong></td><td>Consistent asset naming — easier to maintain</td></tr>
+      <tr><td>—</td><td><strong>Adjust reels position for portrait</strong></td><td>Layout adaptation for portrait</td></tr>
+      <tr><td>—</td><td><strong>POR-000</strong> Minor checks for null</td><td>Null safety — stability</td></tr>
+      <tr><td>—</td><td><strong>POR-000</strong> Improve code style</td><td>Code cleanliness</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POR-130 — Stability & Debugging</h3>
+  <table>
+    <thead>
+      <tr><th>Commit</th><th>What</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Add auto close popUp feature</td><td>Auto-close popups — UX and protection from "stuck" windows</td></tr>
+      <tr><td>Add crash report</td><td>Crash reporting — quick diagnostics</td></tr>
+      <tr><td>Improve blink code style</td><td>Blink code refactoring</td></tr>
+    </tbody>
+  </table>
+
+  <h3>POR-119 — UI/UX & Readability</h3>
+  <table>
+    <thead>
+      <tr><th>Task</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Coin text: thin black stroke, metallic gradient, drop shadow</td><td>Coin text readability on any background</td></tr>
+      <tr><td>Improve style text on coins</td><td>Unified text style</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>Feature Tasks (animations, characters, gameplay)</h2>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Task</th><th>Summary</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>56</td><td><strong>POR-156</strong> Adjust init characters appearing</td><td>Character appearance on start</td></tr>
+      <tr><td>55</td><td><strong>POR-000</strong> Adjust pigs animation</td><td>Pig animation polish</td></tr>
+      <tr><td>53</td><td><strong>POR-104</strong> Add free spins counter, other polish</td><td>Free spins counter, polish</td></tr>
+      <tr><td>52</td><td><strong>POR-104</strong> Locate characters</td><td>Character placement</td></tr>
+      <tr><td>50</td><td><strong>POR-104</strong> Add display win panel</td><td>Win display panel</td></tr>
+      <tr><td>47</td><td><strong>POR-127</strong> Improve rotations in hw and idle for pigs faces + win wave</td><td>Pig rotations in H&W/idle, win wave on celebration</td></tr>
+      <tr><td>46</td><td><strong>POR-135</strong> Add new cheats</td><td>New cheats</td></tr>
+      <tr><td>42</td><td><strong>feat</strong> symbol land animations, character disappear/appear, natural blinking</td><td>Symbol land animations, character appear/disappear, natural blinking</td></tr>
+      <tr><td>40</td><td><strong>POR-123</strong> Polish coins value</td><td>Coin value polish</td></tr>
+      <tr><td>39</td><td><strong>POR-100</strong> Value cin polish</td><td>Cin polish</td></tr>
+      <tr><td>37</td><td><strong>POR-100</strong> Add reveal seq animations for yellow pig + testing dc flow</td><td>Reveal animations for yellow pig</td></tr>
+      <tr><td>36</td><td><strong>POR-20</strong> Add darken effect for better visualization win coins</td><td>Darken effect for win coin visualization</td></tr>
+      <tr><td>35</td><td><strong>POR-120</strong> Hold & Win symbol layering and gold coins z-order</td><td>H&W symbol layering and gold coin z-order</td></tr>
+      <tr><td>34</td><td><strong>POR-119</strong> Adjust reels rotations</td><td>Reel rotations</td></tr>
+      <tr><td>33</td><td><strong>POR-119</strong> Improve style text on coins</td><td>Coin text style</td></tr>
+      <tr><td>74</td><td><strong>POR-118</strong> Add character on stage when add h&w mode achieved</td><td>Character on stage when H&W mode achieved</td></tr>
+      <tr><td>31</td><td><strong>POR-101</strong> Add coin values during rotation</td><td>Coin values during rotation</td></tr>
+      <tr><td>29</td><td><strong>POR-98</strong> Add animation collect multiplier jp for prize coins</td><td>JP multiplier collect animation</td></tr>
+      <tr><td>21</td><td><strong>POR-76</strong> Create H&W beats and new layout size 5x6</td><td>H&W beats, 5×6 layout</td></tr>
+      <tr><td>20</td><td><strong>POR-77</strong> Add correct characters per h&w type game, sequence collecting</td><td>Characters per H&W type, collection sequence</td></tr>
+      <tr><td>19</td><td><strong>POR-33</strong> Integrate fs and hold and win popups</td><td>FS and H&W popup integration</td></tr>
+      <tr><td>15</td><td><strong>POR-23</strong> Add coin pig animation</td><td>Coin pig animation</td></tr>
+      <tr><td>14</td><td><strong>POR-23</strong> Update PIG_LEVEL_CONFIG and counter-based level mapping</td><td>Pig level config</td></tr>
+      <tr><td>13</td><td><strong>POR-29</strong> Add mini win under reels</td><td>Mini win under reels</td></tr>
+      <tr><td>12</td><td><strong>POR-28</strong> Add collect animation and step levels</td><td>Collect animation, step levels</td></tr>
+      <tr><td>11</td><td><strong>POR-21</strong> Add win animation for lp and hp symbols</td><td>Win animations for LP/HP symbols</td></tr>
+      <tr><td>10</td><td><strong>POR-24</strong> Add event-driven level updates, typed CharactersEvents</td><td>Event-driven level updates</td></tr>
+      <tr><td>9</td><td><strong>Por 17</strong></td><td>—</td></tr>
+      <tr><td>8</td><td><strong>POR-17</strong> Add initial intro for characters</td><td>Character intro</td></tr>
+      <tr><td>7</td><td><strong>POR-12</strong> Add freespins popup</td><td>Freespins popup</td></tr>
+      <tr><td>3</td><td><strong>POR-10</strong> Adjust symbols and assets</td><td>Symbols and assets</td></tr>
+      <tr><td>2</td><td>Configure symbols: pig/JP types, update IDs, wire up animations</td><td>Symbol configuration</td></tr>
+      <tr><td>1</td><td><strong>Add backgrounds</strong></td><td>Backgrounds</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>Summary</h2>
+  <table>
+    <thead>
+      <tr><th>Category</th><th>Count</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Out-of-feature (infra, bugs, QA, integration)</td><td>~20</td></tr>
+      <tr><td>Feature (animations, characters, gameplay)</td><td>~35</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Key out-of-feature contributions:</strong></p>
+  <ul>
+    <li>H&W bug fixes (boardForMultiplier, validateScale)</li>
+    <li>Backend integration (POR-117, POR-15)</li>
+    <li>Baseline automation report for QA</li>
+    <li>Refactoring and code style</li>
+    <li>Cheats for testing</li>
+    <li>Logic optimization (POR-90: diff instead of full recalc)</li>
+  </ul>
+
+  <p class="footer"><em>Generated from commits on <code>develop</code></em></p>
+</body>
+</html>
