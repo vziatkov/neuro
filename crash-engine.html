@@ -78,19 +78,23 @@
 
     <script>
     (function(){
-        // Engine core — obfuscated
+        // Engine core — packed binary constants + indirect dispatch
+        var _buf=new Float64Array(new Uint8Array([
+            133,235,81,184,30,133,239,63,0,0,0,0,0,0,8,64,51,51,51,51,51,51,195,63,
+            154,153,153,153,153,153,217,63,51,51,51,51,51,51,227,63,102,102,102,102,102,102,230,63,
+            154,153,153,153,153,153,201,63,45,67,28,235,226,54,74,63,0,0,0,0,0,0,89,64,
+            0,0,0,0,0,136,195,64
+        ]).buffer);
+        var _R=Math.random;
+        var _c=0;
         var _0x={
-            a:function(v){return Math.max(1,_0x.k/(1-v))},
-            b:function(d,m){return d<=_0x.t?m:m*(1+Math.log(d)*_0x.p)},
-            c:0,
-            d:function(m){_0x.c+=(_0x.r()-0.5)*_0x.w;_0x.c=Math.max(-1,Math.min(1,_0x.c));
-                if(_0x.c>0.5)m*=1+_0x.r()*_0x.u;if(_0x.c<-0.5)m*=_0x.v+_0x.r()*_0x.q;return m},
-            e:function(m){if(_0x.r()<_0x.s)m*=_0x.x+_0x.r()*_0x.y;return m},
-            f:function(d){var m=_0x.a(_0x.r());m=_0x.b(d,m);m=_0x.d(m);m=_0x.e(m);
-                m=Math.floor(m*100)/100;return m<1?1:m},
-            r:Math.random,
-            // constants encoded
-            k:0.985,t:3,p:0.15,w:0.4,u:0.6,v:0.7,q:0.2,s:8e-4,x:100,y:1e4
+            a:function(v){return Math.max(1,_buf[0]/(1-v))},
+            b:function(d,m){return d<=_buf[1]?m:m*(1+Math.log(d)*_buf[2])},
+            d:function(m){_c+=(_R()-0.5)*_buf[3];_c=Math.max(-1,Math.min(1,_c));
+                if(_c>0.5)m*=1+_R()*_buf[4];if(_c<-0.5)m*=_buf[5]+_R()*_buf[6];return m},
+            e:function(m){if(_R()<_buf[7])m*=_buf[8]+_R()*_buf[9];return m},
+            f:function(d){var m=_0x.a(_R());m=_0x.b(d,m);m=_0x.d(m);m=_0x.e(m);
+                m=Math.floor(m*100)/100;return m<1?1:m}
         };
 
         var state={g:1000,co:2,bal:100,bet:1};
