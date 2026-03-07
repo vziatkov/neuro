@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Engine v2 — Simulation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050508;
+            color: #e5e5e5;
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .header { margin-bottom: 20px; }
+        .header h1 { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.85); }
+        .header .sub { font-size: 10px; color: rgba(255,140,66,0.6); margin-top: 4px; }
+        #c {
+            display: block; width: 100%; max-width: 900px; height: 280px;
+            background: #0a0a0c; border-radius: 8px; border: 1px solid #1a1a1a; margin-bottom: 20px;
+        }
+        .controls {
+            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; max-width: 900px;
+        }
+        .ctrl-btn {
+            background: rgba(255,140,66,0.08); border: 1px solid rgba(255,140,66,0.2);
+            color: #ccc; font-family: inherit; font-size: 10px; padding: 6px 14px;
+            border-radius: 5px; cursor: pointer; transition: all 0.2s;
+        }
+        .ctrl-btn:hover { background: rgba(255,140,66,0.2); color: #fff; }
+        .ctrl-btn.active { background: rgba(255,140,66,0.15); border-color: rgba(255,140,66,0.5); color: #ff8c42; }
+        .summary {
+            font-size: 11px; color: #888; max-width: 900px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
+        }
+        .summary div { background: #0d0d0f; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; }
+        .summary .label { color: #555; font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .summary .value { color: #ff8c42; font-weight: 600; margin-top: 3px; font-size: 14px; }
+        .back {
+            display: inline-block; margin-top: 24px; font-size: 10px;
+            color: rgba(255,255,255,0.25); text-decoration: none; transition: color 0.2s;
+        }
+        .back:hover { color: rgba(255,95,31,0.9); }
+        .note {
+            max-width: 900px; margin-top: 16px; font-size: 9px; color: rgba(255,255,255,0.12);
+            border-top: 1px solid #1a1a1a; padding-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Crash Engine v2</h1>
+        <div class="sub">Drought recovery · Wave dynamics · RTP control · Monte Carlo simulation</div>
+    </div>
+
+    <div class="controls" id="controls">
+        <button class="ctrl-btn active" data-games="1000">1K games</button>
+        <button class="ctrl-btn" data-games="5000">5K games</button>
+        <button class="ctrl-btn" data-games="10000">10K games</button>
+        <span style="color:#333;line-height:28px;margin:0 4px">|</span>
+        <button class="ctrl-btn active" data-cashout="2">Cash @2×</button>
+        <button class="ctrl-btn" data-cashout="3">Cash @3×</button>
+        <button class="ctrl-btn" data-cashout="5">Cash @5×</button>
+    </div>
+
+    <canvas id="c"></canvas>
+    <div class="summary" id="summary"></div>
+
+    <div class="note">
+        Engine internals are proprietary. Visualization shows simulation output only.
+        Contact for licensing inquiries.
+    </div>
+
+    <a href="landing-with-art-cards.html" class="back">← Landing</a>
+
+    <script>
+    (function(){
+        // Engine core — obfuscated
+        var _0x={
+            a:function(v){return Math.max(1,_0x.k/(1-v))},
+            b:function(d,m){return d<=_0x.t?m:m*(1+Math.log(d)*_0x.p)},
+            c:0,
+            d:function(m){_0x.c+=(_0x.r()-0.5)*_0x.w;_0x.c=Math.max(-1,Math.min(1,_0x.c));
+                if(_0x.c>0.5)m*=1+_0x.r()*_0x.u;if(_0x.c<-0.5)m*=_0x.v+_0x.r()*_0x.q;return m},
+            e:function(m){if(_0x.r()<_0x.s)m*=_0x.x+_0x.r()*_0x.y;return m},
+            f:function(d){var m=_0x.a(_0x.r());m=_0x.b(d,m);m=_0x.d(m);m=_0x.e(m);
+                m=Math.floor(m*100)/100;return m<1?1:m},
+            r:Math.random,
+            // constants encoded
+            k:0.985,t:3,p:0.15,w:0.4,u:0.6,v:0.7,q:0.2,s:8e-4,x:100,y:1e4
+        };
+
+        var state={g:1000,co:2,bal:100,bet:1};
+        var lastResult=null;
+
+        function simulate(){
+            var bal=state.bal,d=0,w=0,l=0,nm=0,mx=0,tw=0,tr=0;
+            _0x.c=0;
+            var hist=[];
+            for(var i=0;i<state.g;i++){
+                if(bal<=0)break;
+                var cr=_0x.f(d);
+                if(cr>mx)mx=cr;
+                tw+=state.bet;
+                if(cr>=state.co){bal+=state.bet*(state.co-1);tr+=state.bet*state.co;d=0;w++}
+                else{bal-=state.bet;d++;l++;if(cr>state.co*0.9)nm++}
+                hist.push(bal);
+            }
+            lastResult={hist:hist,wins:w,losses:l,nm:nm,final:bal,max:mx,rtp:tw>0?(tr/tw*100):0,games:hist.length};
+            return lastResult;
+        }
+
+        function drawChart(data){
+            var canvas=document.getElementById('c');
+            var ctx=canvas.getContext('2d');
+            var dpr=Math.min(window.devicePixelRatio,2);
+            var w=canvas.offsetWidth,h=canvas.offsetHeight;
+            canvas.width=w*dpr;canvas.height=h*dpr;
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+            ctx.clearRect(0,0,w,h);
+            if(!data||!data.length)return;
+
+            var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data);
+            var rng=mx-mn||1,pad=24,gw=w-pad*2,gh=h-pad*2;
+
+            // Grid
+            ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+            for(var g=0;g<5;g++){
+                var gy=pad+gh*(g/4);
+                ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(pad+gw,gy);ctx.stroke();
+            }
+
+            // Start balance line
+            var startY=pad+gh-((state.bal-mn)/rng)*gh;
+            ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.setLineDash([4,4]);
+            ctx.beginPath();ctx.moveTo(pad,startY);ctx.lineTo(pad+gw,startY);ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Balance curve fill
+            ctx.beginPath();
+            for(var i=0;i<data.length;i++){
+                var x=pad+(i/(data.length-1||1))*gw;
+                var y=pad+gh-((data[i]-mn)/rng)*gh;
+                if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+            }
+            ctx.lineTo(pad+gw,pad+gh);ctx.lineTo(pad,pad+gh);ctx.closePath();
+            ctx.fillStyle='rgba(255,140,66,0.06)';ctx.fill();
+
+            // Balance curve stroke
+            ctx.beginPath();
+            for(var i=0;i<data.length;i++){
+                var x=pad+(i/(data.length-1||1))*gw;
+                var y=pad+gh-((data[i]-mn)/rng)*gh;
+                if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+            }
+            ctx.strokeStyle='rgba(255,140,66,0.8)';ctx.lineWidth=1.5;ctx.stroke();
+
+            // End dot
+            var lastX=pad+gw,lastY=pad+gh-((data[data.length-1]-mn)/rng)*gh;
+            ctx.fillStyle='rgba(255,140,66,0.3)';ctx.beginPath();ctx.arc(lastX,lastY,6,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#ff8c42';ctx.beginPath();ctx.arc(lastX,lastY,3,0,Math.PI*2);ctx.fill();
+
+            // Labels
+            ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='9px JetBrains Mono';
+            ctx.fillText(mx.toFixed(0),pad-2,pad-4);
+            ctx.fillText(mn.toFixed(0),pad-2,pad+gh+12);
+            ctx.fillText('0',pad,pad+gh+12);
+            ctx.fillText(data.length.toString(),pad+gw-20,pad+gh+12);
+        }
+
+        function updateSummary(r){
+            var el=document.getElementById('summary');
+            var items=[
+                {l:'Games',v:r.games},
+                {l:'Wins',v:r.wins},
+                {l:'Losses',v:r.losses},
+                {l:'Win rate',v:((r.wins+r.losses)?(r.wins/(r.wins+r.losses)*100):0).toFixed(1)+'%'},
+                {l:'Near miss',v:r.nm},
+                {l:'Final balance',v:r.final.toFixed(2)},
+                {l:'Max multiplier',v:r.max.toFixed(2)+'×'},
+                {l:'Actual RTP',v:r.rtp.toFixed(1)+'%'}
+            ];
+            el.innerHTML=items.map(function(i){
+                return '<div><div class="label">'+i.l+'</div><div class="value">'+i.v+'</div></div>';
+            }).join('');
+        }
+
+        function run(){
+            var r=simulate();
+            drawChart(r.hist);
+            updateSummary(r);
+        }
+
+        // Controls
+        document.getElementById('controls').addEventListener('click',function(e){
+            var btn=e.target.closest('.ctrl-btn');if(!btn)return;
+            if(btn.dataset.games){
+                state.g=parseInt(btn.dataset.games);
+                document.querySelectorAll('[data-games]').forEach(function(b){b.classList.remove('active')});
+                btn.classList.add('active');
+            }
+            if(btn.dataset.cashout){
+                state.co=parseInt(btn.dataset.cashout);
+                document.querySelectorAll('[data-cashout]').forEach(function(b){b.classList.remove('active')});
+                btn.classList.add('active');
+            }
+            run();
+        });
+
+        run();
+        window.addEventListener('resize',function(){if(lastResult)drawChart(lastResult.hist);});
+    })();
+    </script>
+</body>
+</html>

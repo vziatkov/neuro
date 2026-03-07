@@ -348,6 +348,7 @@
         .art-yinyang { background: radial-gradient(circle at center, #111 0%, #000 70%); }
         .art-hollow { background: #050508; }
         .art-tsp { background: #050508; }
+        .art-crash { background: #050508; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -504,6 +505,15 @@
                     <div class="art-label">
                         <span class="art-name">TSP Solver — P vs NP</span>
                         <span class="art-sub">When networks race · shortest path through N cities</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-crash" href="https://vziatkov.github.io/neuro/crash-engine.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-crash"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">Crash Engine v2</span>
+                        <span class="art-sub">Monte Carlo sim · drought + wave · RTP control · engine obfuscated</span>
                     </div>
                 </a>
 
@@ -1065,6 +1075,74 @@
     }
   }
 
+  function drawCrash(t) {
+    const s = initCanvas("art-crash");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    if (w <= 0 || h <= 0) return;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = 10;
+    const graphW = w - pad * 2;
+    const graphH = h - pad * 2;
+    // Subtle grid
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+    ctx.lineWidth = 1;
+    for (let g = 0; g <= 3; g++) {
+      const gy = pad + graphH * (g / 3);
+      ctx.beginPath();
+      ctx.moveTo(pad, gy);
+      ctx.lineTo(pad + graphW, gy);
+      ctx.stroke();
+    }
+    // Start-balance line (dashed)
+    const startY = pad + graphH * 0.5;
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = "rgba(255, 140, 66, 0.12)";
+    ctx.beginPath();
+    ctx.moveTo(pad, startY);
+    ctx.lineTo(pad + graphW, startY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const n = 36;
+    const points = [];
+    for (let i = 0; i <= n; i++) {
+      const x = pad + (i / n) * graphW;
+      const drift = Math.sin(t * 0.4 + i * 0.35) * 0.25;
+      const y = pad + graphH * (0.5 + 0.38 * Math.sin((i / n) * Math.PI * 2.5 + t) + drift);
+      points.push({ x, y });
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.lineTo(points[points.length - 1].x, pad + graphH);
+    ctx.lineTo(pad, pad + graphH);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 100, 40, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 140, 66, 0.55)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.stroke();
+
+    const idx = Math.min(Math.floor((t * 0.5) % 1 * n), n - 1);
+    const p = points[idx];
+    if (p) {
+      ctx.fillStyle = "rgba(255, 140, 66, 0.25)";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff8c42";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   const start = performance.now();
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1079,6 +1157,7 @@
     drawYinYang(t);
     drawHollow(t);
     drawTsp(t);
+    drawCrash(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 

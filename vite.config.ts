@@ -15,6 +15,7 @@ export default defineConfig({
         'yin-yang-preloader': resolve(__dirname, 'yin-yang-preloader.html'),
         'hollow-point': resolve(__dirname, 'hollow-point.html'),
         'landing-with-art-cards': resolve(__dirname, 'landing-with-art-cards.html'),
+        'crash-engine': resolve(__dirname, 'crash-engine.html'),
       },
     },
   },
