@@ -32,8 +32,7 @@
         }
         .ctrl-btn:hover { background: rgba(255,140,66,0.2); color: #fff; }
         .ctrl-btn.active { background: rgba(255,140,66,0.15); border-color: rgba(255,140,66,0.5); color: #ff8c42; }
-        .summary {
-            font-size: 11px; color: #888; max-width: 900px;
+        .summary { font-size: 11px; color: #888; max-width: 900px;
             display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
         }
         .summary div { background: #0d0d0f; padding: 12px; border-radius: 6px; border: 1px solid #1a1a1a; }
@@ -47,6 +46,33 @@
         .note {
             max-width: 900px; margin-top: 16px; font-size: 9px; color: rgba(255,255,255,0.12);
             border-top: 1px solid #1a1a1a; padding-top: 12px;
+        }
+
+        /* Portrait: compact vertical layout */
+        @media (orientation: portrait) {
+            body { padding: 14px 16px; }
+            .header { margin-bottom: 14px; }
+            .header h1 { font-size: 12px; }
+            .header .sub { font-size: 9px; }
+            .controls { margin-bottom: 14px; gap: 6px; max-width: none; }
+            .ctrl-btn { padding: 5px 10px; font-size: 9px; }
+            #c { height: 220px; margin-bottom: 14px; max-width: none; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: none; }
+            .summary div { padding: 10px; }
+            .summary .value { font-size: 12px; }
+            .note { margin-top: 12px; padding-top: 10px; font-size: 8px; max-width: none; }
+        }
+
+        /* Square viewport: balanced compact */
+        @media (max-aspect-ratio: 1/1) and (max-width: 720px) {
+            body { padding: 12px 14px; }
+            .header { margin-bottom: 12px; }
+            .header .sub { font-size: 9px; }
+            #c { height: min(260px, 42vh); margin-bottom: 12px; max-width: none; }
+            .controls { margin-bottom: 12px; gap: 6px; max-width: none; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: none; }
+            .summary .value { font-size: 12px; }
+            .note { max-width: none; }
         }
     </style>
 </head>

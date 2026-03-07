@@ -34,6 +34,37 @@
         .back { display: inline-block; margin-top: 20px; font-size: 10px; color: rgba(255,255,255,0.25); text-decoration: none; transition: color 0.2s; }
         .back:hover { color: rgba(255,95,31,0.9); }
         .note { max-width: 960px; margin-top: 14px; font-size: 9px; color: rgba(255,255,255,0.10); border-top: 1px solid #1a1a1a; padding-top: 10px; }
+
+        /* Portrait: compact vertical layout */
+        @media (orientation: portrait) {
+            body { padding: 14px 16px; }
+            .header { margin-bottom: 14px; }
+            .header h1 { font-size: 12px; }
+            .header .sub { font-size: 9px; }
+            .controls { margin-bottom: 14px; gap: 6px; max-width: none; }
+            .ctrl-btn { padding: 5px 10px; font-size: 9px; }
+            .ctrl-sep { margin: 0 2px; }
+            .live-badge { font-size: 8px; padding: 2px 8px; margin-left: 4px; }
+            #c { height: 220px; margin-bottom: 12px; max-width: none; }
+            .rtp-bar { margin: 12px 0; }
+            .rtp-label { font-size: 7px; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: none; }
+            .summary div { padding: 10px; }
+            .summary .value { font-size: 12px; }
+            .note { margin-top: 12px; padding-top: 10px; font-size: 8px; }
+        }
+
+        /* Square viewport: balanced compact */
+        @media (max-aspect-ratio: 1/1) and (max-width: 720px) {
+            body { padding: 12px 14px; }
+            .header { margin-bottom: 12px; }
+            .header .sub { font-size: 9px; }
+            #c { height: min(260px, 42vh); margin-bottom: 12px; max-width: none; }
+            .controls { margin-bottom: 12px; gap: 6px; }
+            .rtp-bar { margin: 12px 0; max-width: none; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: none; }
+            .summary .value { font-size: 12px; }
+        }
     </style>
 </head>
 <body>
