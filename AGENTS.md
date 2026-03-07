@@ -39,3 +39,7 @@ Chrome in headless/cloud VMs requires SwiftShader for software rendering. Launch
 ```
 
 Without these flags the canvas will be black.
+
+### Crash Engine (crash-engine.html, crash-engine-v3.html)
+
+Math is **intentionally obfuscated**: constants live in `Float64Array(_buf)` from a byte array; logic uses `_0x`/`_E` and `_c` for wave state. Do **not** replace with literal numbers (e.g. 0.985, 3, 0.15) or reintroduce `_0x.c` — use `_c` for wave reset. Landing card preview (`drawCrash`) is visual-only, no engine logic.
