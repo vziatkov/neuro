@@ -118,6 +118,10 @@
                 _master=_ax.createGain();_master.gain.value=0.15;_master.connect(_ax.destination)}
             catch(e){_ax=null}
         }
+        // Pentatonic scale (A minor): A C D E G — musical, never dissonant
+        var _penta=[220,261.6,293.7,329.6,392,440,523.3,587.3,659.3,784];
+        var _stepBeat=0;
+
         function tone(freq,dur,type,vol,detune){
             if(!_ax)return;var t=_ax.currentTime;
             var o=_ax.createOscillator(),g=_ax.createGain();
@@ -126,21 +130,48 @@
             g.gain.exponentialRampToValueAtTime(0.001,t+(dur||0.15));
             o.connect(g);g.connect(_ax.destination);o.start(t);o.stop(t+(dur||0.15));
         }
-        function sndWin(){tone(520,0.08,'sine',0.4);setTimeout(function(){tone(660,0.1,'sine',0.3)},60);
-            setTimeout(function(){tone(880,0.15,'triangle',0.2)},120)}
-        function sndLoss(){tone(280,0.12,'sine',0.3);setTimeout(function(){tone(220,0.15,'sine',0.2)},80)}
-        function sndNearMiss(){tone(400,0.06,'square',0.15);setTimeout(function(){tone(380,0.08,'square',0.1)},50)}
+        function chord(notes,dur,type,vol){
+            for(var i=0;i<notes.length;i++)setTimeout(function(f){tone(f,dur,type,vol)}.bind(null,notes[i]),i*40)}
+
+        // Win: rising major arpeggio — satisfying, casino-like
+        function sndWin(){chord([523.3,659.3,784],0.12,'sine',0.3);
+            setTimeout(function(){tone(1047,0.2,'triangle',0.15)},150)}
+
+        // Loss: gentle minor descent — not harsh, just "not this time"
+        function sndLoss(){tone(293.7,0.1,'sine',0.2);setTimeout(function(){tone(261.6,0.12,'sine',0.15)},70)}
+
+        // Near miss: tense wobble — "almost!"
+        function sndNearMiss(){tone(392,0.05,'sine',0.2);tone(440,0.05,'sine',0.15);
+            setTimeout(function(){tone(370,0.08,'triangle',0.12)},60)}
+
+        // Heartbeat: sub-bass pulse, tempo rises with drought
         function sndHeartbeat(drought){
             if(!_ax||drought<4)return;
-            var spd=Math.max(0.06,0.2-drought*0.012);var vol=Math.min(0.5,0.15+drought*0.03);
-            tone(55,spd,'sine',vol);setTimeout(function(){tone(50,spd*0.7,'sine',vol*0.6)},spd*500)}
-        function sndSpike(){tone(80,0.4,'sawtooth',0.5);tone(160,0.3,'square',0.3,50);
-            setTimeout(function(){tone(60,0.6,'sine',0.4)},100);
-            setTimeout(function(){tone(1200,0.2,'sine',0.15)},200)}
+            var bpm=60+drought*8;var interval=60000/bpm;
+            var vol=Math.min(0.4,0.1+drought*0.025);
+            tone(55,0.12,'sine',vol);
+            setTimeout(function(){tone(44,0.08,'sine',vol*0.5)},interval*0.3)}
+
+        // Spike: dramatic boom + shimmering overtone — jackpot moment
+        function sndSpike(){
+            tone(55,0.5,'sawtooth',0.4);tone(110,0.4,'sine',0.3);
+            setTimeout(function(){chord([659.3,784,1047],0.3,'triangle',0.2)},150);
+            setTimeout(function(){tone(1568,0.4,'sine',0.1)},300)}
+
+        // Wave shift: subtle ambient pad — warm for hot, cool for cold
         function sndWaveShift(wave){
-            if(!_ax||Math.abs(wave)<0.4)return;
-            var f=wave>0?440:260;tone(f,0.05,'sine',0.05);tone(f*1.5,0.04,'sine',0.03)}
-        function sndStep(){tone(800+_R()*200,0.02,'sine',0.04)}
+            if(!_ax||Math.abs(wave)<0.5)return;
+            if(wave>0){tone(440,0.15,'sine',0.03);tone(554.4,0.12,'sine',0.02)}
+            else{tone(220,0.15,'sine',0.03);tone(261.6,0.12,'sine',0.02)}}
+
+        // Step: rhythmic pentatonic pulse — creates a groove
+        function sndStep(){
+            _stepBeat=(_stepBeat+1)%8;
+            // Accent on beats 1,4,7 — swing feel
+            var accent=(_stepBeat===0||_stepBeat===3||_stepBeat===6);
+            var note=_penta[Math.floor(_R()*5)+(accent?5:0)];
+            var vol=accent?0.06:0.025;
+            tone(note,accent?0.04:0.02,'sine',vol)}
         // === END AUDIO ===
         var _E={
             a:function(v){return Math.max(1,_buf[0]/(1-v))},
