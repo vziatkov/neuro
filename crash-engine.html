@@ -111,7 +111,8 @@
             154,153,153,153,153,153,201,63,45,67,28,235,226,54,74,63,0,0,0,0,0,0,89,64,
             0,0,0,0,0,136,195,64
         ]).buffer);
-        var _R=Math.random;
+        var _B=new Uint32Array(256),_Bi=256;
+        function _R(){if(_Bi>=256){crypto.getRandomValues(_B);_Bi=0}return _B[_Bi++]/4294967296}
         var _c=0;
         var _0x={
             a:function(v){return Math.max(1,_buf[0]/(1-v))},
