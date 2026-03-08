@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Engine v4 — Audio + Live Simulation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #050508; color: #e5e5e5; font-family: 'JetBrains Mono', monospace; min-height: 100vh; padding: 24px; }
+        .header { margin-bottom: 20px; }
+        .header h1 { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.85); }
+        .header .sub { font-size: 10px; color: rgba(255,140,66,0.6); margin-top: 4px; }
+        #c { display: block; width: 100%; max-width: 960px; height: 320px; background: #0a0a0c; border-radius: 8px; border: 1px solid #1a1a1a; margin-bottom: 16px; }
+        .controls { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; max-width: 960px; align-items: center; }
+        .ctrl-btn { background: rgba(255,140,66,0.08); border: 1px solid rgba(255,140,66,0.2); color: #ccc; font-family: inherit; font-size: 10px; padding: 6px 14px; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
+        .ctrl-btn:hover { background: rgba(255,140,66,0.2); color: #fff; }
+        .ctrl-btn.active { background: rgba(255,140,66,0.15); border-color: rgba(255,140,66,0.5); color: #ff8c42; }
+        .ctrl-sep { color: #333; line-height: 28px; margin: 0 4px; }
+        .live-badge { font-size: 9px; color: #44ff88; background: rgba(68,255,136,0.1); border: 1px solid rgba(68,255,136,0.2); padding: 3px 10px; border-radius: 10px; margin-left: 8px; animation: livePulse 2s ease-in-out infinite; }
+        @keyframes livePulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+        .summary { font-size: 11px; color: #888; max-width: 960px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .summary div { background: #0d0d0f; padding: 10px 12px; border-radius: 6px; border: 1px solid #1a1a1a; transition: border-color 0.3s; }
+        .summary div.flash { border-color: rgba(255,140,66,0.4); }
+        .summary .label { color: #555; font-size: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .summary .value { color: #ff8c42; font-weight: 600; margin-top: 2px; font-size: 13px; transition: color 0.3s; }
+        .summary .value.up { color: #44ff88; }
+        .summary .value.down { color: #ff4444; }
+        .rtp-bar { max-width: 960px; margin: 16px 0; height: 4px; background: #1a1a1a; border-radius: 2px; position: relative; overflow: visible; }
+        .rtp-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; position: relative; }
+        .rtp-marker { position: absolute; top: -6px; width: 2px; height: 16px; background: rgba(255,255,255,0.15); }
+        .rtp-label { position: absolute; top: -18px; font-size: 8px; color: #555; transform: translateX(-50%); }
+        .back { display: inline-block; margin-top: 20px; font-size: 10px; color: rgba(255,255,255,0.25); text-decoration: none; transition: color 0.2s; }
+        .back:hover { color: rgba(255,95,31,0.9); }
+        .note { max-width: 960px; margin-top: 14px; font-size: 9px; color: rgba(255,255,255,0.10); border-top: 1px solid #1a1a1a; padding-top: 10px; }
+
+        /* Portrait: compact vertical layout */
+        @media (orientation: portrait) {
+            body { padding: 14px 16px; }
+            .header { margin-bottom: 14px; }
+            .header h1 { font-size: 12px; }
+            .header .sub { font-size: 9px; }
+            .controls { margin-bottom: 14px; gap: 6px; max-width: none; }
+            .ctrl-btn { padding: 5px 10px; font-size: 9px; }
+            .ctrl-sep { margin: 0 2px; }
+            .live-badge { font-size: 8px; padding: 2px 8px; margin-left: 4px; }
+            #c { height: 220px; margin-bottom: 12px; max-width: none; }
+            .rtp-bar { margin: 12px 0; }
+            .rtp-label { font-size: 7px; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: none; }
+            .summary div { padding: 10px; }
+            .summary .value { font-size: 12px; }
+            .note { margin-top: 12px; padding-top: 10px; font-size: 8px; }
+        }
+
+        /* Square viewport: balanced compact */
+        @media (max-aspect-ratio: 1/1) and (max-width: 720px) {
+            body { padding: 12px 14px; }
+            .header { margin-bottom: 12px; }
+            .header .sub { font-size: 9px; }
+            #c { height: min(260px, 42vh); margin-bottom: 12px; max-width: none; }
+            .controls { margin-bottom: 12px; gap: 6px; }
+            .rtp-bar { margin: 12px 0; max-width: none; }
+            .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: none; }
+            .summary .value { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Crash Engine v4</h1>
+        <div class="sub">Procedural audio · heartbeat drought · wave ambient · spike boom · CSPRNG</div>
+    </div>
+
+    <div class="controls" id="controls">
+        <button class="ctrl-btn active" data-games="500">500</button>
+        <button class="ctrl-btn" data-games="1000">1K</button>
+        <button class="ctrl-btn" data-games="5000">5K</button>
+        <span class="ctrl-sep">|</span>
+        <button class="ctrl-btn active" data-cashout="2">@2×</button>
+        <button class="ctrl-btn" data-cashout="3">@3×</button>
+        <button class="ctrl-btn" data-cashout="5">@5×</button>
+        <span class="ctrl-sep">|</span>
+        <button class="ctrl-btn" id="runBtn">▶ Run</button>
+        <button class="ctrl-btn" id="muteBtn">🔊</button>
+        <span class="live-badge" id="liveBadge" style="display:none">SIMULATING</span>
+    </div>
+
+    <canvas id="c"></canvas>
+    <div class="rtp-bar" id="rtpBar"><div class="rtp-fill" id="rtpFill"></div>
+        <div class="rtp-marker" style="left:47%"></div><div class="rtp-label" style="left:47%">94%</div>
+        <div class="rtp-marker" style="left:50%"></div><div class="rtp-label" style="left:50%">100%</div>
+        <div class="rtp-marker" style="left:52%"></div><div class="rtp-label" style="left:52%">104%</div>
+    </div>
+    <div class="summary" id="summary"></div>
+
+    <div class="note">Engine internals proprietary · visualization only · contact for licensing</div>
+    <a href="landing-with-art-cards.html" class="back">← Landing</a>
+
+    <script>
+    (function(){
+        var _buf=new Float64Array(new Uint8Array([
+            225,122,20,174,71,225,238,63,0,0,0,0,0,0,16,64,154,153,153,153,153,153,185,63,
+            51,51,51,51,51,51,211,63,154,153,153,153,153,153,217,63,0,0,0,0,0,0,232,63,
+            51,51,51,51,51,51,195,63,45,67,28,235,226,54,58,63,0,0,0,0,0,0,73,64,
+            0,0,0,0,0,136,179,64
+        ]).buffer);
+        var _B=new Uint32Array(256),_Bi=256;
+        function _R(){if(_Bi>=256){crypto.getRandomValues(_B);_Bi=0}return _B[_Bi++]/4294967296}
+        var _c=0;
+
+        // === PROCEDURAL AUDIO ENGINE ===
+        var _ax=null,_master=null;
+        function audioInit(){
+            if(_ax)return;
+            try{_ax=new(window.AudioContext||window.webkitAudioContext)();
+                _master=_ax.createGain();_master.gain.value=0.15;_master.connect(_ax.destination)}
+            catch(e){_ax=null}
+        }
+        function tone(freq,dur,type,vol,detune){
+            if(!_ax)return;var t=_ax.currentTime;
+            var o=_ax.createOscillator(),g=_ax.createGain();
+            o.type=type||'sine';o.frequency.value=freq;if(detune)o.detune.value=detune;
+            g.gain.setValueAtTime((vol||0.3)*_master.gain.value,t);
+            g.gain.exponentialRampToValueAtTime(0.001,t+(dur||0.15));
+            o.connect(g);g.connect(_ax.destination);o.start(t);o.stop(t+(dur||0.15));
+        }
+        function sndWin(){tone(520,0.08,'sine',0.4);setTimeout(function(){tone(660,0.1,'sine',0.3)},60);
+            setTimeout(function(){tone(880,0.15,'triangle',0.2)},120)}
+        function sndLoss(){tone(280,0.12,'sine',0.3);setTimeout(function(){tone(220,0.15,'sine',0.2)},80)}
+        function sndNearMiss(){tone(400,0.06,'square',0.15);setTimeout(function(){tone(380,0.08,'square',0.1)},50)}
+        function sndHeartbeat(drought){
+            if(!_ax||drought<4)return;
+            var spd=Math.max(0.06,0.2-drought*0.012);var vol=Math.min(0.5,0.15+drought*0.03);
+            tone(55,spd,'sine',vol);setTimeout(function(){tone(50,spd*0.7,'sine',vol*0.6)},spd*500)}
+        function sndSpike(){tone(80,0.4,'sawtooth',0.5);tone(160,0.3,'square',0.3,50);
+            setTimeout(function(){tone(60,0.6,'sine',0.4)},100);
+            setTimeout(function(){tone(1200,0.2,'sine',0.15)},200)}
+        function sndWaveShift(wave){
+            if(!_ax||Math.abs(wave)<0.4)return;
+            var f=wave>0?440:260;tone(f,0.05,'sine',0.05);tone(f*1.5,0.04,'sine',0.03)}
+        function sndStep(){tone(800+_R()*200,0.02,'sine',0.04)}
+        // === END AUDIO ===
+        var _E={
+            a:function(v){return Math.max(1,_buf[0]/(1-v))},
+            b:function(d,m){return d<=_buf[1]?m:m*(1+Math.log(d)*_buf[2])},
+            d:function(m){_c+=(_R()-0.5)*_buf[3];_c=Math.max(-1,Math.min(1,_c));
+                if(_c>0.5)m*=1+_R()*_buf[4];if(_c<-0.5)m*=_buf[5]+_R()*_buf[6];return m},
+            e:function(m){if(_R()<_buf[7])m*=_buf[8]+_R()*_buf[9];return m},
+            f:function(d){var m=_E.a(_R());m=_E.b(d,m);m=_E.d(m);m=_E.e(m);
+                m=Math.floor(m*100)/100;return m<1?1:m}
+        };
+
+        var state={g:500,co:2,bal:100,bet:1};
+        var hist=[],stats={w:0,l:0,nm:0,mx:0,tw:0,tr:0,d:0,rtp:0};
+        var animIdx=0,animRunning=false,animRaf=0;
+
+        var canvas=document.getElementById('c');
+        var ctx=canvas.getContext('2d');
+        var dpr=Math.min(window.devicePixelRatio,2);
+
+        function resetSim(){
+            hist=[state.bal];animIdx=0;_c=0;
+            stats={w:0,l:0,nm:0,mx:0,tw:0,tr:0,d:0,rtp:0};
+        }
+
+        function stepSim(){
+            if(animIdx>=state.g||hist[hist.length-1]<=0)return false;
+            var bal=hist[hist.length-1];
+            var cr=_E.f(stats.d);
+            if(cr>stats.mx)stats.mx=cr;
+            stats.tw+=state.bet;
+            var wasSpike=cr>50;
+            if(cr>=state.co){
+                bal+=state.bet*(state.co-1);stats.tr+=state.bet*state.co;
+                if(wasSpike)sndSpike();else sndWin();
+                stats.d=0;stats.w++;
+            }else{
+                bal-=state.bet;stats.d++;stats.l++;
+                if(cr>state.co*0.9){stats.nm++;sndNearMiss()}else sndLoss();
+                sndHeartbeat(stats.d);
+            }
+            sndStep();
+            sndWaveShift(_c);
+            hist.push(bal);
+            stats.rtp=stats.tw>0?(stats.tr/stats.tw*100):0;
+            animIdx++;
+            return true;
+        }
+
+        function drawChart(t){
+            var w=canvas.offsetWidth,h=canvas.offsetHeight;
+            canvas.width=w*dpr;canvas.height=h*dpr;
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+            ctx.clearRect(0,0,w,h);
+            if(hist.length<2)return;
+            var mn=Math.min.apply(null,hist),mx=Math.max.apply(null,hist);
+            var rng=mx-mn||1,pad=28,gw=w-pad*2,gh=h-pad*2;
+
+            // Grid
+            ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+            for(var g=0;g<5;g++){var gy=pad+gh*(g/4);ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(pad+gw,gy);ctx.stroke();}
+
+            // Start line
+            var sy=pad+gh-((state.bal-mn)/rng)*gh;
+            ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.setLineDash([4,4]);
+            ctx.beginPath();ctx.moveTo(pad,sy);ctx.lineTo(pad+gw,sy);ctx.stroke();ctx.setLineDash([]);
+
+            // Fill
+            ctx.beginPath();
+            for(var i=0;i<hist.length;i++){
+                var x=pad+(i/(state.g||1))*gw;
+                var y=pad+gh-((hist[i]-mn)/rng)*gh;
+                if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+            }
+            var lx=pad+((hist.length-1)/(state.g||1))*gw;
+            ctx.lineTo(lx,pad+gh);ctx.lineTo(pad,pad+gh);ctx.closePath();
+            ctx.fillStyle='rgba(255,140,66,0.05)';ctx.fill();
+
+            // Stroke with color coding
+            for(var i=1;i<hist.length;i++){
+                var x0=pad+((i-1)/(state.g||1))*gw;
+                var x1=pad+(i/(state.g||1))*gw;
+                var y0=pad+gh-((hist[i-1]-mn)/rng)*gh;
+                var y1=pad+gh-((hist[i]-mn)/rng)*gh;
+                var delta=hist[i]-hist[i-1];
+                ctx.strokeStyle=delta>0?'rgba(68,255,136,0.7)':'rgba(255,80,60,0.5)';
+                ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
+            }
+
+            // Head dot
+            var ly=pad+gh-((hist[hist.length-1]-mn)/rng)*gh;
+            var pulse=3+Math.sin(t*5)*2;
+            ctx.fillStyle='rgba(255,140,66,0.15)';ctx.beginPath();ctx.arc(lx,ly,pulse+4,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#ff8c42';ctx.beginPath();ctx.arc(lx,ly,2.5,0,Math.PI*2);ctx.fill();
+
+            // Balance label
+            ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='10px JetBrains Mono';
+            ctx.fillText(hist[hist.length-1].toFixed(0),lx+8,ly+3);
+
+            // Axis labels
+            ctx.fillStyle='rgba(255,255,255,0.12)';ctx.font='8px JetBrains Mono';
+            ctx.fillText(mx.toFixed(0),2,pad-2);
+            ctx.fillText(mn.toFixed(0),2,pad+gh+10);
+            ctx.fillText(hist.length-1+'',lx-12,pad+gh+10);
+        }
+
+        function updateSummary(){
+            var r=stats,b=hist[hist.length-1]||state.bal;
+            var wr=(r.w+r.l)?(r.w/(r.w+r.l)*100):0;
+            var items=[
+                {l:'Games',v:animIdx,c:''},
+                {l:'Balance',v:b.toFixed(1),c:b>=state.bal?'up':'down'},
+                {l:'Win rate',v:wr.toFixed(1)+'%',c:''},
+                {l:'RTP',v:r.rtp.toFixed(1)+'%',c:r.rtp>=94&&r.rtp<=104?'up':'down'},
+                {l:'Near miss',v:r.nm,c:''},
+                {l:'Max mult',v:r.mx.toFixed(1)+'×',c:''},
+                {l:'Drought',v:r.d,c:r.d>5?'down':''}
+            ];
+            var el=document.getElementById('summary');
+            el.innerHTML=items.map(function(i){
+                return '<div><div class="label">'+i.l+'</div><div class="value'+
+                    (i.c?' '+i.c:'')+'">'+i.v+'</div></div>';
+            }).join('');
+
+            // RTP bar
+            var fill=document.getElementById('rtpFill');
+            var pct=Math.max(0,Math.min(100,(r.rtp/200)*100));
+            fill.style.width=pct+'%';
+            fill.style.background=r.rtp>=94&&r.rtp<=104?'rgba(68,255,136,0.5)':
+                r.rtp<94?'rgba(255,80,60,0.5)':'rgba(255,200,50,0.5)';
+        }
+
+        var animT=0;
+        function animLoop(){
+            animT+=0.016;
+            var steps=state.g>2000?10:state.g>1000?5:2;
+            var alive=true;
+            for(var s=0;s<steps;s++){if(!stepSim()){alive=false;break;}}
+            drawChart(animT);
+            updateSummary();
+            if(alive&&animRunning){animRaf=requestAnimationFrame(animLoop)}
+            else{animRunning=false;document.getElementById('liveBadge').style.display='none';
+                document.getElementById('runBtn').textContent='▶ Run';}
+        }
+
+        function startSim(){
+            if(animRunning)return;
+            audioInit();
+            resetSim();animRunning=true;animT=0;
+            document.getElementById('liveBadge').style.display='';
+            document.getElementById('runBtn').textContent='⏸';
+            animLoop();
+        }
+
+        // Controls
+        document.getElementById('controls').addEventListener('click',function(e){
+            var btn=e.target.closest('.ctrl-btn');if(!btn)return;
+            if(btn.id==='runBtn'){
+                if(animRunning){animRunning=false;cancelAnimationFrame(animRaf);
+                    btn.textContent='▶ Run';document.getElementById('liveBadge').style.display='none'}
+                else startSim();
+                return;
+            }
+            if(btn.dataset.games){
+                state.g=parseInt(btn.dataset.games);
+                document.querySelectorAll('[data-games]').forEach(function(b){b.classList.remove('active')});
+                btn.classList.add('active');
+            }
+            if(btn.dataset.cashout){
+                state.co=parseInt(btn.dataset.cashout);
+                document.querySelectorAll('[data-cashout]').forEach(function(b){b.classList.remove('active')});
+                btn.classList.add('active');
+            }
+        });
+
+        document.getElementById('muteBtn').addEventListener('click',function(){
+            audioInit();if(!_master)return;
+            var on=_master.gain.value>0;_master.gain.value=on?0:0.15;
+            this.textContent=on?'🔇':'🔊';
+        });
+
+        startSim();
+        window.addEventListener('resize',function(){drawChart(animT)});
+    })();
+    </script>
+</body>
+</html>

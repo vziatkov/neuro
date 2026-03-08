@@ -17,6 +17,7 @@ export default defineConfig({
         'landing-with-art-cards': resolve(__dirname, 'landing-with-art-cards.html'),
         'crash-engine': resolve(__dirname, 'crash-engine.html'),
         'crash-engine-v3': resolve(__dirname, 'crash-engine-v3.html'),
+        'crash-engine-v4': resolve(__dirname, 'crash-engine-v4.html'),
       },
     },
   },
