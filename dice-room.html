@@ -143,7 +143,9 @@
 
         // Dice roll for round (1–6, deterministic)
         function rollForRound(roundIdx){
-            var rng=mkRng(roomSeed+roundIdx*7919);
+            var s=Math.abs(roomSeed*65537+roundIdx*7919+roundIdx*roundIdx)>>>0;
+            var rng=mkRng(s);
+            rng();rng();rng();
             return Math.floor(rng()*6)+1;
         }
 

@@ -164,7 +164,7 @@
 
         function crash(roundIdx){
             // Re-seed per round for determinism
-            var rng=mkRng(roomSeed+roundIdx*7919);
+            var rng=mkRng(Math.abs(roomSeed*65537+roundIdx*7919+roundIdx*roundIdx)>>>0);rng();rng();rng();
             var _lc=0;
             function r(){return rng()}
             var m=Math.max(1,_buf[0]/(1-r()));
