@@ -40,6 +40,11 @@
         .score-item{font-size:12px;color:#555}
         .score-item span{color:#ff8c42;font-weight:600}
         .score-item .goal{color:#44ff88}
+        .leaderboard{max-width:600px;width:100%;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+        .leaderboard .lb-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
+        .leaderboard .lb-scores{font-size:12px;color:#888}
+        .leaderboard .lb-scores .you{color:#ff8c42}
+        .leaderboard .lb-scores .peer{color:#6cc}
         .win-banner{background:rgba(68,255,136,0.1);border:1px solid rgba(68,255,136,0.3);border-radius:8px;padding:16px;text-align:center;color:#44ff88;font-size:14px;margin-bottom:16px;display:none}
         .win-banner.show{display:block}
         .voice-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
@@ -84,6 +89,10 @@
         </div>
         <div class="score-row">
             <div class="score-item">Score: <span id="scoreVal">0</span> / <span class="goal">5</span></div>
+        </div>
+        <div class="leaderboard" id="leaderboard">
+            <span class="lb-title">Leaderboard (P2P)</span>
+            <span class="lb-scores">You: <span class="you" id="lbYou">0</span> · Peer: <span class="peer" id="lbPeer">—</span></span>
         </div>
     </div>
 
@@ -159,6 +168,28 @@
         var lastScoredRound=-1;
         var myChoiceByRound={};
 
+        var peerScore=null;
+        var dataChannel=null;
+        function updateLeaderboard(){
+            document.getElementById('lbYou').textContent=score;
+            document.getElementById('lbPeer').textContent=peerScore===null||peerScore===undefined?'—':peerScore;
+        }
+        function sendScore(){
+            if(dataChannel&&dataChannel.readyState==='open'){
+                try{dataChannel.send(JSON.stringify({score:score}));}catch(e){}
+            }
+        }
+        function setupDataChannel(ch){
+            dataChannel=ch;
+            ch.onmessage=function(e){
+                try{
+                    var d=JSON.parse(e.data);
+                    if(typeof d.score==='number'){peerScore=d.score;updateLeaderboard();}
+                }catch(err){}
+            };
+            ch.onopen=function(){sendScore();};
+        }
+
         var pickBtnsEl=document.getElementById('pickBtns');
         for(var i=1;i<=6;i++){
             var btn=document.createElement('button');
@@ -191,6 +222,7 @@
             document.getElementById('roundNum').textContent='ROUND '+(currentRound+1);
             document.getElementById('timerBar').style.width=(phase*100)+'%';
             document.getElementById('scoreVal').textContent=score;
+            updateLeaderboard();
 
             if(score>=GOAL){
                 document.getElementById('winBanner').classList.add('show');
@@ -216,6 +248,7 @@
                 if(myChoice!==undefined&&lastScoredRound!==currentRound){
                     if(myChoice===roll){
                         score++;
+                        sendScore();
                         lastScoredRound=currentRound;
                         document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
                         document.getElementById('resultLine').className='result-line win';
@@ -254,6 +287,7 @@
             pc=new RTCPeerConnection({iceServers:ICE});
             stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
             pc.ontrack=function(e){document.getElementById('vRemote').srcObject=e.streams[0]};
+            pc.ondatachannel=function(e){setupDataChannel(e.channel);};
             pc.oniceconnectionstatechange=function(){
                 var s=pc.iceConnectionState;
                 if(s==='connected'||s==='completed'){vDot('#44ff88');vStat('🔊 Connected');}
@@ -266,6 +300,7 @@
         function hangup(){
             if(localStream){localStream.getTracks().forEach(function(t){t.stop()});localStream=null;}
             if(pc){pc.close();pc=null;}
+            peerScore=null;dataChannel=null;updateLeaderboard();
             document.getElementById('vRemote').srcObject=null;
             document.getElementById('vMySdp').value='';
             document.getElementById('vPeerSdp').value='';
@@ -280,6 +315,8 @@
             getMic().then(function(stream){
                 localStream=stream;
                 setupPC(stream);
+                dataChannel=pc.createDataChannel('lb');
+                setupDataChannel(dataChannel);
                 return pc.createOffer();
             }).then(function(offer){return pc.setLocalDescription(offer)})
             .then(function(){return waitICE(pc)})
