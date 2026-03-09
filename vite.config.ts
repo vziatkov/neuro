@@ -19,6 +19,7 @@ export default defineConfig({
         'crash-engine-v3': resolve(__dirname, 'crash-engine-v3.html'),
         'crash-engine-v4': resolve(__dirname, 'crash-engine-v4.html'),
         'crash-backoffice': resolve(__dirname, 'crash-backoffice.html'),
+        'crash-room': resolve(__dirname, 'crash-room.html'),
       },
     },
   },

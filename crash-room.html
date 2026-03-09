@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Room — Shared Session</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+        .header{margin-bottom:20px;text-align:center;max-width:600px}
+        .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.85)}
+        .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:4px}
+        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center;max-width:600px;width:100%}
+        .room-id{font-size:20px;font-weight:600;color:#ff8c42;letter-spacing:3px;margin:8px 0}
+        .room-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
+        .share-btn{background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 16px;border-radius:5px;cursor:pointer;margin-top:8px;transition:all 0.2s}
+        .share-btn:hover{background:rgba(255,140,66,0.2)}
+        .share-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
+        .game-area{max-width:600px;width:100%;margin-bottom:16px}
+        .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
+        .round-num{font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase}
+        .multiplier{font-size:56px;font-weight:700;margin:12px 0;transition:color 0.3s}
+        .mult-win{color:#44ff88}
+        .mult-loss{color:#ff4444}
+        .mult-pending{color:#555;animation:pulse 1s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}
+        .cashout-line{font-size:10px;color:#555;margin-top:4px}
+        .timer-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,140,66,0.5);transition:width 0.1s linear;border-radius:0 0 10px 10px}
+        .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+        .stat{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;padding:10px;text-align:center}
+        .stat .label{font-size:8px;color:#555;text-transform:uppercase;letter-spacing:0.5px}
+        .stat .value{font-size:16px;font-weight:600;color:#ff8c42;margin-top:2px}
+        .stat .value.up{color:#44ff88}
+        .stat .value.down{color:#ff4444}
+        .history{max-width:600px;width:100%;display:flex;flex-wrap:wrap;gap:4px}
+        .history .h-item{font-size:9px;padding:3px 6px;border-radius:3px;font-weight:500}
+        .h-win{background:rgba(68,255,136,0.08);color:#44ff88}
+        .h-loss{background:rgba(255,68,68,0.06);color:#ff4444}
+        .h-spike{background:rgba(255,140,66,0.12);color:#ff8c42;font-weight:700}
+        .controls{margin-top:16px;display:flex;gap:8px}
+        .ctrl-btn{background:rgba(255,140,66,0.08);border:1px solid rgba(255,140,66,0.2);color:#ccc;font-family:inherit;font-size:10px;padding:6px 14px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .ctrl-btn:hover{background:rgba(255,140,66,0.2);color:#fff}
+        .ctrl-btn.active{background:rgba(255,140,66,0.15);border-color:rgba(255,140,66,0.5);color:#ff8c42}
+        .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
+        .back:hover{color:rgba(255,95,31,0.8)}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Crash Room</h1>
+        <div class="sub">Shared seed · deterministic rounds · anyone with the link sees the same game</div>
+    </div>
+
+    <div class="room-info">
+        <div class="room-label">Room</div>
+        <div class="room-id" id="roomId"></div>
+        <button class="share-btn" id="shareBtn">📋 Copy room link</button>
+        <div class="share-status" id="shareStatus"></div>
+    </div>
+
+    <div class="game-area">
+        <div class="round-display">
+            <div class="round-num" id="roundNum">ROUND 1</div>
+            <div class="multiplier mult-pending" id="multiplier">—</div>
+            <div class="cashout-line">Cashout @ <span id="cashoutVal">2</span>×</div>
+            <div class="timer-bar" id="timerBar"></div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat"><div class="label">Balance</div><div class="value" id="sBal">100</div></div>
+            <div class="stat"><div class="label">Wins</div><div class="value up" id="sWins">0</div></div>
+            <div class="stat"><div class="label">Losses</div><div class="value down" id="sLoss">0</div></div>
+            <div class="stat"><div class="label">RTP</div><div class="value" id="sRtp">—</div></div>
+        </div>
+
+        <div class="history" id="history"></div>
+
+        <div class="controls">
+            <button class="ctrl-btn active" data-co="2">@2×</button>
+            <button class="ctrl-btn" data-co="3">@3×</button>
+            <button class="ctrl-btn" data-co="5">@5×</button>
+        </div>
+    </div>
+
+    <a href="crash-engine.html" class="back">← Crash Engine</a>
+
+    <script>
+    (function(){
+        // Deterministic PRNG from seed (xoshiro128**)
+        function mkRng(seed){
+            var s=new Uint32Array(4);
+            s[0]=seed^0x9E3779B9;s[1]=seed^0x6C078965;s[2]=seed^0xBB67AE85;s[3]=seed^0x3C6EF372;
+            function rotl(x,k){return(x<<k)|(x>>>(32-k))}
+            return function(){
+                var r=rotl(s[1]*5,7)*9,t=s[1]<<9;
+                s[2]^=s[0];s[3]^=s[1];s[1]^=s[2];s[0]^=s[3];s[2]^=t;s[3]=rotl(s[3],11);
+                return(r>>>0)/4294967296;
+            };
+        }
+
+        // Room seed from URL hash or generate
+        var roomSeed;
+        if(location.hash&&location.hash.length>1){
+            roomSeed=parseInt(location.hash.slice(1),36);
+            if(isNaN(roomSeed))roomSeed=Date.now()^(Math.random()*0xFFFFFFFF>>>0);
+        }else{
+            roomSeed=Date.now()^(Math.random()*0xFFFFFFFF>>>0);
+            location.hash=roomSeed.toString(36);
+        }
+
+        var roomId=roomSeed.toString(36).toUpperCase();
+        document.getElementById('roomId').textContent=roomId;
+
+        // Share
+        document.getElementById('shareBtn').addEventListener('click',function(){
+            var url=location.href;
+            if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){
+                document.getElementById('shareStatus').textContent='✓ Link copied — share with friend';
+                setTimeout(function(){document.getElementById('shareStatus').textContent=''},3000);
+            });
+        });
+
+        // Engine with deterministic RNG
+        var _rng=mkRng(roomSeed);
+        var _c=0;
+        var _buf=[0.985,3,0.15,0.4,0.6,0.7,0.2,8e-4,100,1e4];
+
+        function crash(roundIdx){
+            // Re-seed per round for determinism
+            var rng=mkRng(roomSeed+roundIdx*7919);
+            var _lc=0;
+            function r(){return rng()}
+            var m=Math.max(1,_buf[0]/(1-r()));
+            _lc+=(r()-0.5)*_buf[3];_lc=Math.max(-1,Math.min(1,_lc));
+            if(_lc>0.5)m*=1+r()*_buf[4];if(_lc<-0.5)m*=_buf[5]+r()*_buf[6];
+            if(r()<_buf[7])m*=_buf[8]+r()*_buf[9];
+            return Math.max(1,Math.floor(m*100)/100);
+        }
+
+        // State
+        var co=2,bal=100,wins=0,losses=0,tw=0,tr=0,round=0;
+        var histEl=document.getElementById('history');
+
+        // Cashout controls
+        document.querySelector('.controls').addEventListener('click',function(e){
+            var btn=e.target.closest('.ctrl-btn');if(!btn||!btn.dataset.co)return;
+            co=parseInt(btn.dataset.co);
+            document.getElementById('cashoutVal').textContent=co;
+            document.querySelectorAll('[data-co]').forEach(function(b){b.classList.remove('active')});
+            btn.classList.add('active');
+        });
+
+        // Round cycle
+        var ROUND_TIME=5000;
+        var roundStart=Date.now();
+
+        // Sync to absolute time so all clients tick together
+        var epoch=Math.floor(Date.now()/ROUND_TIME)*ROUND_TIME;
+        round=Math.floor((Date.now()-epoch)/ROUND_TIME);
+
+        function tick(){
+            var now=Date.now();
+            var elapsed=now-epoch;
+            var currentRound=Math.floor(elapsed/ROUND_TIME);
+            var phase=(elapsed%ROUND_TIME)/ROUND_TIME;
+
+            // Timer bar
+            document.getElementById('timerBar').style.width=(phase*100)+'%';
+
+            if(currentRound>round){
+                // New round
+                round=currentRound;
+                var cr=crash(round);
+                tw+=1;
+
+                document.getElementById('roundNum').textContent='ROUND '+round;
+                var multEl=document.getElementById('multiplier');
+                multEl.textContent=cr.toFixed(2)+'×';
+
+                if(cr>=co){
+                    bal+=co-1;tr+=co;wins++;
+                    multEl.className='multiplier mult-win';
+                    var cls=cr>20?'h-spike':' h-win';
+                    histEl.innerHTML='<span class="h-item '+cls+'">'+cr.toFixed(1)+'×</span>'+histEl.innerHTML;
+                }else{
+                    bal-=1;losses++;
+                    multEl.className='multiplier mult-loss';
+                    histEl.innerHTML='<span class="h-item h-loss">'+cr.toFixed(1)+'×</span>'+histEl.innerHTML;
+                }
+
+                // Trim history
+                while(histEl.children.length>50)histEl.removeChild(histEl.lastChild);
+
+                // Update stats
+                document.getElementById('sBal').textContent=bal;
+                document.getElementById('sBal').className='value'+(bal>=100?' up':' down');
+                document.getElementById('sWins').textContent=wins;
+                document.getElementById('sLoss').textContent=losses;
+                var rtp=tw>0?(tr/tw*100):0;
+                document.getElementById('sRtp').textContent=rtp.toFixed(0)+'%';
+                document.getElementById('sRtp').className='value'+(rtp>=94&&rtp<=104?' up':rtp<94?' down':'');
+            }else{
+                // Pending phase
+                var multEl=document.getElementById('multiplier');
+                if(phase<0.3){
+                    multEl.textContent='—';
+                    multEl.className='multiplier mult-pending';
+                }
+            }
+
+            requestAnimationFrame(tick);
+        }
+
+        tick();
+    })();
+    </script>
+</body>
+</html>
