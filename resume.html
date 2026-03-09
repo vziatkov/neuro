@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitalii Ziatkov — Senior Real-Time Frontend Engineer</title>
+<style>
+body{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f0f0f0;
+  margin: 0;
+  padding: 24px;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+.container{
+  max-width: 840px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 48px 56px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+h1{
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+.title{
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 12px;
+}
+.contact{
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+.contact a{
+  color: #c45c26;
+  text-decoration: none;
+}
+.contact a:hover{ text-decoration: underline; }
+.section{
+  margin-top: 32px;
+}
+.section h2{
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #888;
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.job{ margin-bottom: 28px; }
+.company{
+  font-weight: 600;
+  font-size: 15px;
+  color: #222;
+}
+.date{
+  color: #777;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+ul{
+  margin: 0;
+  padding-left: 20px;
+}
+li{
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.skills{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 24px;
+}
+.badge{
+  background: #f6f6f6;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  margin: 3px 6px 3px 0;
+  font-size: 13px;
+  color: #333;
+}
+.badge.primary{
+  background: #fef3ed;
+  color: #b84a0a;
+  font-weight: 500;
+}
+.projects li{
+  margin-bottom: 10px;
+}
+.projects .tech{
+  color: #777;
+  font-size: 13px;
+  font-weight: 400;
+}
+.print{
+  margin-top: 36px;
+  padding: 10px 24px;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.print:hover{ background: #333; }
+@media print{
+  body{ background: #fff; padding: 0; }
+  .container{ box-shadow: none; padding: 32px; max-width: 100%; }
+  .print{ display: none; }
+  .contact a{ color: #1a1a1a; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>Vitalii Ziatkov</h1>
+<div class="title">Senior Real-Time Frontend Engineer</div>
+<div class="contact">
+  15+ years in gaming & real-time systems · Pixi.js · WebGL · WebRTC<br>
+  <a href="mailto:zyatkovvv87@gmail.com">zyatkovvv87@gmail.com</a>
+  <span style="color:#ccc;margin:0 8px">|</span>
+  <a href="https://github.com/vziatkov" target="_blank" rel="noopener">GitHub</a>
+  <span style="color:#ccc;margin:0 8px">|</span>
+  <a href="https://vziatkov.github.io/neuro/" target="_blank" rel="noopener">Portfolio</a>
+</div>
+
+<div class="section">
+<h2>Profile</h2>
+<p style="margin:0;font-size:14px;">
+  Frontend engineer focused on <strong>real-time interactive systems</strong>, browser rendering pipelines, and multiplayer architectures. Over 15 years building casino platforms, slot engines, and live-dealer interfaces with Pixi.js, WebGL, and modern JS/TS stacks. Strong in performance optimization, deterministic RNG systems, and shipping products that stay stable under real-time and high-load constraints.
+</p>
+</div>
+
+<div class="section">
+<h2>Core Skills</h2>
+<div class="skills">
+  <div>
+    <span class="badge primary">JavaScript (ES6+)</span>
+    <span class="badge primary">TypeScript</span>
+    <span class="badge">React</span>
+    <span class="badge">Svelte</span>
+  </div>
+  <div>
+    <span class="badge primary">Pixi.js</span>
+    <span class="badge primary">Spine</span>
+    <span class="badge">WebGL</span>
+    <span class="badge">Three.js</span>
+  </div>
+  <div>
+    <span class="badge primary">WebRTC</span>
+    <span class="badge">WebSocket</span>
+    <span class="badge">Protobuf</span>
+    <span class="badge">SignalR</span>
+  </div>
+  <div>
+    <span class="badge">Vite</span>
+    <span class="badge">Webpack</span>
+    <span class="badge">MobX</span>
+    <span class="badge">Git</span>
+  </div>
+</div>
+</div>
+
+<div class="section">
+<h2>Experience</h2>
+
+<div class="job">
+  <div class="company">Toucan Royale</div>
+  <div class="date">Team Lead Frontend Engineer · May 2025 – July 2025</div>
+  <ul>
+    <li>Designed high-performance animation system for slot gameplay using Pixi.js and Spine.</li>
+    <li>Implemented TrailAnimator with node pooling, reducing memory churn and improving frame stability.</li>
+    <li>Built internal debugging and logging tools for animation pipelines.</li>
+    <li>Developed asset tooling: JSON optimization and Spine export automation.</li>
+  </ul>
+</div>
+
+<div class="job">
+  <div class="company">Clawbuster</div>
+  <div class="date">Senior Frontend Developer · 2024 – 2025</div>
+  <ul>
+    <li>Developed slot games targeting 60fps on low-end devices using Pixi-Spine and WebGL.</li>
+    <li>Reduced load time by ~20% through rendering and asset optimization.</li>
+    <li>Implemented UI systems with Svelte, Tailwind, and Vite.</li>
+  </ul>
+</div>
+
+<div class="job">
+  <div class="company">Winfinity</div>
+  <div class="date">Senior Frontend Developer · 2021 – 2024</div>
+  <ul>
+    <li>Led development of browser-based live casino interfaces.</li>
+    <li>Built real-time communication layer with WebSocket and Protobuf.</li>
+    <li>Mentored junior engineers and improved delivery processes.</li>
+  </ul>
+</div>
+
+<div class="job">
+  <div class="company">Evolution Gaming</div>
+  <div class="date">Frontend Developer · 2015 – 2021</div>
+  <ul>
+    <li>Developed shared component libraries for blackjack and live casino products.</li>
+    <li>Built high-performance UI components used across multiple gaming products.</li>
+    <li>Worked with React, MobX, and WebSocket infrastructure.</li>
+  </ul>
+</div>
+</div>
+
+<div class="section">
+<h2>Projects & Experiments</h2>
+<ul class="projects">
+  <li><strong>Dice Room</strong> — serverless P2P dice game: deterministic RNG, WebRTC voice & data channel, 10-min link sharing. <span class="tech">Pixi/WebGL-style UX, no backend.</span></li>
+  <li><strong>Crash Engine</strong> — probabilistic crash-game simulation with drought/wave dynamics and RTP control. <span class="tech">Monte Carlo, engine obfuscation.</span></li>
+  <li><strong>WebXR prototypes</strong> — AR/VR overlays and experiments with Three.js.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Education</h2>
+Kharkiv National University of Radio Electronics<br>
+Engineer in Automated Control Systems
+</div>
+
+<button class="print" onclick="window.print()">Save as PDF</button>
+
+</div>
+
+</body>
+</html>
