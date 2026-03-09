@@ -91,20 +91,12 @@
         <button class="ctrl-btn" data-cashout="3">Cash @3×</button>
         <button class="ctrl-btn" data-cashout="5">Cash @5×</button>
         <span style="color:#333;line-height:28px;margin:0 4px">|</span>
-        <button class="ctrl-btn" id="snapBtn">Snapshot</button>
-        <button class="ctrl-btn" id="loadBtn">Load snapshot</button>
+        <button class="ctrl-btn" id="snapBtn" disabled style="opacity:0.3">📋 Get Snapshot</button>
     </div>
 
     <canvas id="c"></canvas>
     <div class="summary" id="summary"></div>
-    <div class="snap-area" id="snapArea" style="display:none; max-width:900px; margin-top:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span style="color:#555; font-size:9px;">Signed round imprint — HMAC-SHA256</span>
-            <span id="snapStatus" style="font-size:9px; color:#44ff88; opacity:0; transition:opacity 0.3s;"></span>
-        </div>
-        <textarea id="snapInput" rows="3" spellcheck="false" placeholder="Paste snapshot blob here and click Load" style="width:100%; background:#0d0d0f; border:1px solid #1a1a1a; border-radius:6px; color:#666; font-family:'JetBrains Mono',monospace; font-size:9px; padding:8px; resize:vertical; transition: border-color 0.3s;"></textarea>
-        <div id="snapReport" style="display:none; margin-top:10px; background:#0d0d0f; border:1px solid #1a1a1a; border-radius:6px; padding:12px; font-size:10px; color:#888; line-height:1.8;"></div>
-    </div>
+    <div id="snapStatus" style="max-width:900px;margin-top:8px;font-size:9px;color:#44ff88;opacity:0;transition:opacity 0.3s;"></div>
 
     <div class="note">
         Engine internals are proprietary. Visualization shows simulation output only.
@@ -235,6 +227,7 @@
             var r=simulate();
             drawChart(r.hist);
             updateSummary(r);
+            enableSnap();
         }
 
         // === SNAPSHOT: provably fair round imprint ===
@@ -250,82 +243,26 @@
         function snapStatus(msg,ok){
             var el=document.getElementById('snapStatus');
             el.textContent=msg;el.style.color=ok?'#44ff88':'#ff4444';el.style.opacity='1';
-            setTimeout(function(){el.style.opacity='0'},2500);}
+            setTimeout(function(){el.style.opacity='0'},3000);}
 
-        function replayFromSeq(seq,co,bet,bal0){
-            var bal=bal0,hist=[bal0],w=0,l=0,nm=0,mx=0,tw=0,tr=0;
-            for(var i=0;i<seq.length;i++){var cr=seq[i];if(cr>mx)mx=cr;tw+=bet;
-                if(cr>=co){bal+=bet*(co-1);tr+=bet*co;w++}else{bal-=bet;l++;if(cr>co*0.9)nm++}
-                hist.push(bal);}
-            lastResult={hist:hist,crashes:seq,wins:w,losses:l,nm:nm,final:bal,max:mx,rtp:tw>0?(tr/tw*100):0,games:seq.length};
-            drawChart(lastResult.hist);updateSummary(lastResult);}
+        function enableSnap(){
+            var btn=document.getElementById('snapBtn');
+            btn.disabled=false;btn.style.opacity='1';}
 
         function buildSnapshot(){
-            if(!lastResult||!lastResult.crashes){run();}
+            if(!lastResult||!lastResult.crashes)return;
             var payload={v:2,g:state.g,co:state.co,b:state.bal,t:Date.now(),seq:lastResult.crashes};
             var msg=JSON.stringify(payload);
             _deriveKey().then(function(key){
                 return crypto.subtle.sign('HMAC',key,_enc.encode(msg)).then(function(sig){
                     var snap=_b64E(_enc.encode(msg))+'.'+_b64E(sig);
-                    document.getElementById('snapInput').value=snap;
-                    document.getElementById('snapArea').style.display='block';
-                    document.getElementById('snapInput').style.borderColor='rgba(68,255,136,0.3)';
-                    setTimeout(function(){document.getElementById('snapInput').style.borderColor=''},1500);
                     if(navigator.clipboard)navigator.clipboard.writeText(snap).then(function(){
-                        snapStatus('✓ Copied',true)}).catch(function(){snapStatus('✓ Ready',true)});
+                        snapStatus('✓ Snapshot copied to clipboard — paste in Backoffice to verify',true)})
+                    .catch(function(){snapStatus('✓ Snapshot ready (clipboard blocked)',true)});
                     else snapStatus('✓ Ready',true);
                 });});}
 
-        function showReport(payload,sigHash){
-            var seq=payload.seq,co=payload.co||payload.c||2;
-            var w=0,l=0,nm=0,mx=0,tw=0,tr=0;
-            for(var i=0;i<seq.length;i++){var cr=seq[i];if(cr>mx)mx=cr;tw+=1;
-                if(cr>=co){w++;tr+=co}else{l++;if(cr>co*0.9)nm++}}
-            var rtp=tw>0?(tr/tw*100):0;
-            var spikes=seq.filter(function(x){return x>50}).sort(function(a,b){return b-a}).slice(0,5);
-            var rep=document.getElementById('snapReport');
-            rep.style.display='block';
-            rep.innerHTML='<div style="color:#ff8c42;font-weight:600;margin-bottom:6px">✓ VERIFIED ROUND REPORT</div>'+
-                '<div style="color:#555;font-size:8px;margin-bottom:8px">SIG: '+sigHash+'</div>'+
-                '<table style="width:100%;border-collapse:collapse">'+
-                [['Games',seq.length],['Cashout',co+'×'],['Wins / Losses',w+' / '+l],
-                 ['Win Rate',(w/(w+l)*100).toFixed(1)+'%'],['RTP',rtp.toFixed(1)+'%'],
-                 ['Max Multiplier',mx.toFixed(2)+'×'],['Near Miss',nm],
-                 ['Top Spikes',spikes.length?spikes.map(function(s){return s.toFixed(0)+'×'}).join(', '):'—']
-                ].map(function(r){return '<tr><td style="color:#555;padding:2px 8px 2px 0;font-size:9px">'+r[0]+
-                    '</td><td style="color:#ccc;font-size:10px;font-weight:500">'+r[1]+'</td></tr>'}).join('')+
-                '</table>';
-        }
-
-        function loadSnapshot(){
-            var el=document.getElementById('snapInput');
-            var area=document.getElementById('snapArea');
-            area.style.display='block';
-            var snap=el.value.trim();
-            if(!snap){el.focus();return;}
-            var dot=snap.indexOf('.');
-            if(dot<1){snapStatus('✗ No signature',false);return;}
-            var msg;try{msg=_dec.decode(_b64D(snap.slice(0,dot)))}catch(e){snapStatus('✗ Bad encoding',false);return;}
-            var payload;try{payload=JSON.parse(msg)}catch(e){snapStatus('✗ Bad JSON',false);return;}
-            if(!payload.v||!payload.seq||!Array.isArray(payload.seq)){snapStatus('✗ Missing fields',false);return;}
-            var sigB64=snap.slice(dot+1);
-            _deriveKey().then(function(key){
-                return crypto.subtle.verify('HMAC',key,_b64D(sigB64),_enc.encode(msg)).then(function(valid){
-                    if(!valid){snapStatus('✗ Signature mismatch',false);el.style.borderColor='rgba(255,68,68,0.4)';
-                        document.getElementById('snapReport').style.display='none';
-                        setTimeout(function(){el.style.borderColor=''},2000);return;}
-                    state.g=payload.g||state.g;state.co=payload.co||payload.c||state.co;
-                    document.querySelectorAll('[data-games]').forEach(function(b){b.classList.toggle('active',parseInt(b.dataset.games)===state.g)});
-                    document.querySelectorAll('[data-cashout]').forEach(function(b){b.classList.toggle('active',parseInt(b.dataset.cashout)===state.co)});
-                    replayFromSeq(payload.seq,state.co,state.bet,payload.b||state.bal);
-                    el.style.borderColor='rgba(68,255,136,0.3)';
-                    setTimeout(function(){el.style.borderColor=''},1500);
-                    snapStatus('✓ Verified',true);
-                    showReport(payload,sigB64.slice(0,16)+'…');
-                });});}
-
         document.getElementById('snapBtn').addEventListener('click',buildSnapshot);
-        document.getElementById('loadBtn').addEventListener('click',loadSnapshot);
 
         // Controls
         document.getElementById('controls').addEventListener('click',function(e){
