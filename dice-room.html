@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash Room — Shared Session</title>
+    <title>Dice Room — Guess the roll</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -21,30 +21,27 @@
         .game-area{max-width:600px;width:100%;margin-bottom:16px}
         .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
         .round-num{font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase}
-        .multiplier{font-size:56px;font-weight:700;margin:12px 0;transition:color 0.3s}
-        .mult-win{color:#44ff88}
-        .mult-loss{color:#ff4444}
-        .mult-pending{color:#555;animation:pulse 1s ease-in-out infinite}
-        @keyframes pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}
-        .cashout-line{font-size:10px;color:#555;margin-top:4px}
+        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:64px;display:flex;align-items:center;justify-content:center;gap:8px}
+        .dice-dot{width:12px;height:12px;border-radius:50%;background:#ff8c42}
+        .dice-value{color:#ff8c42}
+        .dice-value.win{color:#44ff88}
+        .dice-value.loss{color:#ff4444}
+        .pick-label{font-size:10px;color:#555;margin-bottom:12px}
+        .pick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
+        .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42}
+        .pick-btn.chosen{background:rgba(255,140,66,0.15);border-color:#ff8c42;color:#ff8c42}
+        .pick-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .result-line{font-size:11px;color:#888;margin-top:8px;min-height:18px}
+        .result-line.win{color:#44ff88}
+        .result-line.loss{color:#ff4444}
         .timer-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,140,66,0.5);transition:width 0.1s linear;border-radius:0 0 10px 10px}
-        .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-        .stat{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;padding:10px;text-align:center}
-        .stat .label{font-size:8px;color:#555;text-transform:uppercase;letter-spacing:0.5px}
-        .stat .value{font-size:16px;font-weight:600;color:#ff8c42;margin-top:2px}
-        .stat .value.up{color:#44ff88}
-        .stat .value.down{color:#ff4444}
-        .history{max-width:600px;width:100%;display:flex;flex-wrap:wrap;gap:4px}
-        .history .h-item{font-size:9px;padding:3px 6px;border-radius:3px;font-weight:500}
-        .h-win{background:rgba(68,255,136,0.08);color:#44ff88}
-        .h-loss{background:rgba(255,68,68,0.06);color:#ff4444}
-        .h-spike{background:rgba(255,140,66,0.12);color:#ff8c42;font-weight:700}
-        .controls{margin-top:16px;display:flex;gap:8px}
-        .ctrl-btn{background:rgba(255,140,66,0.08);border:1px solid rgba(255,140,66,0.2);color:#ccc;font-family:inherit;font-size:10px;padding:6px 14px;border-radius:5px;cursor:pointer;transition:all 0.2s}
-        .ctrl-btn:hover{background:rgba(255,140,66,0.2);color:#fff}
-        .ctrl-btn.active{background:rgba(255,140,66,0.15);border-color:rgba(255,140,66,0.5);color:#ff8c42}
-        .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
-        .back:hover{color:rgba(255,95,31,0.8)}
+        .score-row{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
+        .score-item{font-size:12px;color:#555}
+        .score-item span{color:#ff8c42;font-weight:600}
+        .score-item .goal{color:#44ff88}
+        .win-banner{background:rgba(68,255,136,0.1);border:1px solid rgba(68,255,136,0.3);border-radius:8px;padding:16px;text-align:center;color:#44ff88;font-size:14px;margin-bottom:16px;display:none}
+        .win-banner.show{display:block}
         .voice-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
         .voice-section .v-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
         .voice-section .v-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
@@ -56,12 +53,14 @@
         .voice-section .v-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
         .voice-section .v-status.err{color:#ff4444}
         .voice-section audio{display:block;margin-top:8px;width:100%;max-height:32px}
+        .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
+        .back:hover{color:rgba(255,95,31,0.8)}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Crash Room</h1>
-        <div class="sub">Shared seed · deterministic rounds · anyone with the link sees the same game</div>
+        <h1>Dice Room</h1>
+        <div class="sub">Same link = same sequence of rolls · guess 1–6 each round · first to 5 points wins</div>
     </div>
 
     <div class="room-info">
@@ -72,58 +71,46 @@
     </div>
 
     <div class="game-area">
+        <div class="win-banner" id="winBanner">🎲 You win! First to 5.</div>
         <div class="round-display">
             <div class="round-num" id="roundNum">ROUND 1</div>
-            <div class="multiplier mult-pending" id="multiplier">—</div>
-            <div class="cashout-line">Cashout @ <span id="cashoutVal">2</span>×</div>
+            <div class="dice-display" id="diceDisplay">
+                <span class="dice-value" id="diceValue">—</span>
+            </div>
+            <div class="pick-label" id="pickLabel">Pick a number 1–6 before time runs out</div>
+            <div class="pick-btns" id="pickBtns"></div>
+            <div class="result-line" id="resultLine"></div>
             <div class="timer-bar" id="timerBar"></div>
         </div>
-
-        <div class="stats-row">
-            <div class="stat"><div class="label">Balance</div><div class="value" id="sBal">100</div></div>
-            <div class="stat"><div class="label">Wins</div><div class="value up" id="sWins">0</div></div>
-            <div class="stat"><div class="label">Losses</div><div class="value down" id="sLoss">0</div></div>
-            <div class="stat"><div class="label">RTP</div><div class="value" id="sRtp">—</div></div>
-        </div>
-
-        <div class="history" id="history"></div>
-
-        <div class="controls">
-            <button class="ctrl-btn active" data-co="2">@2×</button>
-            <button class="ctrl-btn" data-co="3">@3×</button>
-            <button class="ctrl-btn" data-co="5">@5×</button>
+        <div class="score-row">
+            <div class="score-item">Score: <span id="scoreVal">0</span> / <span class="goal">5</span></div>
         </div>
     </div>
 
     <div class="voice-section" id="voiceSection">
         <div class="v-title">P2P Voice Chat <span id="vConnDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
-        <div class="v-desc">WebRTC peer-to-peer audio. No server — manual SDP exchange. JSON is used for safe type detection.</div>
-
+        <div class="v-desc">WebRTC peer-to-peer audio. No server — manual SDP exchange.</div>
         <div class="v-btns" id="vBtns">
             <button class="v-btn" id="vStart">🎤 Start (create offer)</button>
             <button class="v-btn" id="vJoin">📥 Join (paste offer)</button>
             <button class="v-btn" id="vMute" disabled style="opacity:0.3">🔇 Mute</button>
             <button class="v-btn" id="vHangup" disabled style="opacity:0.3">✕ Hang up</button>
         </div>
-
         <label style="font-size:8px;color:#555;">Your signal (copy → send to peer)</label>
         <textarea id="vMySdp" placeholder="Click Start or Join — your signal appears here." readonly></textarea>
         <button class="v-btn" id="vCopySdp" style="margin-bottom:10px;font-size:8px">📋 Copy signal</button>
-
         <label style="font-size:8px;color:#555;">Peer signal (paste here)</label>
         <textarea id="vPeerSdp" placeholder="Paste the signal from the other player here."></textarea>
         <button class="v-btn" id="vApplySdp" style="margin-bottom:6px;font-size:8px">✓ Apply peer signal</button>
-
         <div class="v-status" id="vStatus"></div>
         <audio id="vRemote" autoplay playsinline></audio>
     </div>
 
-    <a href="crash-engine.html" class="back">← Crash Engine</a>
-    <a href="dice-room.html" class="back" style="margin-left:12px">Dice Room →</a>
+    <a href="crash-room.html" class="back">← Crash Room</a>
 
     <script>
     (function(){
-        // Deterministic PRNG from seed (xoshiro128**)
+        // Deterministic PRNG (xoshiro128**)
         function mkRng(seed){
             var s=new Uint32Array(4);
             s[0]=seed^0x9E3779B9;s[1]=seed^0x6C078965;s[2]=seed^0xBB67AE85;s[3]=seed^0x3C6EF372;
@@ -135,7 +122,7 @@
             };
         }
 
-        // Room seed from URL hash or generate
+        // Room seed from URL hash
         var roomSeed;
         if(location.hash&&location.hash.length>1){
             roomSeed=parseInt(location.hash.slice(1),36);
@@ -144,144 +131,136 @@
             roomSeed=Date.now()^(Math.random()*0xFFFFFFFF>>>0);
             location.hash=roomSeed.toString(36);
         }
+        document.getElementById('roomId').textContent=roomSeed.toString(36).toUpperCase();
 
-        var roomId=roomSeed.toString(36).toUpperCase();
-        document.getElementById('roomId').textContent=roomId;
-
-        // Share
         document.getElementById('shareBtn').addEventListener('click',function(){
             var url=location.href;
             if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){
-                document.getElementById('shareStatus').textContent='✓ Link copied — share with friend';
+                document.getElementById('shareStatus').textContent='✓ Link copied — share to see same dice';
                 setTimeout(function(){document.getElementById('shareStatus').textContent=''},3000);
             });
         });
 
-        // Engine with deterministic RNG
-        var _rng=mkRng(roomSeed);
-        var _c=0;
-        var _buf=[0.985,3,0.15,0.4,0.6,0.7,0.2,8e-4,100,1e4];
-
-        function crash(roundIdx){
-            // Re-seed per round for determinism
+        // Dice roll for round (1–6, deterministic)
+        function rollForRound(roundIdx){
             var rng=mkRng(roomSeed+roundIdx*7919);
-            var _lc=0;
-            function r(){return rng()}
-            var m=Math.max(1,_buf[0]/(1-r()));
-            _lc+=(r()-0.5)*_buf[3];_lc=Math.max(-1,Math.min(1,_lc));
-            if(_lc>0.5)m*=1+r()*_buf[4];if(_lc<-0.5)m*=_buf[5]+r()*_buf[6];
-            if(r()<_buf[7])m*=_buf[8]+r()*_buf[9];
-            return Math.max(1,Math.floor(m*100)/100);
+            return Math.floor(rng()*6)+1;
         }
 
-        // State
-        var co=2,bal=100,wins=0,losses=0,tw=0,tr=0,round=0;
-        var histEl=document.getElementById('history');
-
-        // Cashout controls
-        document.querySelector('.controls').addEventListener('click',function(e){
-            var btn=e.target.closest('.ctrl-btn');if(!btn||!btn.dataset.co)return;
-            co=parseInt(btn.dataset.co);
-            document.getElementById('cashoutVal').textContent=co;
-            document.querySelectorAll('[data-co]').forEach(function(b){b.classList.remove('active')});
-            btn.classList.add('active');
-        });
-
-        // Round cycle
-        var ROUND_TIME=5000;
-
-        // Fixed epoch: midnight UTC today — all clients sync to same absolute clock
+        var ROUND_TIME=6000;
+        var PICK_PHASE=0.65;
+        var GOAL=5;
         var today=new Date();today.setUTCHours(0,0,0,0);
         var epoch=today.getTime();
-        round=Math.floor((Date.now()-epoch)/ROUND_TIME);
+
+        var score=0;
+        var lastScoredRound=-1;
+        var myChoiceByRound={};
+
+        var pickBtnsEl=document.getElementById('pickBtns');
+        for(var i=1;i<=6;i++){
+            var btn=document.createElement('button');
+            btn.className='pick-btn';
+            btn.dataset.num=i;
+            btn.textContent=i;
+            pickBtnsEl.appendChild(btn);
+        }
+
+        pickBtnsEl.addEventListener('click',function(e){
+            var btn=e.target.closest('.pick-btn');
+            if(!btn||btn.disabled)return;
+            var num=parseInt(btn.dataset.num,10);
+            var roundEl=document.getElementById('roundNum');
+            var roundStr=roundEl.textContent.replace('ROUND ','');
+            var r=parseInt(roundStr,10);
+            if(isNaN(r))return;
+            myChoiceByRound[r]=num;
+            document.querySelectorAll('.pick-btn').forEach(function(b){b.classList.remove('chosen')});
+            btn.classList.add('chosen');
+        });
 
         function tick(){
             var now=Date.now();
             var elapsed=now-epoch;
             var currentRound=Math.floor(elapsed/ROUND_TIME);
             var phase=(elapsed%ROUND_TIME)/ROUND_TIME;
+            var isPickPhase=phase<PICK_PHASE;
 
-            // Timer bar
+            document.getElementById('roundNum').textContent='ROUND '+(currentRound+1);
             document.getElementById('timerBar').style.width=(phase*100)+'%';
+            document.getElementById('scoreVal').textContent=score;
 
-            if(currentRound>round){
-                // New round
-                round=currentRound;
-                var cr=crash(round);
-                tw+=1;
-
-                document.getElementById('roundNum').textContent='ROUND '+round;
-                var multEl=document.getElementById('multiplier');
-                multEl.textContent=cr.toFixed(2)+'×';
-
-                if(cr>=co){
-                    bal+=co-1;tr+=co;wins++;
-                    multEl.className='multiplier mult-win';
-                    var cls=cr>20?'h-spike':' h-win';
-                    histEl.innerHTML='<span class="h-item '+cls+'">'+cr.toFixed(1)+'×</span>'+histEl.innerHTML;
-                }else{
-                    bal-=1;losses++;
-                    multEl.className='multiplier mult-loss';
-                    histEl.innerHTML='<span class="h-item h-loss">'+cr.toFixed(1)+'×</span>'+histEl.innerHTML;
-                }
-
-                // Trim history
-                while(histEl.children.length>50)histEl.removeChild(histEl.lastChild);
-
-                // Update stats
-                document.getElementById('sBal').textContent=bal;
-                document.getElementById('sBal').className='value'+(bal>=100?' up':' down');
-                document.getElementById('sWins').textContent=wins;
-                document.getElementById('sLoss').textContent=losses;
-                var rtp=tw>0?(tr/tw*100):0;
-                document.getElementById('sRtp').textContent=rtp.toFixed(0)+'%';
-                document.getElementById('sRtp').className='value'+(rtp>=94&&rtp<=104?' up':rtp<94?' down':'');
+            if(score>=GOAL){
+                document.getElementById('winBanner').classList.add('show');
+                document.getElementById('pickLabel').textContent='Game over — you won!';
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
+            }else if(isPickPhase){
+                document.getElementById('pickLabel').textContent='Pick 1–6 before time runs out';
+                document.getElementById('diceValue').textContent='?';
+                document.getElementById('diceValue').className='dice-value';
+                document.getElementById('resultLine').textContent='';
+                document.getElementById('resultLine').className='result-line';
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
+                var chosen=myChoiceByRound[currentRound+1];
+                document.querySelectorAll('.pick-btn').forEach(function(b){
+                    b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
+                });
             }else{
-                // Pending phase
-                var multEl=document.getElementById('multiplier');
-                if(phase<0.3){
-                    multEl.textContent='—';
-                    multEl.className='multiplier mult-pending';
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
+                var roll=rollForRound(currentRound+1);
+                document.getElementById('diceValue').textContent=roll;
+                document.getElementById('diceValue').className='dice-value';
+                var myChoice=myChoiceByRound[currentRound+1];
+                if(myChoice!==undefined&&lastScoredRound!==currentRound){
+                    if(myChoice===roll){
+                        score++;
+                        lastScoredRound=currentRound;
+                        document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
+                        document.getElementById('resultLine').className='result-line win';
+                        document.getElementById('diceValue').className='dice-value win';
+                    }else{
+                        document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. No point.';
+                        document.getElementById('resultLine').className='result-line loss';
+                        document.getElementById('diceValue').className='dice-value loss';
+                        lastScoredRound=currentRound;
+                    }
+                }else if(myChoice===undefined){
+                    document.getElementById('resultLine').textContent='Roll: '+roll+'. (You didn’t pick.)';
+                    document.getElementById('resultLine').className='result-line';
+                    lastScoredRound=currentRound;
                 }
             }
 
             requestAnimationFrame(tick);
         }
-
         tick();
 
-        // === P2P VOICE — polished WebRTC, JSON SDP, mute, hangup ===
+        // === P2P VOICE (same as crash-room) ===
         var pc=null,localStream=null,isMuted=false;
         var ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
-
         function vStat(msg,err){var el=document.getElementById('vStatus');el.textContent=msg||'';el.className='v-status'+(err?' err':'');}
         function vDot(color){document.getElementById('vConnDot').style.background=color;}
         function enableBtn(id,on){var b=document.getElementById(id);b.disabled=!on;b.style.opacity=on?'1':'0.3';}
-
         function waitICE(conn){return new Promise(function(ok){
             if(conn.iceGatheringState==='complete')return ok();
             var to=setTimeout(ok,5000);
             conn.onicegatheringstatechange=function(){if(conn.iceGatheringState==='complete'){clearTimeout(to);ok()}};})}
-
         function getMic(){return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
-
         function encodeSDP(desc){return btoa(JSON.stringify({type:desc.type,sdp:desc.sdp}))}
         function decodeSDP(str){try{return JSON.parse(atob(str.trim()))}catch(e){return null}}
-
         function setupPC(stream){
             pc=new RTCPeerConnection({iceServers:ICE});
             stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
             pc.ontrack=function(e){document.getElementById('vRemote').srcObject=e.streams[0]};
             pc.oniceconnectionstatechange=function(){
                 var s=pc.iceConnectionState;
-                if(s==='connected'||s==='completed'){vDot('#44ff88');vStat('🔊 Connected — voice active');}
+                if(s==='connected'||s==='completed'){vDot('#44ff88');vStat('🔊 Connected');}
                 else if(s==='checking'){vDot('#ffaa44');vStat('Connecting…');}
                 else if(s==='disconnected'){vDot('#ff4444');vStat('Disconnected',true);}
                 else if(s==='failed'){vDot('#ff4444');vStat('Connection failed',true);}
             };
             return pc;
         }
-
         function hangup(){
             if(localStream){localStream.getTracks().forEach(function(t){t.stop()});localStream=null;}
             if(pc){pc.close();pc=null;}
@@ -293,8 +272,6 @@
             enableBtn('vStart',true);enableBtn('vJoin',true);
             document.getElementById('vMute').textContent='🔇 Mute';
         }
-
-        // START (host creates offer)
         document.getElementById('vStart').addEventListener('click',function(){
             enableBtn('vStart',false);enableBtn('vJoin',false);
             vStat('Requesting microphone…');vDot('#ffaa44');
@@ -307,11 +284,9 @@
             .then(function(){
                 document.getElementById('vMySdp').value=encodeSDP(pc.localDescription);
                 enableBtn('vMute',true);enableBtn('vHangup',true);
-                vStat('1) Copy your signal → send to peer. 2) Paste their answer → Apply.');
+                vStat('Copy your signal → send to peer. Paste their answer → Apply.');
             }).catch(function(e){vStat('Error: '+e.message,true);enableBtn('vStart',true);enableBtn('vJoin',true);});
         });
-
-        // JOIN (guest pastes offer, creates answer)
         document.getElementById('vJoin').addEventListener('click',function(){
             var raw=document.getElementById('vPeerSdp').value.trim();
             var desc=decodeSDP(raw);
@@ -328,37 +303,27 @@
             .then(function(){
                 document.getElementById('vMySdp').value=encodeSDP(pc.localDescription);
                 enableBtn('vMute',true);enableBtn('vHangup',true);
-                vStat('Answer ready — copy your signal → send to host. They click Apply.');
+                vStat('Copy your signal → send to host. They click Apply.');
             }).catch(function(e){vStat('Error: '+e.message,true);enableBtn('vStart',true);enableBtn('vJoin',true);});
         });
-
-        // COPY signal
         document.getElementById('vCopySdp').addEventListener('click',function(){
             var v=document.getElementById('vMySdp').value;
             if(!v)return;
             if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){vStat('✓ Signal copied')});
         });
-
-        // APPLY peer signal
         document.getElementById('vApplySdp').addEventListener('click',function(){
             var raw=document.getElementById('vPeerSdp').value.trim();
             var desc=decodeSDP(raw);
-            if(!desc){vStat('Invalid signal — must be base64 encoded JSON.',true);return;}
+            if(!desc){vStat('Invalid signal.',true);return;}
             if(!pc){vStat('Start or Join first.',true);return;}
-            pc.setRemoteDescription(new RTCSessionDescription(desc)).then(function(){
-                vStat('Applied — connecting…');vDot('#ffaa44');
-            }).catch(function(e){vStat('Error: '+e.message,true);});
+            pc.setRemoteDescription(new RTCSessionDescription(desc)).then(function(){vStat('Applied — connecting…');vDot('#ffaa44');}).catch(function(e){vStat('Error: '+e.message,true);});
         });
-
-        // MUTE
         document.getElementById('vMute').addEventListener('click',function(){
             if(!localStream)return;
             isMuted=!isMuted;
             localStream.getAudioTracks().forEach(function(t){t.enabled=!isMuted});
             this.textContent=isMuted?'🔊 Unmute':'🔇 Mute';
         });
-
-        // HANGUP
         document.getElementById('vHangup').addEventListener('click',hangup);
     })();
     </script>
