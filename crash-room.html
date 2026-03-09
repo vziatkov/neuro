@@ -45,6 +45,17 @@
         .ctrl-btn.active{background:rgba(255,140,66,0.15);border-color:rgba(255,140,66,0.5);color:#ff8c42}
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,95,31,0.8)}
+        .voice-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
+        .voice-section .v-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+        .voice-section .v-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
+        .voice-section textarea{width:100%;min-height:60px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;color:#888;font-family:inherit;font-size:9px;padding:8px;resize:vertical;margin-bottom:8px}
+        .voice-section .v-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+        .voice-section .v-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .voice-section .v-btn:hover{background:rgba(100,200,255,0.15);color:#8ee}
+        .voice-section .v-btn:disabled{opacity:0.4;cursor:not-allowed}
+        .voice-section .v-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
+        .voice-section .v-status.err{color:#ff4444}
+        .voice-section audio{display:block;margin-top:8px;width:100%;max-height:32px}
     </style>
 </head>
 <body>
@@ -82,6 +93,22 @@
             <button class="ctrl-btn" data-co="3">@3×</button>
             <button class="ctrl-btn" data-co="5">@5×</button>
         </div>
+    </div>
+
+    <div class="voice-section">
+        <div class="v-title">P2P voice</div>
+        <div class="v-desc">Microphone → WebRTC (STUN). One peer creates an offer and sends it; the other pastes it and sends back the answer. No server.</div>
+        <div class="v-btns">
+            <button class="v-btn" id="vOffer">Request mic & create offer</button>
+            <button class="v-btn" id="vAnswer" disabled>Create answer from pasted offer</button>
+            <button class="v-btn" id="vApply" disabled>Apply pasted answer</button>
+        </div>
+        <label style="font-size:8px;color:#555;">Your SDP (copy and send to peer)</label>
+        <textarea id="vMySdp" placeholder="After 'Create offer' or 'Create answer', copy this and send to the other peer." readonly></textarea>
+        <label style="font-size:8px;color:#555;">Paste peer SDP (offer or answer)</label>
+        <textarea id="vPeerSdp" placeholder="Paste the other peer's offer or answer here."></textarea>
+        <div class="v-status" id="vStatus"></div>
+        <audio id="vRemote" autoplay playsinline></audio>
     </div>
 
     <a href="crash-engine.html" class="back">← Crash Engine</a>
@@ -214,6 +241,97 @@
         }
 
         tick();
+
+        // P2P voice — WebRTC with manual SDP exchange (no signaling server)
+        var pc=null,localStream=null;
+        var ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'}];
+
+        function setVStatus(msg,isErr){
+            var el=document.getElementById('vStatus');
+            el.textContent=msg||'';
+            el.classList.toggle('err',!!isErr);
+        }
+
+        function waitIceGathering(pc){
+            return new Promise(function(resolve){
+                if(pc.iceGatheringState==='complete'){resolve();return;}
+                pc.onicegatheringstatechange=function(){if(pc.iceGatheringState==='complete')resolve();};
+                setTimeout(resolve,3000);
+            });
+        }
+
+        document.getElementById('vOffer').addEventListener('click',function(){
+            var btn=this;
+            btn.disabled=true;
+            setVStatus('Requesting microphone…');
+            navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+                localStream=stream;
+                pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+                pc.oniceconnectionstatechange=function(){
+                    setVStatus('Connection: '+pc.iceConnectionState, pc.iceConnectionState==='failed'||pc.iceConnectionState==='disconnected');
+                };
+                pc.ontrack=function(e){
+                    var el=document.getElementById('vRemote');
+                    if(el.srcObject!==e.streams[0]){el.srcObject=e.streams[0];}
+                };
+                stream.getTracks().forEach(function(t){pc.addTrack(t,stream);});
+                return pc.createOffer();
+            }).then(function(offer){
+                return pc.setLocalDescription(offer);
+            }).then(function(){
+                return waitIceGathering(pc);
+            }).then(function(){
+                document.getElementById('vMySdp').value=pc.localDescription.sdp;
+                document.getElementById('vAnswer').disabled=false;
+                document.getElementById('vApply').disabled=false;
+                setVStatus('Offer ready — copy "Your SDP" and send to peer. Then paste peer answer and click Apply.');
+            }).catch(function(e){
+                setVStatus('Error: '+e.message,true);
+            }).then(function(){btn.disabled=false;});
+        });
+
+        document.getElementById('vAnswer').addEventListener('click',function(){
+            var pasted=document.getElementById('vPeerSdp').value.trim();
+            if(!pasted){setVStatus('Paste the offer SDP first.',true);return;}
+            var btn=this;
+            btn.disabled=true;
+            setVStatus('Requesting microphone…');
+            navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+                localStream=stream;
+                pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+                pc.oniceconnectionstatechange=function(){
+                    setVStatus('Connection: '+pc.iceConnectionState, pc.iceConnectionState==='failed'||pc.iceConnectionState==='disconnected');
+                };
+                pc.ontrack=function(e){
+                    var el=document.getElementById('vRemote');
+                    if(el.srcObject!==e.streams[0]){el.srcObject=e.streams[0];}
+                };
+                stream.getTracks().forEach(function(t){pc.addTrack(t,stream);});
+                return pc.setRemoteDescription({type:'offer',sdp:pasted});
+            }).then(function(){
+                return pc.createAnswer();
+            }).then(function(answer){
+                return pc.setLocalDescription(answer);
+            }).then(function(){
+                return waitIceGathering(pc);
+            }).then(function(){
+                document.getElementById('vMySdp').value=pc.localDescription.sdp;
+                setVStatus('Answer ready — copy "Your SDP" and send to peer. They should paste it and click Apply.');
+            }).catch(function(e){
+                setVStatus('Error: '+e.message,true);
+            }).then(function(){btn.disabled=false;});
+        });
+
+        document.getElementById('vApply').addEventListener('click',function(){
+            var pasted=document.getElementById('vPeerSdp').value.trim();
+            if(!pasted){setVStatus('Paste the answer (or offer) SDP first.',true);return;}
+            if(!pc){setVStatus('Create an offer first (Request mic & create offer).',true);return;}
+            pc.setRemoteDescription({type:'answer',sdp:pasted}).then(function(){
+                setVStatus('Answer applied — connection should establish.');
+            }).catch(function(e){
+                setVStatus('Error: '+e.message,true);
+            });
+        });
     })();
     </script>
 </body>
