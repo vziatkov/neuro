@@ -267,6 +267,7 @@
         // Controls
         document.getElementById('controls').addEventListener('click',function(e){
             var btn=e.target.closest('.ctrl-btn');if(!btn)return;
+            if(btn.id==='snapBtn')return;
             if(btn.dataset.games){
                 state.g=parseInt(btn.dataset.games);
                 document.querySelectorAll('[data-games]').forEach(function(b){b.classList.remove('active')});
