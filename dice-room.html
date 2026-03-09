@@ -21,11 +21,20 @@
         .game-area{max-width:600px;width:100%;margin-bottom:16px}
         .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
         .round-num{font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase}
-        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:64px;display:flex;align-items:center;justify-content:center;gap:8px}
-        .dice-dot{width:12px;height:12px;border-radius:50%;background:#ff8c42}
-        .dice-value{color:#ff8c42}
-        .dice-value.win{color:#44ff88}
-        .dice-value.loss{color:#ff4444}
+        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:100px;display:flex;align-items:center;justify-content:center;gap:8px}
+        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center}
+        .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,100,40,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
+        .dice-face.reveal{animation:diceReveal 0.35s ease-out}
+        .dice-face.win{border-color:rgba(68,255,136,0.5);box-shadow:0 0 24px rgba(68,255,136,0.2)}
+        .dice-face.loss{border-color:rgba(255,68,68,0.4);box-shadow:0 0 20px rgba(255,68,68,0.12)}
+        .dice-face.pending .dice-pip{opacity:0.35;animation:dicePulse 1.2s ease-in-out infinite}
+        @keyframes diceReveal{0%{transform:scale(0.92);opacity:0.7}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1);opacity:1}}
+        @keyframes dicePulse{0%,100%{opacity:0.35}50%{opacity:0.6}}
+        .dice-pip{display:none;position:absolute;width:12px;height:12px;border-radius:50%;background:#ff9f5c;box-shadow:0 0 8px rgba(255,140,66,0.5),inset 0 1px 0 rgba(255,255,255,0.25);transform:translate(-50%,-50%)}
+        .dice-face.face-1 .dice-pip.p5,.dice-face.face-2 .dice-pip.p1,.dice-face.face-2 .dice-pip.p9,.dice-face.face-3 .dice-pip.p1,.dice-face.face-3 .dice-pip.p5,.dice-face.face-3 .dice-pip.p9,.dice-face.face-4 .dice-pip.p1,.dice-face.face-4 .dice-pip.p3,.dice-face.face-4 .dice-pip.p7,.dice-face.face-4 .dice-pip.p9,.dice-face.face-5 .dice-pip.p1,.dice-face.face-5 .dice-pip.p3,.dice-face.face-5 .dice-pip.p5,.dice-face.face-5 .dice-pip.p7,.dice-face.face-5 .dice-pip.p9,.dice-face.face-6 .dice-pip.p1,.dice-face.face-6 .dice-pip.p4,.dice-face.face-6 .dice-pip.p7,.dice-face.face-6 .dice-pip.p3,.dice-face.face-6 .dice-pip.p6,.dice-face.face-6 .dice-pip.p9{display:block}
+        .dice-face.pending .dice-pip.p1,.dice-face.pending .dice-pip.p3,.dice-face.pending .dice-pip.p5,.dice-face.pending .dice-pip.p7,.dice-face.pending .dice-pip.p9{display:block}
+        .dice-pip.p1{left:25%;top:25%}.dice-pip.p2{left:50%;top:25%}.dice-pip.p3{left:75%;top:25%}.dice-pip.p4{left:25%;top:50%}.dice-pip.p5{left:50%;top:50%}.dice-pip.p6{left:75%;top:50%}.dice-pip.p7{left:25%;top:75%}.dice-pip.p8{left:50%;top:75%}.dice-pip.p9{left:75%;top:75%}
+        .dice-value{color:#ff8c42;font-size:24px;margin-left:10px}
         .pick-label{font-size:10px;color:#555;margin-bottom:12px}
         .pick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
         .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s}
@@ -80,7 +89,14 @@
         <div class="round-display">
             <div class="round-num" id="roundNum">ROUND 1</div>
             <div class="dice-display" id="diceDisplay">
-                <span class="dice-value" id="diceValue">—</span>
+                <div class="dice-face-wrap">
+                    <div class="dice-face" id="diceFace" aria-hidden="true">
+                        <span class="dice-pip p1"></span><span class="dice-pip p2"></span><span class="dice-pip p3"></span>
+                        <span class="dice-pip p4"></span><span class="dice-pip p5"></span><span class="dice-pip p6"></span>
+                        <span class="dice-pip p7"></span><span class="dice-pip p8"></span><span class="dice-pip p9"></span>
+                    </div>
+                    <span class="dice-value" id="diceValue" aria-live="polite">—</span>
+                </div>
             </div>
             <div class="pick-label" id="pickLabel">Pick a number 1–6 before time runs out</div>
             <div class="pick-btns" id="pickBtns"></div>
@@ -234,8 +250,11 @@
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
             }else if(isPickPhase){
                 document.getElementById('pickLabel').textContent='Pick 1–6 before time runs out';
-                document.getElementById('diceValue').textContent='?';
-                document.getElementById('diceValue').className='dice-value';
+                var diceFace=document.getElementById('diceFace');
+                var diceValEl=document.getElementById('diceValue');
+                diceFace.className='dice-face pending';
+                diceValEl.textContent='?';
+                diceValEl.className='dice-value';
                 document.getElementById('resultLine').textContent='';
                 document.getElementById('resultLine').className='result-line';
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
@@ -246,27 +265,43 @@
             }else{
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
                 var roll=rollForRound(currentRound+1);
-                document.getElementById('diceValue').textContent=roll;
-                document.getElementById('diceValue').className='dice-value';
+                var diceFace=document.getElementById('diceFace');
+                var diceValEl=document.getElementById('diceValue');
+                diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','win','loss');
+                diceFace.classList.add('face-'+roll);
+                diceValEl.textContent=roll;
+                diceValEl.className='dice-value';
                 var myChoice=myChoiceByRound[currentRound+1];
                 if(myChoice!==undefined&&lastScoredRound!==currentRound){
                     if(myChoice===roll){
                         score++;
                         sendScore();
                         lastScoredRound=currentRound;
+                        diceFace.classList.add('win');
+                        diceFace.classList.add('reveal');
+                        setTimeout(function(){diceFace.classList.remove('reveal');},400);
                         document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
                         document.getElementById('resultLine').className='result-line win';
-                        document.getElementById('diceValue').className='dice-value win';
+                        diceValEl.className='dice-value win';
                     }else{
                         document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. No point.';
                         document.getElementById('resultLine').className='result-line loss';
-                        document.getElementById('diceValue').className='dice-value loss';
+                        diceFace.classList.add('loss');
+                        diceFace.classList.add('reveal');
+                        setTimeout(function(){diceFace.classList.remove('reveal');},400);
                         lastScoredRound=currentRound;
+                        diceValEl.className='dice-value loss';
                     }
                 }else if(myChoice===undefined){
                     document.getElementById('resultLine').textContent='Roll: '+roll+'. (You didn’t pick.)';
                     document.getElementById('resultLine').className='result-line';
                     lastScoredRound=currentRound;
+                    diceFace.classList.remove('win','loss');
+                    diceFace.classList.add('reveal');
+                    setTimeout(function(){diceFace.classList.remove('reveal');},400);
+                }else if(lastScoredRound===currentRound){
+                    if(myChoice===roll)diceFace.classList.add('win');
+                    else if(myChoice!==undefined)diceFace.classList.add('loss');
                 }
             }
 

@@ -1161,62 +1161,106 @@
 
     const cx = w / 2;
     const cy = h / 2;
-    const size = Math.min(w, h) * 0.22;
-    const face = Math.floor(t * 0.8) % 6 + 1;
 
-    ctx.shadowColor = "rgba(255, 140, 66, 0.5)";
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = "rgba(255, 140, 66, 0.12)";
-    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
-    ctx.shadowBlur = 0;
+    // Soft radial background
+    const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, w * 0.7);
+    bg.addColorStop(0, "rgba(255, 100, 40, 0.06)");
+    bg.addColorStop(0.5, "rgba(255, 80, 30, 0.02)");
+    bg.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = "rgba(255, 140, 66, 0.4)";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(cx - size, cy - size, size * 2, size * 2);
-
-    const dotR = size * 0.12;
-    const o = size * 0.45;
-    ctx.fillStyle = "#ff8c42";
-    if (face === 1) {
+    // Drifting particles (inspired by neuro)
+    const particleCount = 28;
+    const orbitScale = Math.min(w, h) * 0.38;
+    for (let i = 0; i < particleCount; i++) {
+      const a = (i / particleCount) * Math.PI * 2 + t * 0.2;
+      const r = 0.5 + Math.sin(i * 0.97 + t * 0.5) * 0.5;
+      const px = cx + Math.cos(a) * r * orbitScale + Math.sin(t * 0.6 + i * 0.4) * 6;
+      const py = cy + Math.sin(a) * r * orbitScale * 0.7 + Math.cos(t * 0.4 + i * 0.3) * 4;
+      const dist = Math.hypot(px - cx, py - cy);
+      const size = 0.8 + (1 - dist / (orbitScale * 1.2)) * 1.2;
+      const alpha = 0.1 + (1 - dist / (orbitScale * 1.1)) * 0.22;
       ctx.beginPath();
-      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 140, 66, ${alpha})`;
+      if (i % 5 === 0) {
+        ctx.shadowColor = "rgba(255, 120, 50, 0.4)";
+        ctx.shadowBlur = 4;
+      }
       ctx.fill();
-    } else if (face === 2) {
-      ctx.beginPath();
-      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (face === 3) {
-      ctx.beginPath();
-      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (face === 4) {
-      ctx.beginPath();
-      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx - o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (face === 5) {
-      ctx.beginPath();
-      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
-      ctx.arc(cx - o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.beginPath();
-      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy - o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx - o, cy, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy, dotR, 0, Math.PI * 2);
-      ctx.arc(cx - o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.shadowBlur = 0;
     }
+
+    // Roll phase: short shrink before face change
+    const facePeriod = 1.6;
+    const rollDuration = 0.18;
+    const faceIndex = Math.floor(t / facePeriod) % 6;
+    const phaseInPeriod = (t % facePeriod) / facePeriod;
+    const isRolling = phaseInPeriod < rollDuration;
+    const rollScale = isRolling
+      ? 0.88 + 0.12 * (1 - Math.cos((phaseInPeriod / rollDuration) * Math.PI)) * 0.5
+      : 1;
+    const face = faceIndex + 1;
+
+    const size = Math.min(w, h) * 0.2 * rollScale;
+    const radius = Math.min(size * 0.12, 6);
+
+    // Cube face: rounded rect with soft glow
+    const x = cx - size;
+    const y = cy - size;
+    ctx.save();
+    ctx.shadowColor = "rgba(255, 100, 40, 0.35)";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "rgba(20, 12, 8, 0.85)";
+    if (ctx.roundRect) ctx.roundRect(x, y, size * 2, size * 2, size * 0.14);
+    else roundRect(ctx, x, y, size * 2, size * 2, size * 0.14);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255, 140, 66, 0.5)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Pips: positions for 1–6, with breath and glow
+    const o = size * 0.42;
+    const dots = [];
+    if (face === 1) dots.push([cx, cy]);
+    else if (face === 2) dots.push([cx - o, cy - o], [cx + o, cy + o]);
+    else if (face === 3) dots.push([cx - o, cy - o], [cx, cy], [cx + o, cy + o]);
+    else if (face === 4) dots.push([cx - o, cy - o], [cx + o, cy - o], [cx - o, cy + o], [cx + o, cy + o]);
+    else if (face === 5) dots.push([cx - o, cy - o], [cx + o, cy - o], [cx, cy], [cx - o, cy + o], [cx + o, cy + o]);
+    else dots.push([cx - o, cy - o], [cx + o, cy - o], [cx - o, cy], [cx + o, cy], [cx - o, cy + o], [cx + o, cy + o]);
+
+    dots.forEach((d, i) => {
+      const breath = 0.92 + 0.08 * Math.sin(t * 4 + i * 1.2);
+      const r = radius * breath;
+      ctx.shadowColor = "rgba(255, 160, 80, 0.7)";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(d[0], d[1], r, 0, Math.PI * 2);
+      ctx.fillStyle = "#ff9f5c";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(d[0], d[1], r * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffb876";
+      ctx.fill();
+    });
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
   }
 
   const start = performance.now();
