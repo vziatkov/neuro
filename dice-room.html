@@ -49,6 +49,11 @@
         .score-item{font-size:12px;color:#555}
         .score-item span{color:#ff8c42;font-weight:600}
         .score-item .goal{color:#44ff88}
+        .history-row{max-width:600px;width:100%;margin-bottom:16px}
+        .history-row .history-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+        .history-list{display:flex;flex-wrap:wrap;gap:6px}
+        .history-item{width:28px;height:28px;border-radius:6px;background:rgba(15,12,10,0.9);border:1px solid rgba(255,140,66,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:rgba(255,140,66,0.9)}
+        .history-item.empty{color:#333;border-color:#1a1a1a}
         .leaderboard{max-width:600px;width:100%;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
         .leaderboard .lb-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
         .leaderboard .lb-scores{font-size:12px;color:#888}
@@ -105,6 +110,10 @@
         </div>
         <div class="score-row">
             <div class="score-item">Score: <span id="scoreVal">0</span> / <span class="goal">5</span></div>
+        </div>
+        <div class="history-row">
+            <div class="history-label">Last 15 rolls</div>
+            <div class="history-list" id="historyList"></div>
         </div>
         <div class="leaderboard" id="leaderboard">
             <span class="lb-title">Leaderboard (P2P)</span>
@@ -219,6 +228,14 @@
             pickBtnsEl.appendChild(btn);
         }
 
+        var historyListEl=document.getElementById('historyList');
+        for(var h=0;h<15;h++){
+            var span=document.createElement('span');
+            span.className='history-item empty';
+            span.textContent='—';
+            historyListEl.appendChild(span);
+        }
+
         pickBtnsEl.addEventListener('click',function(e){
             var btn=e.target.closest('.pick-btn');
             if(!btn||btn.disabled)return;
@@ -243,6 +260,18 @@
             document.getElementById('timerBar').style.width=(phase*100)+'%';
             document.getElementById('scoreVal').textContent=score;
             updateLeaderboard();
+
+            var historyItems=historyListEl.querySelectorAll('.history-item');
+            for(var hi=0;hi<15;hi++){
+                var roundIndex=currentRound-15+hi;
+                if(roundIndex>=0&&roundIndex<currentRound){
+                    historyItems[hi].textContent=rollForRound(roundIndex+1);
+                    historyItems[hi].classList.remove('empty');
+                }else{
+                    historyItems[hi].textContent='—';
+                    historyItems[hi].classList.add('empty');
+                }
+            }
 
             if(score>=GOAL){
                 document.getElementById('winBanner').classList.add('show');
