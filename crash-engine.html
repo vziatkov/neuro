@@ -90,10 +90,17 @@
         <button class="ctrl-btn active" data-cashout="2">Cash @2×</button>
         <button class="ctrl-btn" data-cashout="3">Cash @3×</button>
         <button class="ctrl-btn" data-cashout="5">Cash @5×</button>
+        <span style="color:#333;line-height:28px;margin:0 4px">|</span>
+        <button class="ctrl-btn" id="snapBtn">Snapshot</button>
+        <button class="ctrl-btn" id="loadBtn">Load snapshot</button>
     </div>
 
     <canvas id="c"></canvas>
     <div class="summary" id="summary"></div>
+    <div class="snap-area" id="snapArea" style="display:none; max-width:900px; margin-top:12px;">
+        <div style="color:#555; font-size:9px; margin-bottom:4px;">Snapshot (round imprint — verify & replay)</div>
+        <textarea id="snapInput" rows="3" style="width:100%; background:#0d0d0f; border:1px solid #1a1a1a; border-radius:6px; color:#888; font-family:inherit; font-size:10px; padding:8px; resize:vertical;"></textarea>
+    </div>
 
     <div class="note">
         Engine internals are proprietary. Visualization shows simulation output only.
@@ -130,7 +137,7 @@
         function simulate(){
             var bal=state.bal,d=0,w=0,l=0,nm=0,mx=0,tw=0,tr=0;
             _c=0;
-            var hist=[];
+            var hist=[],crashes=[];
             for(var i=0;i<state.g;i++){
                 if(bal<=0)break;
                 var cr=_0x.f(d);
@@ -139,8 +146,9 @@
                 if(cr>=state.co){bal+=state.bet*(state.co-1);tr+=state.bet*state.co;d=0;w++}
                 else{bal-=state.bet;d++;l++;if(cr>state.co*0.9)nm++}
                 hist.push(bal);
+                crashes.push(Math.round(cr*100)/100);
             }
-            lastResult={hist:hist,wins:w,losses:l,nm:nm,final:bal,max:mx,rtp:tw>0?(tr/tw*100):0,games:hist.length};
+            lastResult={hist:hist,crashes:crashes,wins:w,losses:l,nm:nm,final:bal,max:mx,rtp:tw>0?(tr/tw*100):0,games:hist.length};
             return lastResult;
         }
 
@@ -224,6 +232,76 @@
             drawChart(r.hist);
             updateSummary(r);
         }
+
+        // Snapshot: round imprint — signed by engine, replay from seq
+        var _bufAb=_buf.buffer;
+        function _deriveKey(){
+            return crypto.subtle.digest('SHA-256',_bufAb).then(function(h){
+                return crypto.subtle.importKey('raw',h,{name:'HMAC',hash:'SHA-256'},false,['sign']);
+            });
+        }
+        function _hmac(key,msg){
+            var enc=new TextEncoder();
+            return crypto.subtle.sign('HMAC',key,enc.encode(msg)).then(function(sig){return sig});
+        }
+        function _b64Enc(buf){var u=new Uint8Array(buf);var s='';for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+        function _b64Dec(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),function(c){return c.charCodeAt(0)}).buffer;}
+
+        function replayFromSeq(seq,co,bet,startBal){
+            var bal=startBal,hist=[startBal],w=0,l=0,nm=0,mx=0,tw=0,tr=0;
+            for(var i=0;i<seq.length;i++){
+                var cr=seq[i];
+                if(cr>mx)mx=cr;
+                tw+=bet;
+                if(cr>=co){bal+=bet*(co-1);tr+=bet*co;w++}
+                else{bal-=bet;l++;if(cr>co*0.9)nm++}
+                hist.push(bal);
+            }
+            lastResult={hist:hist,crashes:seq,wins:w,losses:l,nm:nm,final:bal,max:mx,rtp:tw>0?(tr/tw*100):0,games:seq.length};
+            drawChart(lastResult.hist);
+            updateSummary(lastResult);
+        }
+
+        function buildSnapshot(){
+            if(!lastResult||!lastResult.crashes){run();if(!lastResult.crashes)return;}
+            var payload={v:2,g:state.g,c:state.co,seq:lastResult.crashes};
+            var msg=JSON.stringify(payload);
+            _deriveKey().then(function(key){
+                return _hmac(key,msg).then(function(sig){
+                    var snap=_b64Enc(new TextEncoder().encode(msg))+'.'+_b64Enc(sig);
+                    document.getElementById('snapInput').value=snap;
+                    document.getElementById('snapArea').style.display='block';
+                    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(snap);
+                });
+            });
+        }
+
+        function loadSnapshot(){
+            var snap=document.getElementById('snapInput').value.trim();
+            if(!snap){document.getElementById('snapArea').style.display='block';return;}
+            var dot=snap.indexOf('.');
+            if(dot===-1){alert('Invalid snapshot: no signature');return;}
+            var msgB64=snap.slice(0,dot),sigB64=snap.slice(dot+1);
+            var msg=new TextDecoder().decode(_b64Dec(msgB64));
+            var payload;try{payload=JSON.parse(msg);}catch(e){alert('Invalid snapshot: bad payload');return;}
+            if(!payload.v||!payload.g||!payload.c||!Array.isArray(payload.seq)){alert('Invalid snapshot: missing v/g/c/seq');return;}
+            var sigBuf=_b64Dec(sigB64);
+            _deriveKey().then(function(key){
+                return _hmac(key,msg).then(function(actualSig){
+                    if(actualSig.byteLength!==sigBuf.byteLength){alert('Invalid snapshot: signature length');return;}
+                    var a=new Uint8Array(actualSig),b=new Uint8Array(sigBuf);
+                    for(var i=0;i<a.length;i++)if(a[i]!==b[i]){alert('Invalid snapshot: signature mismatch — not from this engine');return;}
+                    state.g=payload.g;state.co=payload.c;
+                    document.querySelectorAll('[data-games]').forEach(function(b){b.classList.toggle('active',parseInt(b.dataset.games)===state.g);});
+                    document.querySelectorAll('[data-cashout]').forEach(function(b){b.classList.toggle('active',parseInt(b.dataset.cashout)===state.co);});
+                    replayFromSeq(payload.seq,payload.c,state.bet,state.bal);
+                    document.getElementById('snapArea').style.display='block';
+                });
+            });
+        }
+
+        document.getElementById('snapBtn').addEventListener('click',buildSnapshot);
+        document.getElementById('loadBtn').addEventListener('click',loadSnapshot);
 
         // Controls
         document.getElementById('controls').addEventListener('click',function(e){
