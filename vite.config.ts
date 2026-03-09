@@ -20,6 +20,7 @@ export default defineConfig({
         'crash-engine-v4': resolve(__dirname, 'crash-engine-v4.html'),
         'crash-backoffice': resolve(__dirname, 'crash-backoffice.html'),
         'crash-room': resolve(__dirname, 'crash-room.html'),
+        'dice-room': resolve(__dirname, 'dice-room.html'),
       },
     },
   },
