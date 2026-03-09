@@ -349,6 +349,7 @@
         .art-hollow { background: #050508; }
         .art-tsp { background: #050508; }
         .art-crash { background: #050508; }
+        .art-dice { background: #050508; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -514,6 +515,15 @@
                     <div class="art-label">
                         <span class="art-name">Crash Engine v2</span>
                         <span class="art-sub">Monte Carlo sim · drought + wave · RTP control · engine obfuscated</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-dice" href="https://vziatkov.github.io/neuro/dice-room.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-dice"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">Dice Room</span>
+                        <span class="art-sub">Guess 1–6 · shared RNG · P2P voice + leaderboard</span>
                     </div>
                 </a>
 
@@ -1143,6 +1153,72 @@
     }
   }
 
+  function drawDice(t) {
+    const s = initCanvas("art-dice");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const size = Math.min(w, h) * 0.22;
+    const face = Math.floor(t * 0.8) % 6 + 1;
+
+    ctx.shadowColor = "rgba(255, 140, 66, 0.5)";
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = "rgba(255, 140, 66, 0.12)";
+    ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = "rgba(255, 140, 66, 0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - size, cy - size, size * 2, size * 2);
+
+    const dotR = size * 0.12;
+    const o = size * 0.45;
+    ctx.fillStyle = "#ff8c42";
+    if (face === 1) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (face === 2) {
+      ctx.beginPath();
+      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (face === 3) {
+      ctx.beginPath();
+      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (face === 4) {
+      ctx.beginPath();
+      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx - o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (face === 5) {
+      ctx.beginPath();
+      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+      ctx.arc(cx - o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx - o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy - o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx - o, cy, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy, dotR, 0, Math.PI * 2);
+      ctx.arc(cx - o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.arc(cx + o, cy + o, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   const start = performance.now();
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1158,6 +1234,7 @@
     drawHollow(t);
     drawTsp(t);
     drawCrash(t);
+    drawDice(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 

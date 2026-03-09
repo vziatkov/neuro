@@ -107,9 +107,13 @@
         </div>
         <label style="font-size:8px;color:#555;">Your signal (copy → send to peer)</label>
         <textarea id="vMySdp" placeholder="Click Start or Join — your signal appears here." readonly></textarea>
-        <button class="v-btn" id="vCopySdp" style="margin-bottom:10px;font-size:8px">📋 Copy signal</button>
-        <label style="font-size:8px;color:#555;">Peer signal (paste here)</label>
-        <textarea id="vPeerSdp" placeholder="Paste the signal from the other player here."></textarea>
+        <div class="v-btns" style="margin-bottom:8px">
+            <button class="v-btn" id="vCopySdp" style="font-size:8px">📋 Copy raw</button>
+            <button class="v-btn" id="vCopyShort" style="font-size:8px">📦 Copy short (gzip+base85)</button>
+            <button class="v-btn" id="vGetLink" style="font-size:8px">🔗 Get link (10 min)</button>
+        </div>
+        <label style="font-size:8px;color:#555;">Peer signal — paste raw, short blob, or link (SetGet 10 min)</label>
+        <textarea id="vPeerSdp" placeholder="Paste raw signal or compressed blob from the other player."></textarea>
         <button class="v-btn" id="vApplySdp" style="margin-bottom:6px;font-size:8px">✓ Apply peer signal</button>
         <div class="v-status" id="vStatus"></div>
         <audio id="vRemote" autoplay playsinline></audio>
@@ -283,6 +287,54 @@
         function getMic(){return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
         function encodeSDP(desc){return btoa(JSON.stringify({type:desc.type,sdp:desc.sdp}))}
         function decodeSDP(str){try{return JSON.parse(atob(str.trim()))}catch(e){return null}}
+
+        function encodeBase85(buf){
+            var u=new Uint8Array(buf);
+            var out='';
+            for(var i=0;i<u.length;i+=4){
+                var n=(u[i]||0)*16777216+(u[i+1]||0)*65536+(u[i+2]||0)*256+(u[i+3]||0);
+                if(n===0&&i+4<=u.length){out+='z';continue;}
+                var d=[];
+                for(var k=0;k<5;k++){d.push(n%85);n=Math.floor(n/85);}
+                for(k=4;k>=0;k--)out+=String.fromCharCode(33+d[k]);
+            }
+            return out;
+        }
+        function decodeBase85(str){
+            var out=[];
+            var i=0;
+            while(i<str.length){
+                if(str[i]==='z'){out.push(0,0,0,0);i++;continue;}
+                if(i+5>str.length)break;
+                var n=0;
+                for(var k=0;k<5;k++){
+                    var c=str.charCodeAt(i++)-33;
+                    if(c<0||c>=85)return null;
+                    n=n*85+c;
+                }
+                out.push((n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255);
+            }
+            return new Uint8Array(out).buffer;
+        }
+        function bytesFromBase64url(str){
+            try{
+                str=str.replace(/-/g,'+').replace(/_/g,'/');
+                while(str.length%4)str+='=';
+                var binary=atob(str.trim());
+                var bytes=new Uint8Array(binary.length);
+                for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+                return bytes.buffer;
+            }catch(e){return null;}
+        }
+        function compressGzip(str){
+            var stream=new Blob([new TextEncoder().encode(str)]).stream().pipeThrough(new CompressionStream('gzip'));
+            return new Response(stream).arrayBuffer();
+        }
+        function decompressGzip(buf){
+            var stream=new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+            return new Response(stream).arrayBuffer().then(function(ab){ return new TextDecoder().decode(ab); });
+        }
+
         function setupPC(stream){
             pc=new RTCPeerConnection({iceServers:ICE});
             stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
@@ -348,14 +400,72 @@
         document.getElementById('vCopySdp').addEventListener('click',function(){
             var v=document.getElementById('vMySdp').value;
             if(!v)return;
-            if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){vStat('✓ Signal copied')});
+            if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){vStat('✓ Raw copied')});
+        });
+        document.getElementById('vCopyShort').addEventListener('click',function(){
+            var text=document.getElementById('vMySdp').value.trim();
+            if(!text){vStat('Create signal first (Start or Join).',true);return;}
+            vStat('Compressing…');
+            compressGzip(text).then(function(ab){
+                var short=encodeBase85(ab);
+                if(navigator.clipboard)navigator.clipboard.writeText(short);
+                vStat('✓ Short copied ('+short.length+' chars) — paste to peer');
+            }).catch(function(){vStat('Gzip not supported in this browser.',true);});
+        });
+        document.getElementById('vGetLink').addEventListener('click',function(){
+            var text=document.getElementById('vMySdp').value.trim();
+            if(!text){vStat('Create signal first (Start or Join).',true);return;}
+            var key=Math.random().toString(36).slice(2,14);
+            vStat('Uploading…');
+            fetch('https://setget.io/api/set',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({key:key,content:text,expireAfter:600})
+            }).then(function(r){return r.json().catch(function(){return{}});})
+            .then(function(){
+                var link='https://setget.io/api/get/'+key+'?raw=1';
+                if(navigator.clipboard)navigator.clipboard.writeText(link);
+                vStat('✓ Link copied — valid 10 min. Send to peer.');
+            }).catch(function(){vStat('SetGet failed. Use Copy raw or Copy short.',true);});
         });
         document.getElementById('vApplySdp').addEventListener('click',function(){
             var raw=document.getElementById('vPeerSdp').value.trim();
-            var desc=decodeSDP(raw);
-            if(!desc){vStat('Invalid signal.',true);return;}
-            if(!pc){vStat('Start or Join first.',true);return;}
-            pc.setRemoteDescription(new RTCSessionDescription(desc)).then(function(){vStat('Applied — connecting…');vDot('#ffaa44');}).catch(function(e){vStat('Error: '+e.message,true);});
+            var isSetGetLink=/setget\.io\/api\/get\//i.test(raw)||(raw.indexOf('http')===0&&raw.indexOf('setget')!==-1);
+            function doApply(raw){
+                var desc=decodeSDP(raw);
+                if(!desc){
+                    function tryShort(buf){
+                        if(!buf)return;
+                        decompressGzip(buf).then(function(text){
+                            desc=decodeSDP(text);
+                            if(!desc){vStat('Invalid signal.',true);return;}
+                            document.getElementById('vPeerSdp').value=text;
+                            applyDesc(desc);
+                        }).catch(function(){vStat('Invalid or not gzip.',true);});
+                    }
+                    var buf=decodeBase85(raw);
+                    if(!buf)buf=bytesFromBase64url(raw);
+                    if(buf)tryShort(buf);
+                    else vStat('Invalid signal.',true);
+                    return;
+                }
+                applyDesc(desc);
+            }
+            function applyDesc(desc){
+                if(!pc){vStat('Start or Join first.',true);return;}
+                pc.setRemoteDescription(new RTCSessionDescription(desc)).then(function(){vStat('Applied — connecting…');vDot('#ffaa44');}).catch(function(e){vStat('Error: '+e.message,true);});
+            }
+            if(isSetGetLink){
+                var url=raw.indexOf('?')===-1?raw+'?raw=1':raw;
+                if(url.indexOf('raw=1')===-1)url+=url.indexOf('?')===-1?'?raw=1':'&raw=1';
+                vStat('Fetching link…');
+                fetch(url).then(function(r){return r.text();}).then(function(text){
+                    document.getElementById('vPeerSdp').value=text;
+                    doApply(text.trim());
+                }).catch(function(){vStat('Could not fetch link.',true);});
+                return;
+            }
+            doApply(raw);
         });
         document.getElementById('vMute').addEventListener('click',function(){
             if(!localStream)return;
