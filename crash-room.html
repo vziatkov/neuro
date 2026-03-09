@@ -154,10 +154,10 @@
 
         // Round cycle
         var ROUND_TIME=5000;
-        var roundStart=Date.now();
 
-        // Sync to absolute time so all clients tick together
-        var epoch=Math.floor(Date.now()/ROUND_TIME)*ROUND_TIME;
+        // Fixed epoch: midnight UTC today — all clients sync to same absolute clock
+        var today=new Date();today.setUTCHours(0,0,0,0);
+        var epoch=today.getTime();
         round=Math.floor((Date.now()-epoch)/ROUND_TIME);
 
         function tick(){
