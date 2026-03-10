@@ -8,19 +8,20 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
-        .header{margin-bottom:16px;text-align:center;max-width:720px}
+        html,body{height:100%;overflow:hidden;background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace}
+        body{display:flex;flex-direction:column;align-items:center;min-height:0;padding:12px 16px}
+        .header{flex-shrink:0;margin-bottom:8px;text-align:center;max-width:720px}
         .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.9)}
         .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:4px}
-        .world-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:14px 20px;margin-bottom:16px;text-align:center;max-width:720px;width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:20px;align-items:center}
+        .world-info{flex-shrink:0;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:10px 16px;margin-bottom:10px;text-align:center;max-width:720px;width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:20px;align-items:center}
         .world-info .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
         .world-info .seed{font-size:16px;font-weight:600;color:#ff8c42;letter-spacing:2px}
         .world-info .coords{font-size:11px;color:#666}
         .world-info .coords span{color:#888}
-        .map-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid #1a1a1a;box-shadow:0 0 0 1px rgba(0,0,0,0.3),0 8px 32px rgba(0,0,0,0.4);margin-bottom:16px}
-        .map-wrap canvas{display:block}
-        .map-hint{font-size:9px;color:#444;text-align:center;margin-top:8px;letter-spacing:0.5px}
-        .joystick-wrap{margin-top:14px;display:flex;justify-content:center;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+        .map-wrap{flex:1;min-height:0;min-width:0;width:100%;max-width:800px;position:relative;border-radius:12px;overflow:hidden;border:1px solid #1a1a1a;box-shadow:0 0 0 1px rgba(0,0,0,0.3),0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:stretch;justify-content:stretch}
+        .map-wrap canvas{display:block;width:100%;height:100%}
+        .map-hint{flex-shrink:0;font-size:9px;color:#444;text-align:center;margin-top:6px;letter-spacing:0.5px}
+        .joystick-wrap{flex-shrink:0;margin-top:8px;display:flex;justify-content:center;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
         .joystick-base{position:relative;width:96px;height:96px;min-width:96px;min-height:96px;border-radius:50%;background:radial-gradient(circle at 30% 25%,rgba(255,140,66,0.2),transparent 55%),radial-gradient(circle at 70% 75%,rgba(0,0,0,0.6),#050508);border:1px solid rgba(255,140,66,0.3);box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 10px 30px rgba(0,0,0,0.6);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
         .joystick-ring{position:absolute;inset:10px;border-radius:50%;border:1px dashed rgba(255,140,66,0.25);pointer-events:none}
         .joystick-dot{position:absolute;left:50%;top:50%;width:40px;height:40px;min-width:40px;min-height:40px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#ffb876,#ff8c42);border:1px solid rgba(255,200,150,0.8);box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 8px 20px rgba(255,120,50,0.4);transform:translate(-50%,-50%);transition:transform 0.08s ease-out;pointer-events:none}
@@ -29,7 +30,7 @@
             .joystick-base{width:112px;height:112px;min-width:112px;min-height:112px}
             .joystick-dot{width:48px;height:48px;min-width:48px;min-height:48px}
         }
-        .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
+        .back{flex-shrink:0;display:inline-block;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,140,66,0.8)}
     </style>
 </head>
@@ -51,7 +52,7 @@
     </div>
 
     <div class="map-wrap">
-        <canvas id="canvas" width="800" height="560"></canvas>
+        <canvas id="canvas"></canvas>
     </div>
     <div class="map-hint">Drag the joystick to move · Map is infinite and identical for everyone with the same URL</div>
 
@@ -76,6 +77,21 @@
         var ctx=canvas.getContext('2d');
         var playerX=0;
         var playerY=0;
+        var mapWrap=document.querySelector('.map-wrap');
+
+        function resizeCanvas(){
+            var w=mapWrap.clientWidth;
+            var h=mapWrap.clientHeight;
+            if(w<=0||h<=0)return;
+            if(canvas.width!==w||canvas.height!==h){
+                canvas.width=w;
+                canvas.height=h;
+                VIEW_X=Math.ceil(w/TILE/2)+1;
+                VIEW_Y=Math.ceil(h/TILE/2)+1;
+            }
+        }
+        resizeCanvas();
+        window.addEventListener('resize',resizeCanvas);
 
         function hash(s){
             var h=0;
@@ -300,6 +316,7 @@
         var lastTime=null;
         var SPEED=5; // tiles per second at full deflection
         function loop(now){
+            resizeCanvas();
             if(typeof now!=='number')now=performance.now();
             if(lastTime===null)lastTime=now;
             var dt=(now-lastTime)/1000;
