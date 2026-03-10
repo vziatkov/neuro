@@ -6,6 +6,7 @@
     <title>Dice Room — Guess the roll</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
@@ -122,24 +123,14 @@
     </div>
 
     <div class="voice-section" id="voiceSection">
-        <div class="v-title">P2P Voice Chat <span id="vConnDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
-        <div class="v-desc">WebRTC peer-to-peer audio. No server — manual SDP exchange.</div>
+        <div class="v-title">P2P Voice & leaderboard <span id="vConnDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
+        <div class="v-desc">PeerJS — same room link. One clicks Host, the other Join. No copy-paste.</div>
         <div class="v-btns" id="vBtns">
-            <button class="v-btn" id="vStart">🎤 Start (create offer)</button>
-            <button class="v-btn" id="vJoin">📥 Join (paste offer)</button>
+            <button class="v-btn" id="vHost">🎤 Host (wait for guest)</button>
+            <button class="v-btn" id="vJoin">📥 Join (connect to host)</button>
             <button class="v-btn" id="vMute" disabled style="opacity:0.3">🔇 Mute</button>
             <button class="v-btn" id="vHangup" disabled style="opacity:0.3">✕ Hang up</button>
         </div>
-        <label style="font-size:8px;color:#555;">Your signal (copy → send to peer)</label>
-        <textarea id="vMySdp" placeholder="Click Start or Join — your signal appears here." readonly></textarea>
-        <div class="v-btns" style="margin-bottom:8px">
-            <button class="v-btn" id="vCopySdp" style="font-size:8px">📋 Copy raw</button>
-            <button class="v-btn" id="vCopyShort" style="font-size:8px">📦 Copy short (gzip+base85)</button>
-            <button class="v-btn" id="vGetLink" style="font-size:8px">🔗 Get link (10 min)</button>
-        </div>
-        <label style="font-size:8px;color:#555;">Peer signal — paste raw, short blob, or link (SetGet 10 min)</label>
-        <textarea id="vPeerSdp" placeholder="Paste raw signal or compressed blob from the other player."></textarea>
-        <button class="v-btn" id="vApplySdp" style="margin-bottom:6px;font-size:8px">✓ Apply peer signal</button>
         <div class="v-status" id="vStatus"></div>
         <audio id="vRemote" autoplay playsinline></audio>
     </div>
@@ -204,19 +195,16 @@
             document.getElementById('lbPeer').textContent=peerScore===null||peerScore===undefined?'—':peerScore;
         }
         function sendScore(){
-            if(dataChannel&&dataChannel.readyState==='open'){
-                try{dataChannel.send(JSON.stringify({score:score}));}catch(e){}
+            if(dataChannel&&dataChannel.open){
+                try{dataChannel.send({score:score});}catch(e){}
             }
         }
-        function setupDataChannel(ch){
-            dataChannel=ch;
-            ch.onmessage=function(e){
-                try{
-                    var d=JSON.parse(e.data);
-                    if(typeof d.score==='number'){peerScore=d.score;updateLeaderboard();}
-                }catch(err){}
-            };
-            ch.onopen=function(){sendScore();};
+        function setupPeerDataConn(conn){
+            dataChannel=conn;
+            conn.on('data',function(data){
+                if(data&&typeof data.score==='number'){peerScore=data.score;updateLeaderboard();}
+            });
+            if(conn.open)sendScore();else conn.on('open',sendScore);
         }
 
         var pickBtnsEl=document.getElementById('pickBtns');
@@ -338,203 +326,79 @@
         }
         tick();
 
-        // === P2P VOICE (same as crash-room) ===
-        var pc=null,localStream=null,isMuted=false;
-        var ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+        // === PeerJS: signaling + voice + data (leaderboard) ===
+        var peer=null,localStream=null,isMuted=false;
+        var peerId='dice-'+roomSeed.toString(36);
+        var PEER_OPTS={host:'0.peerjs.com',secure:true,port:443};
         function vStat(msg,err){var el=document.getElementById('vStatus');el.textContent=msg||'';el.className='v-status'+(err?' err':'');}
-        function vDot(color){document.getElementById('vConnDot').style.background=color;}
+        function vDot(c){document.getElementById('vConnDot').style.background=c;}
         function enableBtn(id,on){var b=document.getElementById(id);b.disabled=!on;b.style.opacity=on?'1':'0.3';}
-        function waitICE(conn){return new Promise(function(ok){
-            if(conn.iceGatheringState==='complete')return ok();
-            var to=setTimeout(ok,5000);
-            conn.onicegatheringstatechange=function(){if(conn.iceGatheringState==='complete'){clearTimeout(to);ok()}};})}
         function getMic(){return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
-        function encodeSDP(desc){return btoa(JSON.stringify({type:desc.type,sdp:desc.sdp}))}
-        function decodeSDP(str){try{return JSON.parse(atob(str.trim()))}catch(e){return null}}
-
-        function encodeBase85(buf){
-            var u=new Uint8Array(buf);
-            var out='';
-            for(var i=0;i<u.length;i+=4){
-                var n=(u[i]||0)*16777216+(u[i+1]||0)*65536+(u[i+2]||0)*256+(u[i+3]||0);
-                if(n===0&&i+4<=u.length){out+='z';continue;}
-                var d=[];
-                for(var k=0;k<5;k++){d.push(n%85);n=Math.floor(n/85);}
-                for(k=4;k>=0;k--)out+=String.fromCharCode(33+d[k]);
-            }
-            return out;
-        }
-        function decodeBase85(str){
-            var out=[];
-            var i=0;
-            while(i<str.length){
-                if(str[i]==='z'){out.push(0,0,0,0);i++;continue;}
-                if(i+5>str.length)break;
-                var n=0;
-                for(var k=0;k<5;k++){
-                    var c=str.charCodeAt(i++)-33;
-                    if(c<0||c>=85)return null;
-                    n=n*85+c;
-                }
-                out.push((n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255);
-            }
-            return new Uint8Array(out).buffer;
-        }
-        function bytesFromBase64url(str){
-            try{
-                str=str.replace(/-/g,'+').replace(/_/g,'/');
-                while(str.length%4)str+='=';
-                var binary=atob(str.trim());
-                var bytes=new Uint8Array(binary.length);
-                for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-                return bytes.buffer;
-            }catch(e){return null;}
-        }
-        function compressGzip(str){
-            var stream=new Blob([new TextEncoder().encode(str)]).stream().pipeThrough(new CompressionStream('gzip'));
-            return new Response(stream).arrayBuffer();
-        }
-        function decompressGzip(buf){
-            var stream=new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
-            return new Response(stream).arrayBuffer().then(function(ab){ return new TextDecoder().decode(ab); });
-        }
-
-        function setupPC(stream){
-            pc=new RTCPeerConnection({iceServers:ICE});
-            stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
-            pc.ontrack=function(e){document.getElementById('vRemote').srcObject=e.streams[0]};
-            pc.ondatachannel=function(e){setupDataChannel(e.channel);};
-            pc.oniceconnectionstatechange=function(){
-                var s=pc.iceConnectionState;
-                if(s==='connected'||s==='completed'){vDot('#44ff88');vStat('🔊 Connected');}
-                else if(s==='checking'){vDot('#ffaa44');vStat('Connecting…');}
-                else if(s==='disconnected'){vDot('#ff4444');vStat('Disconnected',true);}
-                else if(s==='failed'){vDot('#ff4444');vStat('Connection failed',true);}
-            };
-            return pc;
-        }
         function hangup(){
-            if(localStream){localStream.getTracks().forEach(function(t){t.stop()});localStream=null;}
-            if(pc){pc.close();pc=null;}
+            if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
+            if(peer){peer.destroy();peer=null;}
             peerScore=null;dataChannel=null;updateLeaderboard();
             document.getElementById('vRemote').srcObject=null;
-            document.getElementById('vMySdp').value='';
-            document.getElementById('vPeerSdp').value='';
             vDot('#555');vStat('');isMuted=false;
             enableBtn('vMute',false);enableBtn('vHangup',false);
-            enableBtn('vStart',true);enableBtn('vJoin',true);
+            enableBtn('vHost',true);enableBtn('vJoin',true);
             document.getElementById('vMute').textContent='🔇 Mute';
         }
-        document.getElementById('vStart').addEventListener('click',function(){
-            enableBtn('vStart',false);enableBtn('vJoin',false);
+        document.getElementById('vHost').addEventListener('click',function(){
+            enableBtn('vHost',false);enableBtn('vJoin',false);
             vStat('Requesting microphone…');vDot('#ffaa44');
             getMic().then(function(stream){
                 localStream=stream;
-                setupPC(stream);
-                dataChannel=pc.createDataChannel('lb');
-                setupDataChannel(dataChannel);
-                return pc.createOffer();
-            }).then(function(offer){return pc.setLocalDescription(offer)})
-            .then(function(){return waitICE(pc)})
-            .then(function(){
-                document.getElementById('vMySdp').value=encodeSDP(pc.localDescription);
-                enableBtn('vMute',true);enableBtn('vHangup',true);
-                vStat('Copy your signal → send to peer. Paste their answer → Apply.');
-            }).catch(function(e){vStat('Error: '+e.message,true);enableBtn('vStart',true);enableBtn('vJoin',true);});
+                peer=new Peer(peerId,PEER_OPTS);
+                peer.on('open',function(){
+                    vStat('You\'re host. Share room link — guest clicks Join.');
+                    enableBtn('vMute',true);enableBtn('vHangup',true);
+                });
+                peer.on('connection',function(conn){
+                    setupPeerDataConn(conn);
+                    vDot('#44ff88');vStat('🔊 Guest connected');
+                });
+                peer.on('call',function(call){
+                    call.answer(localStream);
+                    call.on('stream',function(remoteStream){
+                        document.getElementById('vRemote').srcObject=remoteStream;
+                    });
+                });
+                peer.on('error',function(err){
+                    if(err.type==='unavailable-id')vStat('Room has a host already. Click Join.',true);
+                    else vStat('PeerJS: '+err.message,true);
+                    enableBtn('vHost',true);enableBtn('vJoin',true);
+                });
+            }).catch(function(e){vStat('Microphone error: '+e.message,true);enableBtn('vHost',true);enableBtn('vJoin',true);});
         });
         document.getElementById('vJoin').addEventListener('click',function(){
-            var raw=document.getElementById('vPeerSdp').value.trim();
-            var desc=decodeSDP(raw);
-            if(!desc||desc.type!=='offer'){vStat('Paste the host\'s signal first, then click Join.',true);return;}
-            enableBtn('vStart',false);enableBtn('vJoin',false);
+            enableBtn('vHost',false);enableBtn('vJoin',false);
             vStat('Requesting microphone…');vDot('#ffaa44');
             getMic().then(function(stream){
                 localStream=stream;
-                setupPC(stream);
-                return pc.setRemoteDescription(new RTCSessionDescription(desc));
-            }).then(function(){return pc.createAnswer()})
-            .then(function(ans){return pc.setLocalDescription(ans)})
-            .then(function(){return waitICE(pc)})
-            .then(function(){
-                document.getElementById('vMySdp').value=encodeSDP(pc.localDescription);
-                enableBtn('vMute',true);enableBtn('vHangup',true);
-                vStat('Copy your signal → send to host. They click Apply.');
-            }).catch(function(e){vStat('Error: '+e.message,true);enableBtn('vStart',true);enableBtn('vJoin',true);});
-        });
-        document.getElementById('vCopySdp').addEventListener('click',function(){
-            var v=document.getElementById('vMySdp').value;
-            if(!v)return;
-            if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){vStat('✓ Raw copied')});
-        });
-        document.getElementById('vCopyShort').addEventListener('click',function(){
-            var text=document.getElementById('vMySdp').value.trim();
-            if(!text){vStat('Create signal first (Start or Join).',true);return;}
-            vStat('Compressing…');
-            compressGzip(text).then(function(ab){
-                var short=encodeBase85(ab);
-                if(navigator.clipboard)navigator.clipboard.writeText(short);
-                vStat('✓ Short copied ('+short.length+' chars) — paste to peer');
-            }).catch(function(){vStat('Gzip not supported in this browser.',true);});
-        });
-        document.getElementById('vGetLink').addEventListener('click',function(){
-            var text=document.getElementById('vMySdp').value.trim();
-            if(!text){vStat('Create signal first (Start or Join).',true);return;}
-            var key=Math.random().toString(36).slice(2,14);
-            vStat('Uploading…');
-            fetch('https://setget.io/api/set',{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({key:key,content:text,expireAfter:600})
-            }).then(function(r){return r.json().catch(function(){return{}});})
-            .then(function(){
-                var link='https://setget.io/api/get/'+key+'?raw=1';
-                if(navigator.clipboard)navigator.clipboard.writeText(link);
-                vStat('✓ Link copied — valid 10 min. Send to peer.');
-            }).catch(function(){vStat('SetGet failed. Use Copy raw or Copy short.',true);});
-        });
-        document.getElementById('vApplySdp').addEventListener('click',function(){
-            var raw=document.getElementById('vPeerSdp').value.trim();
-            var isSetGetLink=/setget\.io\/api\/get\//i.test(raw)||(raw.indexOf('http')===0&&raw.indexOf('setget')!==-1);
-            function doApply(raw){
-                var desc=decodeSDP(raw);
-                if(!desc){
-                    function tryShort(buf){
-                        if(!buf)return;
-                        decompressGzip(buf).then(function(text){
-                            desc=decodeSDP(text);
-                            if(!desc){vStat('Invalid signal.',true);return;}
-                            document.getElementById('vPeerSdp').value=text;
-                            applyDesc(desc);
-                        }).catch(function(){vStat('Invalid or not gzip.',true);});
+                peer=new Peer(PEER_OPTS);
+                peer.on('open',function(){
+                    var conn=peer.connect(peerId);
+                    setupPeerDataConn(conn);
+                    var call=peer.call(peerId,stream);
+                    if(call){
+                        call.on('stream',function(remoteStream){
+                            document.getElementById('vRemote').srcObject=remoteStream;
+                        });
                     }
-                    var buf=decodeBase85(raw);
-                    if(!buf)buf=bytesFromBase64url(raw);
-                    if(buf)tryShort(buf);
-                    else vStat('Invalid signal.',true);
-                    return;
-                }
-                applyDesc(desc);
-            }
-            function applyDesc(desc){
-                if(!pc){vStat('Start or Join first.',true);return;}
-                pc.setRemoteDescription(new RTCSessionDescription(desc)).then(function(){vStat('Applied — connecting…');vDot('#ffaa44');}).catch(function(e){vStat('Error: '+e.message,true);});
-            }
-            if(isSetGetLink){
-                var url=raw.indexOf('?')===-1?raw+'?raw=1':raw;
-                if(url.indexOf('raw=1')===-1)url+=url.indexOf('?')===-1?'?raw=1':'&raw=1';
-                vStat('Fetching link…');
-                fetch(url).then(function(r){return r.text();}).then(function(text){
-                    document.getElementById('vPeerSdp').value=text;
-                    doApply(text.trim());
-                }).catch(function(){vStat('Could not fetch link.',true);});
-                return;
-            }
-            doApply(raw);
+                    vDot('#44ff88');vStat('🔊 Connected to host');
+                    enableBtn('vMute',true);enableBtn('vHangup',true);
+                });
+                peer.on('error',function(err){
+                    vStat('PeerJS: '+err.message,true);
+                    enableBtn('vHost',true);enableBtn('vJoin',true);
+                });
+            }).catch(function(e){vStat('Microphone error: '+e.message,true);enableBtn('vHost',true);enableBtn('vJoin',true);});
         });
         document.getElementById('vMute').addEventListener('click',function(){
             if(!localStream)return;
             isMuted=!isMuted;
-            localStream.getAudioTracks().forEach(function(t){t.enabled=!isMuted});
+            localStream.getAudioTracks().forEach(function(t){t.enabled=!isMuted;});
             this.textContent=isMuted?'🔊 Unmute':'🔇 Mute';
         });
         document.getElementById('vHangup').addEventListener('click',hangup);
