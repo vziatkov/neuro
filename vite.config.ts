@@ -21,6 +21,7 @@ export default defineConfig({
         'crash-backoffice': resolve(__dirname, 'crash-backoffice.html'),
         'crash-room': resolve(__dirname, 'crash-room.html'),
         'dice-room': resolve(__dirname, 'dice-room.html'),
+        'mmo-map': resolve(__dirname, 'mmo-map.html'),
         'resume': resolve(__dirname, 'resume.html'),
       },
     },
