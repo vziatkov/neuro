@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural MMO Map — No server</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+        .header{margin-bottom:16px;text-align:center;max-width:720px}
+        .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.9)}
+        .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:4px}
+        .world-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:14px 20px;margin-bottom:16px;text-align:center;max-width:720px;width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:20px;align-items:center}
+        .world-info .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
+        .world-info .seed{font-size:16px;font-weight:600;color:#ff8c42;letter-spacing:2px}
+        .world-info .coords{font-size:11px;color:#666}
+        .world-info .coords span{color:#888}
+        .map-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid #1a1a1a;box-shadow:0 0 0 1px rgba(0,0,0,0.3),0 8px 32px rgba(0,0,0,0.4);margin-bottom:16px}
+        .map-wrap canvas{display:block}
+        .map-hint{font-size:9px;color:#444;text-align:center;margin-top:8px;letter-spacing:0.5px}
+        .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
+        .back:hover{color:rgba(255,140,66,0.8)}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Procedural MMO Map</h1>
+        <div class="sub">World = f(seed, x, y) · Value noise → height · No server · Same link = same infinite map</div>
+    </div>
+
+    <div class="world-info">
+        <div>
+            <div class="label">World seed</div>
+            <div class="seed" id="worldSeed">—</div>
+        </div>
+        <div>
+            <div class="label">Position</div>
+            <div class="coords" id="coords">x: <span id="px">0</span> · y: <span id="py">0</span></div>
+        </div>
+    </div>
+
+    <div class="map-wrap">
+        <canvas id="canvas" width="800" height="560"></canvas>
+    </div>
+    <div class="map-hint">Arrow keys or WASD to move · Map is infinite and identical for everyone with the same URL</div>
+
+    <a href="dice-room.html" class="back">← Dice Room</a>
+
+    <script>
+    (function(){
+        var seed=location.hash.slice(1)||'world';
+        document.getElementById('worldSeed').textContent=seed||'world';
+
+        var TILE=32;
+        var VIEW_X=14;
+        var VIEW_Y=11;
+        var canvas=document.getElementById('canvas');
+        var ctx=canvas.getContext('2d');
+        var playerX=0;
+        var playerY=0;
+
+        function hash(s){
+            var h=0;
+            for(var i=0;i<s.length;i++){
+                h=((h<<5)-h+s.charCodeAt(i))|0;
+            }
+            return Math.abs(h);
+        }
+        function rng(seed){
+            var x=Math.sin(seed)*10000;
+            return x-Math.floor(x);
+        }
+        var NOISE_SCALE=0.045;
+        function noise2d(wx,wy){
+            var fx=wx*NOISE_SCALE;
+            var fy=wy*NOISE_SCALE;
+            var ix=Math.floor(fx);
+            var iy=Math.floor(fy);
+            var tx=fx-ix;
+            var ty=fy-iy;
+            tx=tx*tx*(3-2*tx);
+            ty=ty*ty*(3-2*ty);
+            var n00=rng(hash(seed+'n:'+ix+':'+iy));
+            var n10=rng(hash(seed+'n:'+(ix+1)+':'+iy));
+            var n01=rng(hash(seed+'n:'+ix+':'+(iy+1)));
+            var n11=rng(hash(seed+'n:'+(ix+1)+':'+(iy+1)));
+            var nx0=n00+(n10-n00)*tx;
+            var nx1=n01+(n11-n01)*tx;
+            return nx0+(nx1-nx0)*ty;
+        }
+        function tileType(wx,wy){
+            var h=noise2d(wx,wy);
+            if(h<0.3)return 'water';
+            if(h<0.45)return 'sand';
+            if(h<0.72)return 'grass';
+            return 'mountain';
+        }
+
+        function drawTile(type,sx,sy){
+            var pad=1;
+            var x=sx+pad;
+            var y=sy+pad;
+            var w=TILE-pad*2;
+            var h=TILE-pad*2;
+            var r=4;
+            ctx.beginPath();
+            ctx.moveTo(x+r,y);
+            ctx.lineTo(x+w-r,y);
+            ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+            ctx.lineTo(x+w,y+h-r);
+            ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+            ctx.lineTo(x+r,y+h);
+            ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+            ctx.lineTo(x,y+r);
+            ctx.quadraticCurveTo(x,y,x+r,y);
+            ctx.closePath();
+
+            if(type==='water'){
+                var g=ctx.createLinearGradient(x,y,x+w,y+h);
+                g.addColorStop(0,'#1a4a8e');
+                g.addColorStop(0.5,'#2060c0');
+                g.addColorStop(1,'#0f2d52');
+                ctx.fillStyle=g;
+                ctx.fill();
+                ctx.strokeStyle='rgba(80,140,220,0.25)';
+                ctx.lineWidth=0.8;
+                ctx.stroke();
+            }else if(type==='sand'){
+                var g=ctx.createLinearGradient(x,y,x+w,y+h);
+                g.addColorStop(0,'#c9a84a');
+                g.addColorStop(0.5,'#d4b55a');
+                g.addColorStop(1,'#a88a38');
+                ctx.fillStyle=g;
+                ctx.fill();
+                ctx.strokeStyle='rgba(180,150,80,0.35)';
+                ctx.lineWidth=0.6;
+                ctx.stroke();
+            }else if(type==='grass'){
+                var g=ctx.createLinearGradient(x,y,x+w,y+h);
+                g.addColorStop(0,'#2d7a3e');
+                g.addColorStop(0.5,'#38a04a');
+                g.addColorStop(1,'#1e5c2a');
+                ctx.fillStyle=g;
+                ctx.fill();
+                ctx.strokeStyle='rgba(60,120,70,0.3)';
+                ctx.lineWidth=0.6;
+                ctx.stroke();
+            }else{
+                var g=ctx.createLinearGradient(x,y,x+w,y+h);
+                g.addColorStop(0,'#5a5a5a');
+                g.addColorStop(0.4,'#6a6a6a');
+                g.addColorStop(0.7,'#4a4a4a');
+                g.addColorStop(1,'#3a3a3a');
+                ctx.fillStyle=g;
+                ctx.fill();
+                ctx.strokeStyle='rgba(100,100,100,0.4)';
+                ctx.lineWidth=0.8;
+                ctx.stroke();
+            }
+        }
+
+        function drawWorld(){
+            var cw=canvas.width;
+            var ch=canvas.height;
+            var ox=cw/2-TILE/2;
+            var oy=ch/2-TILE/2;
+
+            ctx.fillStyle='#0a0a0c';
+            ctx.fillRect(0,0,cw,ch);
+
+            for(var dy=-VIEW_Y;dy<=VIEW_Y;dy++){
+                for(var dx=-VIEW_X;dx<=VIEW_X;dx++){
+                    var wx=playerX+dx;
+                    var wy=playerY+dy;
+                    var type=tileType(wx,wy);
+                    var sx=ox+dx*TILE;
+                    var sy=oy+dy*TILE;
+                    if(sx>-TILE&&sx<cw+TILE&&sy>-TILE&&sy<ch+TILE)
+                        drawTile(type,sx,sy);
+                }
+            }
+
+            var px=cw/2;
+            var py=ch/2;
+            ctx.shadowColor='rgba(255,140,66,0.6)';
+            ctx.shadowBlur=14;
+            ctx.fillStyle='#ff8c42';
+            ctx.beginPath();
+            ctx.arc(px,py,8,0,Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur=0;
+            ctx.strokeStyle='rgba(255,200,150,0.5)';
+            ctx.lineWidth=1.5;
+            ctx.stroke();
+            ctx.fillStyle='rgba(255,255,255,0.9)';
+            ctx.beginPath();
+            ctx.arc(px-3,py-3,2.5,0,Math.PI*2);
+            ctx.fill();
+        }
+
+        function loop(){
+            drawWorld();
+            document.getElementById('px').textContent=playerX;
+            document.getElementById('py').textContent=playerY;
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+        var keys={};
+        window.addEventListener('keydown',function(e){
+            if(keys[e.key])return;
+            keys[e.key]=true;
+            if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')playerY--;
+            if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')playerY++;
+            if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')playerX--;
+            if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')playerX++;
+            e.preventDefault();
+        });
+        window.addEventListener('keyup',function(e){keys[e.key]=false;});
+    })();
+    </script>
+</body>
+</html>

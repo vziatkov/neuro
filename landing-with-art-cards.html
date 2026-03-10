@@ -350,6 +350,7 @@
         .art-tsp { background: #050508; }
         .art-crash { background: #050508; }
         .art-dice { background: #050508; }
+        .art-mmo { background: #050508; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -524,6 +525,15 @@
                     <div class="art-label">
                         <span class="art-name">Dice Room</span>
                         <span class="art-sub">Guess 1–6 · shared RNG · P2P voice + leaderboard</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-mmo" href="https://vziatkov.github.io/neuro/mmo-map.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-mmo"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">Procedural MMO Map</span>
+                        <span class="art-sub">World = f(seed, x, y) · value noise · no server · infinite</span>
                     </div>
                 </a>
 
@@ -1249,6 +1259,76 @@
     });
   }
 
+  function drawMmo(t) {
+    const s = initCanvas("art-mmo");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+    const seed = "card";
+    function hash(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+      return Math.abs(h);
+    }
+    function rng(seed) {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    }
+    const scale = 0.12;
+    function noise2d(wx, wy) {
+      const fx = wx * scale, fy = wy * scale;
+      const ix = Math.floor(fx), iy = Math.floor(fy);
+      let tx = fx - ix, ty = fy - iy;
+      tx = tx * tx * (3 - 2 * tx);
+      ty = ty * ty * (3 - 2 * ty);
+      const n00 = rng(hash(seed + "n:" + ix + ":" + iy));
+      const n10 = rng(hash(seed + "n:" + (ix + 1) + ":" + iy));
+      const n01 = rng(hash(seed + "n:" + ix + ":" + (iy + 1)));
+      const n11 = rng(hash(seed + "n:" + (ix + 1) + ":" + (iy + 1)));
+      const nx0 = n00 + (n10 - n00) * tx;
+      const nx1 = n01 + (n11 - n01) * tx;
+      return nx0 + (nx1 - nx0) * ty;
+    }
+    function tileType(wx, wy) {
+      const h = noise2d(wx, wy);
+      if (h < 0.3) return "water";
+      if (h < 0.45) return "sand";
+      if (h < 0.72) return "grass";
+      return "mountain";
+    }
+    const cols = 9;
+    const rows = 7;
+    const tileW = w / cols;
+    const tileH = h / rows;
+    const offsetX = Math.floor(Math.sin(t * 0.15) * 2);
+    const offsetY = Math.floor(Math.cos(t * 0.12) * 2);
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const wx = col - cols / 2 + offsetX;
+        const wy = row - rows / 2 + offsetY;
+        const type = tileType(wx, wy);
+        const x = col * tileW + 0.5;
+        const y = row * tileH + 0.5;
+        const tw = tileW - 1;
+        const th = tileH - 1;
+        if (type === "water") ctx.fillStyle = "#2060c0";
+        else if (type === "sand") ctx.fillStyle = "#d4b55a";
+        else if (type === "grass") ctx.fillStyle = "#38a04a";
+        else ctx.fillStyle = "#5a5a5a";
+        ctx.fillRect(x, y, tw, th);
+      }
+    }
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.shadowColor = "rgba(255, 140, 66, 0.6)";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = "#ff8c42";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -1279,6 +1359,7 @@
     drawTsp(t);
     drawCrash(t);
     drawDice(t);
+    drawMmo(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 
