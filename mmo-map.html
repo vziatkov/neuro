@@ -20,6 +20,15 @@
         .map-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid #1a1a1a;box-shadow:0 0 0 1px rgba(0,0,0,0.3),0 8px 32px rgba(0,0,0,0.4);margin-bottom:16px}
         .map-wrap canvas{display:block}
         .map-hint{font-size:9px;color:#444;text-align:center;margin-top:8px;letter-spacing:0.5px}
+        .joystick-wrap{margin-top:14px;display:flex;justify-content:center;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+        .joystick-base{position:relative;width:96px;height:96px;min-width:96px;min-height:96px;border-radius:50%;background:radial-gradient(circle at 30% 25%,rgba(255,140,66,0.2),transparent 55%),radial-gradient(circle at 70% 75%,rgba(0,0,0,0.6),#050508);border:1px solid rgba(255,140,66,0.3);box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 10px 30px rgba(0,0,0,0.6);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+        .joystick-ring{position:absolute;inset:10px;border-radius:50%;border:1px dashed rgba(255,140,66,0.25);pointer-events:none}
+        .joystick-dot{position:absolute;left:50%;top:50%;width:40px;height:40px;min-width:40px;min-height:40px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#ffb876,#ff8c42);border:1px solid rgba(255,200,150,0.8);box-shadow:0 0 0 1px rgba(0,0,0,0.6),0 8px 20px rgba(255,120,50,0.4);transform:translate(-50%,-50%);transition:transform 0.08s ease-out;pointer-events:none}
+        .joystick-base.active .joystick-dot{transition:none}
+        @media (hover:none) and (pointer:coarse){
+            .joystick-base{width:112px;height:112px;min-width:112px;min-height:112px}
+            .joystick-dot{width:48px;height:48px;min-width:48px;min-height:48px}
+        }
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,140,66,0.8)}
     </style>
@@ -44,7 +53,14 @@
     <div class="map-wrap">
         <canvas id="canvas" width="800" height="560"></canvas>
     </div>
-    <div class="map-hint">Arrow keys or WASD to move · Map is infinite and identical for everyone with the same URL</div>
+    <div class="map-hint">Drag the joystick to move · Map is infinite and identical for everyone with the same URL</div>
+
+    <div class="joystick-wrap">
+        <div class="joystick-base" id="joyBase">
+            <div class="joystick-ring"></div>
+            <div class="joystick-dot" id="joyDot"></div>
+        </div>
+    </div>
 
     <a href="dice-room.html" class="back">← Dice Room</a>
 
@@ -200,25 +216,107 @@
             ctx.fill();
         }
 
-        function loop(){
+        // Joystick-driven movement (no keyboard)
+        var joyBase=document.getElementById('joyBase');
+        var joyDot=document.getElementById('joyDot');
+        var joyActive=false;
+        var activePointerId=null; // only this pointer drives the joystick; when it goes up, we reset
+        var joyRadius=40;
+        var joyVX=0;
+        var joyVY=0;
+        var joyMag=0;
+
+        function resetJoystick(){
+            var pid=activePointerId;
+            joyVX=0;joyVY=0;joyMag=0;
+            joyActive=false;
+            activePointerId=null;
+            joyBase.classList.remove('active');
+            joyDot.style.transform='translate(-50%,-50%)';
+            try{if(pid!=null)joyBase.releasePointerCapture(pid);}catch(_){}
+        }
+
+        function handleJoyPointer(e){
+            if(!joyActive||e.pointerId!==activePointerId)return;
+            var rect=joyBase.getBoundingClientRect();
+            var cx=rect.left+rect.width/2;
+            var cy=rect.top+rect.height/2;
+            var dx=e.clientX-cx;
+            var dy=e.clientY-cy;
+            var dist=Math.sqrt(dx*dx+dy*dy)||0.0001;
+            var r=Math.min(rect.width,rect.height)/2-16;
+            if(r<8)r=joyRadius;
+            var clamped=Math.min(dist,r);
+            var nx=dx/dist;
+            var ny=dy/dist;
+            var px=nx*clamped;
+            var py=ny*clamped;
+            joyDot.style.transform='translate('+(px)+'px,'+(py)+'px) translate(-50%,-50%)';
+            joyVX=nx;
+            joyVY=ny;
+            joyMag=clamped/r;
+        }
+
+        function endJoy(e){
+            if(!joyActive)return;
+            if(e&&e.pointerId!==activePointerId)return;
+            joyActive=false;
+            var pid=activePointerId;
+            activePointerId=null;
+            try{if(pid!=null)joyBase.releasePointerCapture(pid);}catch(_){}
+            joyVX=0;joyVY=0;joyMag=0;
+            joyBase.classList.remove('active');
+            joyDot.style.transform='translate(-50%,-50%)';
+        }
+
+        joyBase.addEventListener('pointerdown',function(e){
+            if(joyActive)return;
+            e.preventDefault();
+            joyActive=true;
+            activePointerId=e.pointerId;
+            try{joyBase.setPointerCapture(e.pointerId);}catch(_){}
+            joyBase.classList.add('active');
+            handleJoyPointer(e);
+        });
+        joyBase.addEventListener('pointermove',function(e){
+            handleJoyPointer(e);
+        });
+        joyBase.addEventListener('pointerup',endJoy);
+        joyBase.addEventListener('pointercancel',endJoy);
+        joyBase.addEventListener('pointerleave',function(e){
+            if(!joyActive)resetJoystick();
+        });
+
+        // Safety: when the finger/mouse that controls the joystick goes up anywhere (e.g. outside element), stop
+        document.addEventListener('pointerup',function(e){
+            if(joyActive&&e.pointerId===activePointerId)endJoy(e);
+        });
+        document.addEventListener('pointercancel',function(e){
+            if(joyActive&&e.pointerId===activePointerId)endJoy(e);
+        });
+        window.addEventListener('blur',function(){ resetJoystick(); });
+        window.addEventListener('visibilitychange',function(){ if(document.hidden)resetJoystick(); });
+
+        var lastTime=null;
+        var SPEED=5; // tiles per second at full deflection
+        function loop(now){
+            if(typeof now!=='number')now=performance.now();
+            if(lastTime===null)lastTime=now;
+            var dt=(now-lastTime)/1000;
+            lastTime=now;
+
+            // Update position from joystick vector
+            if(joyMag>0.001){
+                playerX+=joyVX*joyMag*SPEED*dt;
+                playerY+=joyVY*joyMag*SPEED*dt;
+            }
+
             drawWorld();
-            document.getElementById('px').textContent=playerX;
-            document.getElementById('py').textContent=playerY;
+            document.getElementById('px').textContent=playerX.toFixed(1);
+            document.getElementById('py').textContent=playerY.toFixed(1);
             requestAnimationFrame(loop);
         }
-        loop();
-
-        var keys={};
-        window.addEventListener('keydown',function(e){
-            if(keys[e.key])return;
-            keys[e.key]=true;
-            if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')playerY--;
-            if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')playerY++;
-            if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')playerX--;
-            if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')playerX++;
-            e.preventDefault();
-        });
-        window.addEventListener('keyup',function(e){keys[e.key]=false;});
+        requestAnimationFrame(loop);
     })();
     </script>
 </body>
