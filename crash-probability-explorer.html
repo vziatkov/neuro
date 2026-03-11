@@ -102,6 +102,8 @@
             <span id="hudBankroll">BANKROLL: —</span>
             <span id="hudSeed">SEED: —</span>
             <span id="hudLoss">LOSS: —</span>
+            <span id="hudFps">FPS: —</span>
+            <span id="hudRps">RPS: —</span>
         </div>
     </div>
     <div class="chart-wrap">
@@ -224,6 +226,11 @@
         var liveState=null;
         var liveParams=null;
         var ROUNDS_PER_FRAME=[8,25,80,400];
+        var lastFrameTime=0;
+        var lastSecondStart=0;
+        var roundsInLastSecond=0;
+        var liveFps=0;
+        var liveRps=0;
 
         function updateHud(r){
             var hud=document.getElementById('hud');
@@ -235,6 +242,8 @@
                 document.getElementById('hudBankroll').textContent='BANKROLL: —';
                 document.getElementById('hudSeed').textContent='SEED: —';
                 document.getElementById('hudLoss').textContent='LOSS: —';
+                document.getElementById('hudFps').textContent='FPS: —';
+                document.getElementById('hudRps').textContent='RPS: —';
                 return;
             }
             hud.classList.remove('empty');
@@ -244,6 +253,8 @@
             document.getElementById('hudSeed').textContent='SEED: '+runSeed;
             var lossRate=(1-r.winRate);
             document.getElementById('hudLoss').textContent='LOSS: '+lossRate.toFixed(4);
+            document.getElementById('hudFps').textContent='FPS: '+(r.fps!=null?r.fps:'—');
+            document.getElementById('hudRps').textContent='RPS: '+(r.rps!=null?r.rps:'—');
         }
 
         function drawBankroll(data){
@@ -389,11 +400,22 @@
             document.getElementById('btnRun100k').disabled=true;
             document.getElementById('btnRun100k').classList.add('running');
             document.getElementById('btnRun100k').textContent='● LIVE';
+            lastFrameTime=0;
+            lastSecondStart=Date.now();
+            roundsInLastSecond=0;
+            liveFps=0;
+            liveRps=0;
             stepLive();
         }
 
         function stepLive(){
             if(!liveRunning||!liveState||!liveParams){return;}
+            var now=Date.now();
+            if(lastFrameTime>0){
+                var dt=now-lastFrameTime;
+                liveFps=dt>0?Math.round(1000/dt):0;
+            }
+            lastFrameTime=now;
             var s=liveState;
             var p=liveParams;
             var total=p.rounds;
@@ -420,6 +442,12 @@
                 s.i++;
                 n++;
             }
+            roundsInLastSecond+=n;
+            if(now-lastSecondStart>=1000){
+                liveRps=roundsInLastSecond;
+                roundsInLastSecond=0;
+                lastSecondStart=now;
+            }
             var totalRounds=s.wins+s.losses;
             var winRate=totalRounds?s.wins/totalRounds:0;
             drawBankroll(s.bankroll);
@@ -428,7 +456,9 @@
                 ev:s.bal-s.startBal,
                 finalBal:s.bal,
                 startBal:s.startBal,
-                winRate:winRate
+                winRate:winRate,
+                fps:liveFps,
+                rps:liveRps
             });
             if(s.i>=total||s.bal<s.bet){
                 liveRunning=false;

@@ -22,6 +22,7 @@ export default defineConfig({
         'crash-room': resolve(__dirname, 'crash-room.html'),
         'dice-room': resolve(__dirname, 'dice-room.html'),
         'mmo-map': resolve(__dirname, 'mmo-map.html'),
+        'crash-probability-explorer': resolve(__dirname, 'crash-probability-explorer.html'),
         'resume': resolve(__dirname, 'resume.html'),
       },
     },
