@@ -379,6 +379,101 @@
             text-align: center;
         }
 
+        /* Paid service cards */
+        .service-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .service-card {
+            background: #050508;
+            border: 1px solid #1a1a1a;
+            border-radius: 10px;
+            padding: 24px;
+            transition: border-color .2s, box-shadow .2s, transform .15s;
+        }
+        .service-card:hover {
+            border-color: rgba(255, 140, 66, 0.35);
+            box-shadow: 0 0 24px rgba(255, 140, 66, 0.06);
+            transform: translateY(-2px);
+        }
+        .service-card-badge {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: rgba(255, 140, 66, 0.9);
+            margin-bottom: 12px;
+        }
+        .service-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+        }
+        .service-card-desc {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+        .service-card-list {
+            list-style: none;
+            margin-bottom: 18px;
+        }
+        .service-card-list li {
+            font-size: 12px;
+            color: #aaa;
+            padding: 4px 0;
+            padding-left: 14px;
+            position: relative;
+        }
+        .service-card-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #ff8c42;
+            opacity: 0.8;
+        }
+        .service-card-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff8c42;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        .service-card-price .range {
+            font-size: 16px;
+            font-weight: 500;
+            color: rgba(255, 140, 66, 0.85);
+        }
+        .service-card-cta {
+            display: inline-block;
+            background: rgba(255, 140, 66, 0.12);
+            border: 1px solid rgba(255, 140, 66, 0.35);
+            color: #ff8c42;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background .2s, border-color .2s;
+        }
+        .service-card-cta:hover {
+            background: rgba(255, 140, 66, 0.2);
+            border-color: rgba(255, 140, 66, 0.5);
+        }
+        .service-card-note {
+            font-size: 10px;
+            color: #555;
+            margin-top: 10px;
+        }
+        @media (max-width: 640px) {
+            .service-cards { grid-template-columns: 1fr; }
+        }
+
         @media (max-width: 480px) {
             .container { padding: 40px 16px; }
             h1 { font-size: 24px; }
@@ -598,7 +693,39 @@
         </div>
 
         <div class="section">
-            <div class="section-title"><span class="section-num">05</span> Connect</div>
+            <div class="section-title"><span class="section-num">05</span> Hire — Consulting & Prototypes</div>
+            <div class="service-cards">
+                <div class="service-card">
+                    <span class="service-card-badge">Consulting</span>
+                    <h3 class="service-card-title">Monte Carlo & Game Math Audit</h3>
+                    <p class="service-card-desc">I analyze probabilistic game systems and simulation models. You receive a structured report covering expected value validation, probability distribution analysis, risk and variance insights, and system design feedback.</p>
+                    <ul class="service-card-list">
+                        <li>60 minute deep-dive call</li>
+                        <li>System review</li>
+                        <li>Written technical report</li>
+                    </ul>
+                    <div class="service-card-price">€900</div>
+                    <a class="service-card-cta" href="mailto:zyatkovvv87@gmail.com?subject=Book%20Audit%20%E2%80%94%20Monte%20Carlo%20%26%20Game%20Math">Book Audit</a>
+                    <p class="service-card-note">Limited slots per month</p>
+                </div>
+                <div class="service-card">
+                    <span class="service-card-badge">Consulting</span>
+                    <h3 class="service-card-title">Interactive Simulation Prototype</h3>
+                    <p class="service-card-desc">Rapid prototype of interactive probabilistic systems: Monte Carlo tools, WebGL dashboards, crash mechanics visualization.</p>
+                    <ul class="service-card-list">
+                        <li>Standalone web demos</li>
+                        <li>Live telemetry / data-viz UI</li>
+                        <li>Typical delivery 1–3 weeks</li>
+                    </ul>
+                    <div class="service-card-price"><span class="range">€3,000 – €8,000</span></div>
+                    <a class="service-card-cta" href="mailto:zyatkovvv87@gmail.com?subject=Discuss%20Project%20%E2%80%94%20Interactive%20Simulation%20Prototype">Discuss Project</a>
+                    <p class="service-card-note">Scope and timeline by request</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title"><span class="section-num">06</span> Connect</div>
             <div class="links">
                 <a class="link" href="https://github.com/vziatkov" target="_blank" rel="noopener noreferrer me">GitHub</a>
                 <a class="link" href="https://www.linkedin.com/in/vitalii-ziatkov-457556106/" target="_blank" rel="noopener noreferrer me">LinkedIn</a>
