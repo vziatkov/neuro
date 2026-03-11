@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crash Game Probability Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+        .header{margin-bottom:20px;text-align:center;max-width:900px}
+        .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.9)}
+        .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:6px;line-height:1.5}
+        .panel{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:16px;max-width:900px;width:100%}
+        .panel-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+        .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+        .ctrl-group{display:flex;align-items:center;gap:8px}
+        .ctrl-group label{font-size:10px;color:#888;min-width:70px}
+        .ctrl-group input[type="number"],.ctrl-group input[type="text"]{width:72px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:5px;color:#ccc;font-family:inherit;font-size:11px;padding:6px 8px}
+        .ctrl-group input[type="range"]{width:80px;accent-color:#ff8c42}
+        .btn{background:rgba(255,140,66,0.08);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 14px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .btn:hover{background:rgba(255,140,66,0.18)}
+        .btn:disabled{opacity:0.4;cursor:not-allowed}
+        .btn.secondary{background:rgba(255,255,255,0.05);border-color:#2a2a2a;color:#888}
+        .btn.secondary:hover{background:rgba(255,255,255,0.08);color:#ccc}
+        .chart-wrap{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px;margin-bottom:16px;overflow:hidden;max-width:900px;width:100%}
+        .chart-wrap canvas{display:block;width:100%}
+        .chart-label{font-size:9px;color:#444;padding:8px 12px;border-bottom:1px solid #1a1a1a}
+        .summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;max-width:900px;width:100%;margin-bottom:16px}
+        .card{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;padding:12px}
+        .card .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:0.5px}
+        .card .value{font-size:14px;font-weight:600;color:#ff8c42;margin-top:4px}
+        .card .value.positive{color:#44ff88}
+        .card .value.negative{color:#ff6666}
+        .feed{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px;max-width:900px;width:100%;margin-bottom:16px}
+        .feed-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+        .feed-rows{font-size:10px;color:#888;max-height:120px;overflow-y:auto}
+        .feed-row{display:flex;align-items:center;gap:10px;padding:4px 0;border-bottom:1px solid #1a1a1a}
+        .feed-row:last-child{border-bottom:none}
+        .feed-row .mult{color:#ff8c42;font-weight:600;min-width:48px}
+        .feed-row .outcome{min-width:36px}
+        .feed-row .outcome.win{color:#44ff88}
+        .feed-row .outcome.loss{color:#ff6666}
+        .insight{background:rgba(255,140,66,0.04);border:1px solid rgba(255,140,66,0.15);border-radius:6px;padding:12px;max-width:900px;width:100%;margin-bottom:16px;font-size:10px;color:#aaa;line-height:1.6}
+        .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
+        .back:hover{color:rgba(255,140,66,0.9)}
+        .chart-wrap{position:relative}
+        .hud{position:absolute;top:36px;left:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#ff8c42;letter-spacing:0.04em;opacity:0.92;pointer-events:none;text-shadow:0 0 20px rgba(0,0,0,0.8)}
+        .hud span{display:block}
+        .hud.empty{opacity:0.35}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Crash Game Probability Explorer</h1>
+        <div class="sub">Educational simulator: multiplier distribution, risk, and expected outcomes. For product, analytics, and investor presentation.</div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Parameters</div>
+        <div class="controls">
+            <div class="ctrl-group">
+                <label>House edge %</label>
+                <input type="range" id="houseEdge" min="0" max="10" step="0.5" value="2">
+                <span id="houseEdgeVal">2</span>%
+            </div>
+            <div class="ctrl-group">
+                <label>Rounds</label>
+                <input type="number" id="rounds" min="100" max="50000" step="500" value="2000">
+            </div>
+            <div class="ctrl-group">
+                <label>Cashout @</label>
+                <input type="number" id="cashoutTarget" min="1.01" max="100" step="0.1" value="2">
+                <span style="color:#555">×</span>
+            </div>
+            <div class="ctrl-group">
+                <label>Bet</label>
+                <input type="number" id="betAmount" min="0.01" max="1000" step="0.5" value="1">
+            </div>
+            <div class="ctrl-group">
+                <label>Speed</label>
+                <input type="range" id="speed" min="0" max="3" value="2">
+                <span id="speedVal">Fast</span>
+            </div>
+            <button type="button" class="btn" id="btnStart">Start</button>
+            <button type="button" class="btn secondary" id="btnReset">Reset</button>
+            <button type="button" class="btn secondary" id="btnRandom">Randomize</button>
+        </div>
+    </div>
+
+    <div class="chart-wrap">
+        <div class="chart-label">Bankroll over time</div>
+        <canvas id="chartBankroll" height="220"></canvas>
+        <div class="hud empty" id="hud" aria-hidden="true">
+            <span id="hudRound">ROUND: —</span>
+            <span id="hudEv">EV: —</span>
+            <span id="hudBankroll">BANKROLL: —</span>
+            <span id="hudSeed">SEED: —</span>
+            <span id="hudLoss">LOSS: —</span>
+        </div>
+    </div>
+    <div class="chart-wrap">
+        <div class="chart-label">Crash multiplier distribution</div>
+        <canvas id="chartHist" height="180"></canvas>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="feed">
+        <div class="feed-title">Latest rounds · W/L vs cashout target</div>
+        <div class="feed-rows" id="feedRows"></div>
+    </div>
+    <div class="insight" id="insight"></div>
+
+    <a href="crash-engine.html" class="back">← Crash Engine</a>
+
+    <script>
+    (function(){
+        var houseEdgeEl=document.getElementById('houseEdge');
+        var houseEdgeValEl=document.getElementById('houseEdgeVal');
+        var roundsEl=document.getElementById('rounds');
+        var cashoutTargetEl=document.getElementById('cashoutTarget');
+        var betAmountEl=document.getElementById('betAmount');
+        var speedEl=document.getElementById('speed');
+        var speedValEl=document.getElementById('speedVal');
+        var SPEED_LABELS=['Off','Slow','Medium','Fast'];
+
+        function getParams(){
+            var he=parseFloat(houseEdgeEl.value)||0;
+            var r=Math.min(50000,Math.max(100,parseInt(roundsEl.value,10)||1000));
+            var ct=Math.max(1.01,parseFloat(cashoutTargetEl.value)||2);
+            var bet=Math.max(0.01,parseFloat(betAmountEl.value)||1);
+            var spd=parseInt(speedEl.value,10)||0;
+            return{houseEdgePct:he,rounds:r,cashoutTarget:ct,bet:bet,speed:spd};
+        }
+
+        function setParams(p){
+            houseEdgeEl.value=p.houseEdgePct;
+            houseEdgeValEl.textContent=p.houseEdgePct;
+            roundsEl.value=p.rounds;
+            cashoutTargetEl.value=p.cashoutTarget;
+            betAmountEl.value=p.bet;
+        }
+
+        houseEdgeEl.addEventListener('input',function(){houseEdgeValEl.textContent=houseEdgeEl.value;});
+        speedEl.addEventListener('input',function(){speedValEl.textContent=SPEED_LABELS[speedEl.value]||'Fast';});
+
+        function randomUniform(){return Math.random();}
+        function generateCrashMultiplier(houseEdgePct){
+            var h=houseEdgePct/100;
+            var u=randomUniform();
+            if(u<=0)u=1e-9;
+            var mult=(1-h)/(1-u);
+            return Math.min(10000,Math.max(1,Math.floor(mult*100)/100));
+        }
+
+        function runSimulation(params){
+            var crashes=[];
+            var bankroll=[];
+            var startBal=100;
+            var bal=startBal;
+            var bet=params.bet;
+            var target=params.cashoutTarget;
+            var wins=0,losses=0;
+            var maxBal=startBal,minBal=startBal;
+            var winStreak=0,lossStreak=0,maxWinStreak=0,maxLossStreak=0;
+            var sumMult=0;
+
+            for(var r=0;r<params.rounds;r++){
+                if(bal<bet)break;
+                var mult=generateCrashMultiplier(params.houseEdgePct);
+                crashes.push(mult);
+                sumMult+=mult;
+                if(mult>=target){
+                    bal+=bet*(target-1);
+                    wins++;
+                    winStreak++;
+                    lossStreak=0;
+                    if(winStreak>maxWinStreak)maxWinStreak=winStreak;
+                }else{
+                    bal-=bet;
+                    losses++;
+                    lossStreak++;
+                    winStreak=0;
+                    if(lossStreak>maxLossStreak)maxLossStreak=lossStreak;
+                }
+                bankroll.push(bal);
+                if(bal>maxBal)maxBal=bal;
+                if(bal<minBal)minBal=bal;
+            }
+
+            var totalRounds=wins+losses;
+            var winRate=totalRounds?wins/totalRounds:0;
+            var ev=totalRounds?bal-startBal:0;
+            var maxDrawdown=startBal-minBal;
+            var avgMult=crashes.length?sumMult/crashes.length:0;
+
+            return{
+                crashes:crashes,
+                bankroll:bankroll,
+                wins:wins,
+                losses:losses,
+                totalRounds:totalRounds,
+                winRate:winRate,
+                finalBal:bal,
+                startBal:startBal,
+                maxDrawdown:maxDrawdown,
+                maxWinStreak:maxWinStreak,
+                maxLossStreak:maxLossStreak,
+                avgMult:avgMult,
+                ev:ev
+            };
+        }
+
+        var result=null;
+        var animFrame=null;
+        var runSeed='';
+
+        function updateHud(r){
+            var hud=document.getElementById('hud');
+            if(!hud)return;
+            if(!r){
+                hud.classList.add('empty');
+                document.getElementById('hudRound').textContent='ROUND: —';
+                document.getElementById('hudEv').textContent='EV: —';
+                document.getElementById('hudBankroll').textContent='BANKROLL: —';
+                document.getElementById('hudSeed').textContent='SEED: —';
+                document.getElementById('hudLoss').textContent='LOSS: —';
+                return;
+            }
+            hud.classList.remove('empty');
+            document.getElementById('hudRound').textContent='ROUND: '+r.totalRounds;
+            document.getElementById('hudEv').textContent='EV: '+(r.ev>=0?'+':'')+r.ev.toFixed(3);
+            document.getElementById('hudBankroll').textContent='BANKROLL: '+r.finalBal.toFixed(1);
+            document.getElementById('hudSeed').textContent='SEED: '+runSeed;
+            var lossRate=(1-r.winRate);
+            document.getElementById('hudLoss').textContent='LOSS: '+lossRate.toFixed(4);
+        }
+
+        function drawBankroll(data){
+            var c=document.getElementById('chartBankroll');
+            var ctx=c.getContext('2d');
+            var w=c.width=c.offsetWidth;
+            var h=c.height=220;
+            if(!data||!data.length){ctx.fillStyle='#0a0a0c';ctx.fillRect(0,0,w,h);return;}
+            var pad=24;
+            var gw=w-pad*2,gh=h-pad*2;
+            var mn=Math.min.apply(null,data);
+            var mx=Math.max.apply(null,data);
+            var rng=Math.max(mx-mn,1);
+            ctx.fillStyle='#0a0a0c';
+            ctx.fillRect(0,0,w,h);
+            ctx.strokeStyle='rgba(255,255,255,0.04)';
+            ctx.lineWidth=1;
+            for(var g=0;g<=4;g++){
+                var gy=pad+gh*(g/4);
+                ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(pad+gw,gy);ctx.stroke();
+            }
+            var startY=pad+gh-((data[0]-mn)/rng)*gh;
+            ctx.strokeStyle='rgba(255,255,255,0.08)';
+            ctx.setLineDash([4,4]);
+            ctx.beginPath();ctx.moveTo(pad,startY);ctx.lineTo(pad+gw,startY);ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            for(var i=0;i<data.length;i++){
+                var x=pad+(i/(data.length-1||1))*gw;
+                var y=pad+gh-((data[i]-mn)/rng)*gh;
+                if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+            }
+            ctx.lineTo(pad+gw,pad+gh);ctx.lineTo(pad,pad+gh);ctx.closePath();
+            ctx.fillStyle='rgba(255,140,66,0.06)';ctx.fill();
+            ctx.beginPath();
+            for(var i=0;i<data.length;i++){
+                var x=pad+(i/(data.length-1||1))*gw;
+                var y=pad+gh-((data[i]-mn)/rng)*gh;
+                if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+            }
+            ctx.strokeStyle='rgba(255,140,66,0.75)';ctx.lineWidth=1.5;ctx.stroke();
+            var lx=pad+gw,ly=pad+gh-((data[data.length-1]-mn)/rng)*gh;
+            ctx.fillStyle='rgba(255,140,66,0.25)';ctx.beginPath();ctx.arc(lx,ly,5,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#ff8c42';ctx.beginPath();ctx.arc(lx,ly,2.5,0,Math.PI*2);ctx.fill();
+        }
+
+        function drawHistogram(crashes){
+            var c=document.getElementById('chartHist');
+            var ctx=c.getContext('2d');
+            var w=c.width=c.offsetWidth;
+            var h=c.height=180;
+            if(!crashes||!crashes.length){ctx.fillStyle='#0a0a0c';ctx.fillRect(0,0,w,h);return;}
+            var pad=24;
+            var gw=w-pad*2,gh=h-pad*2;
+            var bins=40;
+            var maxM=Math.min(10,Math.max.apply(null,crashes));
+            var step=maxM/bins;
+            var hist=new Array(bins).fill(0);
+            for(var i=0;i<crashes.length;i++){
+                var idx=Math.min(bins-1,Math.floor(crashes[i]/step));
+                hist[idx]++;
+            }
+            var maxH=Math.max.apply(null,hist)||1;
+            ctx.fillStyle='#0a0a0c';
+            ctx.fillRect(0,0,w,h);
+            for(var b=0;b<bins;b++){
+                var barH=(hist[b]/maxH)*gh;
+                var x=pad+(b/bins)*gw;
+                var barW=Math.max(1,(gw/bins)-1);
+                ctx.fillStyle='rgba(255,140,66,0.2)';
+                ctx.fillRect(x,pad+gh-barH,barW,barH);
+                ctx.strokeStyle='rgba(255,140,66,0.4)';
+                ctx.strokeRect(x,pad+gh-barH,barW,barH);
+            }
+            ctx.fillStyle='rgba(255,255,255,0.2)';
+            ctx.font='9px JetBrains Mono';
+            ctx.fillText('1×',pad,pad+gh+12);
+            ctx.fillText(maxM.toFixed(1)+'×',pad+gw-28,pad+gh+12);
+        }
+
+        function updateSummary(r){
+            if(!r){document.getElementById('summary').innerHTML='';return;}
+            var cls=function(v){return v>0?'positive':v<0?'negative':'';};
+            var items=[
+                {l:'Win rate',v:(r.winRate*100).toFixed(1)+'%'},
+                {l:'Loss rate',v:((1-r.winRate)*100).toFixed(1)+'%'},
+                {l:'Avg multiplier',v:r.avgMult.toFixed(2)+'×'},
+                {l:'Expected value',v:r.ev.toFixed(2),c:cls(r.ev)},
+                {l:'Max drawdown',v:r.maxDrawdown.toFixed(2),c:'negative'},
+                {l:'Final bankroll',v:r.finalBal.toFixed(2),c:cls(r.finalBal-r.startBal)},
+                {l:'Longest win streak',v:r.maxWinStreak},
+                {l:'Longest loss streak',v:r.maxLossStreak}
+            ];
+            document.getElementById('summary').innerHTML=items.map(function(i){
+                return '<div class="card"><div class="label">'+i.l+'</div><div class="value '+((i.c||''))+'">'+i.v+'</div></div>';
+            }).join('');
+        }
+
+        function updateFeed(r,target){
+            if(!r||!r.crashes.length){document.getElementById('feedRows').innerHTML='';return;}
+            var last=r.crashes.slice(-30).reverse();
+            var html=last.map(function(m){
+                var win=m>=target;
+                return '<div class="feed-row"><span class="mult">'+m.toFixed(2)+'×</span><span class="outcome '+(win?'win':'loss')+'">'+(win?'Win':'Loss')+'</span></div>';
+            }).join('');
+            document.getElementById('feedRows').innerHTML=html||'<div class="feed-row">—</div>';
+        }
+
+        function updateInsight(r,params){
+            var el=document.getElementById('insight');
+            if(!r){el.textContent='';return;}
+            var lines=[];
+            if(params.cashoutTarget<=1.5)lines.push('Low cashout target → higher hit rate, lower upside per win.');
+            else if(params.cashoutTarget>=3)lines.push('Higher target → fewer wins, more variance and drawdown risk.');
+            lines.push('Over many rounds, house edge ('+params.houseEdgePct+'%) dominates: expected value trends negative.');
+            if(r.maxLossStreak>=10)lines.push('Long loss streaks are normal in high-variance strategies.');
+            el.textContent=lines.join(' ');
+        }
+
+        function run(){
+            var p=getParams();
+            runSeed=Math.random().toString(16).slice(2,8);
+            result=runSimulation(p);
+            drawBankroll(result.bankroll);
+            drawHistogram(result.crashes);
+            updateSummary(result);
+            updateFeed(result,p.cashoutTarget);
+            updateInsight(result,p);
+            updateHud(result);
+        }
+
+        document.getElementById('btnStart').addEventListener('click',function(){
+            document.getElementById('btnStart').disabled=true;
+            run();
+            document.getElementById('btnStart').disabled=false;
+        });
+
+        document.getElementById('btnReset').addEventListener('click',function(){
+            setParams({houseEdgePct:2,rounds:2000,cashoutTarget:2,bet:1});
+            houseEdgeValEl.textContent='2';
+            speedEl.value=2;
+            speedValEl.textContent='Fast';
+            result=null;
+            drawBankroll([]);
+            drawHistogram([]);
+            updateSummary(null);
+            updateFeed(null);
+            updateInsight(null);
+            updateHud(null);
+        });
+
+        document.getElementById('btnRandom').addEventListener('click',function(){
+            setParams({
+                houseEdgePct:Math.round((0.5+Math.random()*5)*10)/10,
+                rounds:[500,1000,2000,5000,10000][Math.floor(Math.random()*5)],
+                cashoutTarget:Math.round((1.2+Math.random()*3)*10)/10,
+                bet:Math.round((0.5+Math.random()*2)*20)/20
+            });
+            houseEdgeValEl.textContent=houseEdgeEl.value;
+        });
+
+        window.addEventListener('resize',function(){
+            if(result){drawBankroll(result.bankroll);drawHistogram(result.crashes);}
+        });
+    })();
+    </script>
+</body>
+</html>

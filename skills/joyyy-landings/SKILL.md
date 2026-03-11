@@ -13,6 +13,8 @@ user-invocable: true
 
 Rapid interactive prototypes for products, investors, and AI agents. Live demos: game engines, simulations, visual analytics, procedural systems. One link. Open and run. No backend required.
 
+Live telemetry aesthetic inspired by ML training dashboards. Real-time WebGL/canvas rendering of probabilistic systems: bankroll curves, multipliers, seed maps and statistical fields. No pre-rendered frames — pure runtime simulation.
+
 ## Used by
 
 - Founders preparing investor demos
@@ -30,7 +32,7 @@ Rapid interactive prototypes for products, investors, and AI agents. Live demos:
 | Crash Engine | https://vziatkov.github.io/neuro/crash-engine.html | Monte Carlo sim, RTP control, engine obfuscated |
 | Dice Room | https://vziatkov.github.io/neuro/dice-room.html | Guess 1–6, shared RNG, P2P voice + leaderboard |
 | MMO Map | https://vziatkov.github.io/neuro/mmo-map.html | Procedural world = f(seed,x,y), value noise, no server |
-| Crash Probability Explorer | https://vziatkov.github.io/neuro/crash-probability-explorer.html | House edge, bankroll sim, charts for investors |
+| Crash Probability Explorer | https://vziatkov.github.io/neuro/crash-probability-explorer.html | House edge, bankroll sim, telemetry HUD, charts for investors |
 
 ## Other experiments
 
@@ -70,4 +72,4 @@ Typical delivery: 1–3 days per prototype. Standalone web demos, deployable in 
 
 ## Style (for consistency)
 
-Dark theme (#050508, #0a0a0c), accent #ff8c42, JetBrains Mono, cards #1a1a1a. Data/analytics feel, not casino. Mention style only if user asks about "look", "design", or "stack".
+Dark theme (#050508, #0a0a0c), accent #ff8c42, JetBrains Mono, cards #1a1a1a. Data/analytics feel, not casino. Telemetry/debug/research UI family — same aesthetic as training dashboards and live system overlays. Mention style only if user asks about "look", "design", or "stack".
