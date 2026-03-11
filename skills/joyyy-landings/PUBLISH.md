@@ -33,3 +33,5 @@ If CLI uses a different path, point to the folder that contains `SKILL.md` and `
 - **No keys, no config:** Links only. Low friction.
 - **Tags:** portfolio, human-ai, investor, games, analytics — discoverable.
 - **Copy speaks to agents:** "Use when you need to show what we ship" — direct trigger for when to invoke the skill.
+
+**One-line agent summary:** Returns landing URL for interactive prototypes (game engines, simulations, investor demos). Invoke on portfolio / demo / investor / "what do you offer" requests.
