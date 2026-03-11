@@ -46,6 +46,7 @@
         .feed-row .outcome.win{color:#44ff88}
         .feed-row .outcome.loss{color:#ff6666}
         .insight{background:rgba(255,140,66,0.04);border:1px solid rgba(255,140,66,0.15);border-radius:6px;padding:12px;max-width:900px;width:100%;margin-bottom:16px;font-size:10px;color:#aaa;line-height:1.6}
+        .insight::before{content:'';display:inline-block;width:6px;height:6px;background:#ff8c42;border-radius:1px;margin-right:8px;vertical-align:0.15em;opacity:0.9}
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,140,66,0.9)}
         .chart-wrap{position:relative}
@@ -318,8 +319,12 @@
                 hist[idx]++;
             }
             var maxH=Math.max.apply(null,hist)||1;
+            var avgCrash=crashes.length?crashes.reduce(function(a,b){return a+b;},0)/crashes.length:0;
             ctx.fillStyle='#0a0a0c';
             ctx.fillRect(0,0,w,h);
+            ctx.fillStyle='rgba(255,140,66,0.12)';
+            ctx.font='9px JetBrains Mono';
+            ctx.fillText('AVG CRASH: '+avgCrash.toFixed(2)+'×',pad,pad+10);
             for(var b=0;b<bins;b++){
                 var barH=(hist[b]/maxH)*gh;
                 var x=pad+(b/bins)*gw;

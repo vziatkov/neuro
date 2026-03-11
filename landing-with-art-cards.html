@@ -351,6 +351,7 @@
         .art-crash { background: #050508; }
         .art-dice { background: #050508; }
         .art-mmo { background: #050508; }
+        .art-probability { background: #050508; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -632,6 +633,15 @@
                     <div class="art-label">
                         <span class="art-name">Procedural MMO Map</span>
                         <span class="art-sub">World = f(seed, x, y) · value noise · no server · infinite</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-probability" href="https://vziatkov.github.io/neuro/crash-probability-explorer.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-probability"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">Crash Probability Explorer</span>
+                        <span class="art-sub">Monte Carlo · live telemetry · bankroll sim</span>
                     </div>
                 </a>
 
@@ -1416,6 +1426,79 @@
     });
   }
 
+  function drawProbability(t) {
+    const s = initCanvas("art-probability");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    if (w <= 0 || h <= 0) return;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = 8;
+    const graphW = w - pad * 2;
+    const graphH = (h - pad * 2) * 0.6;
+    const graphTop = pad;
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.lineWidth = 1;
+    for (let g = 0; g <= 2; g++) {
+      const gy = graphTop + graphH * (g / 2);
+      ctx.beginPath();
+      ctx.moveTo(pad, gy);
+      ctx.lineTo(pad + graphW, gy);
+      ctx.stroke();
+    }
+
+    const n = 28;
+    const points = [];
+    for (let i = 0; i <= n; i++) {
+      const x = pad + (i / n) * graphW;
+      const drift = Math.sin(t * 0.35 + i * 0.4) * 0.2;
+      const y = graphTop + graphH * (0.55 + 0.4 * Math.sin((i / n) * Math.PI * 2.2 + t * 0.6) + drift);
+      points.push({ x, y });
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.lineTo(points[points.length - 1].x, graphTop + graphH);
+    ctx.lineTo(pad, graphTop + graphH);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 100, 40, 0.04)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 140, 66, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.stroke();
+
+    const idx = Math.min(Math.floor((t * 0.4) % 1 * n), n - 1);
+    const p = points[idx];
+    if (p) {
+      ctx.fillStyle = "rgba(255, 140, 66, 0.2)";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff8c42";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const histTop = graphTop + graphH + 6;
+    const histH = h - histTop - pad;
+    const bins = 8;
+    const bw = (graphW - (bins - 1) * 2) / bins;
+    for (let i = 0; i < bins; i++) {
+      const v = 0.3 + 0.5 * Math.sin(t * 0.5 + i * 0.7) + 0.2 * Math.sin(i * 1.3);
+      const bh = Math.max(2, histH * 0.15 * Math.max(0, v));
+      const bx = pad + i * (bw + 2);
+      const by = histTop + histH - bh;
+      ctx.fillStyle = "rgba(255, 140, 66, 0.12)";
+      ctx.fillRect(bx, by, bw, bh);
+    }
+  }
+
   function drawMmo(t) {
     const s = initCanvas("art-mmo");
     if (!s) return;
@@ -1517,6 +1600,7 @@
     drawCrash(t);
     drawDice(t);
     drawMmo(t);
+    drawProbability(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 
