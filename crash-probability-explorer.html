@@ -24,6 +24,9 @@
         .btn:disabled{opacity:0.4;cursor:not-allowed}
         .btn.secondary{background:rgba(255,255,255,0.05);border-color:#2a2a2a;color:#888}
         .btn.secondary:hover{background:rgba(255,255,255,0.08);color:#ccc}
+        .btn-live{background:rgba(68,255,136,0.08);border-color:rgba(68,255,136,0.3);color:#44ff88}
+        .btn-live:hover{background:rgba(68,255,136,0.15)}
+        .btn-live.running{opacity:0.9;cursor:wait}
         .chart-wrap{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px;margin-bottom:16px;overflow:hidden;max-width:900px;width:100%}
         .chart-wrap canvas{display:block;width:100%}
         .chart-label{font-size:9px;color:#444;padding:8px 12px;border-bottom:1px solid #1a1a1a}
@@ -54,7 +57,7 @@
 <body>
     <div class="header">
         <h1>Crash Game Probability Explorer</h1>
-        <div class="sub">Educational simulator: multiplier distribution, risk, and expected outcomes. For product, analytics, and investor presentation.</div>
+        <div class="sub">Live telemetry: Monte Carlo simulation rendered round-by-round. Bankroll curve and HUD update in real time. For product, analytics, and investor presentation.</div>
     </div>
 
     <div class="panel">
@@ -84,6 +87,7 @@
                 <span id="speedVal">Fast</span>
             </div>
             <button type="button" class="btn" id="btnStart">Start</button>
+            <button type="button" class="btn btn-live" id="btnRun100k">▶ RUN 100K ROUNDS</button>
             <button type="button" class="btn secondary" id="btnReset">Reset</button>
             <button type="button" class="btn secondary" id="btnRandom">Randomize</button>
         </div>
@@ -216,6 +220,10 @@
         var result=null;
         var animFrame=null;
         var runSeed='';
+        var liveRunning=false;
+        var liveState=null;
+        var liveParams=null;
+        var ROUNDS_PER_FRAME=[8,25,80,400];
 
         function updateHud(r){
             var hud=document.getElementById('hud');
@@ -355,25 +363,122 @@
             el.textContent=lines.join(' ');
         }
 
+        function runLive(params){
+            if(liveRunning)return;
+            runSeed=Math.random().toString(16).slice(2,8);
+            var startBal=100;
+            liveParams=params;
+            liveState={
+                bankroll:[startBal],
+                crashes:[],
+                startBal:startBal,
+                bal:startBal,
+                bet:params.bet,
+                target:params.cashoutTarget,
+                wins:0,
+                losses:0,
+                winStreak:0,
+                lossStreak:0,
+                maxWinStreak:0,
+                maxLossStreak:0,
+                sumMult:0,
+                i:0
+            };
+            liveRunning=true;
+            document.getElementById('btnStart').disabled=true;
+            document.getElementById('btnRun100k').disabled=true;
+            document.getElementById('btnRun100k').classList.add('running');
+            document.getElementById('btnRun100k').textContent='● LIVE';
+            stepLive();
+        }
+
+        function stepLive(){
+            if(!liveRunning||!liveState||!liveParams){return;}
+            var s=liveState;
+            var p=liveParams;
+            var total=p.rounds;
+            var batch=ROUNDS_PER_FRAME[Math.min(3,parseInt(speedEl.value,10)||0)];
+            var n=0;
+            while(n<batch&&s.i<total&&s.bal>=s.bet){
+                var mult=generateCrashMultiplier(p.houseEdgePct);
+                s.crashes.push(mult);
+                s.sumMult+=mult;
+                if(mult>=s.target){
+                    s.bal+=s.bet*(s.target-1);
+                    s.wins++;
+                    s.winStreak++;
+                    s.lossStreak=0;
+                    if(s.winStreak>s.maxWinStreak)s.maxWinStreak=s.winStreak;
+                }else{
+                    s.bal-=s.bet;
+                    s.losses++;
+                    s.lossStreak++;
+                    s.winStreak=0;
+                    if(s.lossStreak>s.maxLossStreak)s.maxLossStreak=s.lossStreak;
+                }
+                s.bankroll.push(s.bal);
+                s.i++;
+                n++;
+            }
+            var totalRounds=s.wins+s.losses;
+            var winRate=totalRounds?s.wins/totalRounds:0;
+            drawBankroll(s.bankroll);
+            updateHud({
+                totalRounds:totalRounds,
+                ev:s.bal-s.startBal,
+                finalBal:s.bal,
+                startBal:s.startBal,
+                winRate:winRate
+            });
+            if(s.i>=total||s.bal<s.bet){
+                liveRunning=false;
+                var minBal=Math.min.apply(null,s.bankroll);
+                result={
+                    crashes:s.crashes,
+                    bankroll:s.bankroll,
+                    wins:s.wins,
+                    losses:s.losses,
+                    totalRounds:totalRounds,
+                    winRate:winRate,
+                    finalBal:s.bal,
+                    startBal:s.startBal,
+                    maxDrawdown:s.startBal-minBal,
+                    maxWinStreak:s.maxWinStreak,
+                    maxLossStreak:s.maxLossStreak,
+                    avgMult:s.crashes.length?s.sumMult/s.crashes.length:0,
+                    ev:s.bal-s.startBal
+                };
+                drawHistogram(result.crashes);
+                updateSummary(result);
+                updateFeed(result,p.cashoutTarget);
+                updateInsight(result,p);
+                document.getElementById('btnStart').disabled=false;
+                document.getElementById('btnRun100k').disabled=false;
+                document.getElementById('btnRun100k').classList.remove('running');
+                document.getElementById('btnRun100k').textContent='▶ RUN 100K ROUNDS';
+                return;
+            }
+            requestAnimationFrame(stepLive);
+        }
+
         function run(){
             var p=getParams();
-            runSeed=Math.random().toString(16).slice(2,8);
-            result=runSimulation(p);
-            drawBankroll(result.bankroll);
-            drawHistogram(result.crashes);
-            updateSummary(result);
-            updateFeed(result,p.cashoutTarget);
-            updateInsight(result,p);
-            updateHud(result);
+            runLive(p);
         }
 
         document.getElementById('btnStart').addEventListener('click',function(){
-            document.getElementById('btnStart').disabled=true;
+            if(liveRunning)return;
             run();
-            document.getElementById('btnStart').disabled=false;
+        });
+
+        document.getElementById('btnRun100k').addEventListener('click',function(){
+            if(liveRunning)return;
+            roundsEl.value=100000;
+            runLive(getParams());
         });
 
         document.getElementById('btnReset').addEventListener('click',function(){
+            liveRunning=false;
             setParams({houseEdgePct:2,rounds:2000,cashoutTarget:2,bet:1});
             houseEdgeValEl.textContent='2';
             speedEl.value=2;
@@ -385,6 +490,10 @@
             updateFeed(null);
             updateInsight(null);
             updateHud(null);
+            document.getElementById('btnStart').disabled=false;
+            document.getElementById('btnRun100k').disabled=false;
+            document.getElementById('btnRun100k').classList.remove('running');
+            document.getElementById('btnRun100k').textContent='▶ RUN 100K ROUNDS';
         });
 
         document.getElementById('btnRandom').addEventListener('click',function(){
