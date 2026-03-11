@@ -12,6 +12,12 @@
 
 💫 *Made with love, photons, and a quiet desire to understand what it means to be alive.*
 
+## 🤖 AI-callable portfolio
+
+This repo also ships an **AI-agent skill** (OpenClaw / ClawHub): **Interactive Prototypes — Human + AI**. Crash engines, probability simulators, procedural worlds, visual analytics. One link, open and run.
+
+**Live demos:** [landing with art cards](https://vziatkov.github.io/neuro/landing-with-art-cards.html) · **Skill package:** `skills/joyyy-landings/`
+
 ---
 
 ## 🎯 Что это?
