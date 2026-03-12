@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forest Supply Chain — Digital Twin</title>
+    <meta name="description" content="Supply Chain Digital Twin — ontology, simulation, decision cockpit. Nodes, flows, risk, geography. Where we lose money, where the bottleneck is.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{min-height:100vh;background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace}
+        body{display:flex;flex-direction:column;align-items:center;padding:24px 20px}
+        .header{text-align:center;max-width:640px;margin-bottom:20px}
+        .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.95)}
+        .header .sub{font-size:10px;color:rgba(255,140,66,0.55);margin-top:6px;line-height:1.5}
+        .card{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:640px;width:100%;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,0.35)}
+        .card-canvas{display:block;width:100%;height:200px;background:#08080a}
+        .card-body{padding:16px 20px}
+        .card-body .lead{font-size:11px;color:#aaa;line-height:1.6;margin-bottom:14px}
+        .card-body ul{list-style:none;font-size:10px;color:#666;line-height:2}
+        .card-body li::before{content:'·';color:#ff8c42;margin-right:8px;font-weight:600}
+        .card-body a{color:rgba(255,140,66,0.9);text-decoration:none;font-size:10px;letter-spacing:0.5px}
+        .card-body a:hover{text-decoration:underline}
+        .back{display:inline-block;margin-top:12px;font-size:10px;color:rgba(255,255,255,0.25);text-decoration:none;transition:color 0.2s}
+        .back:hover{color:rgba(255,140,66,0.85)}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Forest Supply Chain — Digital Twin</h1>
+        <div class="sub">Ontology · Simulation engine · Decision cockpit. Move sliders → see network profit. Where we lose money, where the bottleneck is.</div>
+    </div>
+
+    <div class="card">
+        <canvas class="card-canvas" id="c" width="640" height="200"></canvas>
+        <div class="card-body">
+            <p class="lead">Economic network: nodes (forest, sawmill, factory, store, logistics) and flows (raw, materials, goods). Contracts, inventory, risk, geography. Two modes: interactive map and full Monte Carlo.</p>
+            <ul>
+                <li>Ontology & data model — CONCEPT_MAP in <code>skills/forest-supply-chain-sim</code></li>
+                <li>Profit decomposition · Bottleneck detection · Strategic what-if scenarios</li>
+                <li>Next: simulation engine (state transitions, stock/flow), then live UI</li>
+            </ul>
+            <p style="margin-top:12px"><a href="https://github.com/vziatkov/neuro/tree/main/skills/forest-supply-chain-sim" target="_blank" rel="noopener noreferrer">Concept map & README →</a> · <a href="forest-supply-chain-live.html">Live simulation →</a></p>
+        </div>
+    </div>
+
+    <a href="landing-with-art-cards.html" class="back">← Landing</a>
+
+    <script>
+(function(){
+    var c=document.getElementById('c');
+    var ctx=c.getContext('2d');
+    var w=c.width,h=c.height;
+    var nodes=[
+        { x: w*0.12, y: h/2, label: 'Forest', r: 10 },
+        { x: w*0.32, y: h/2, label: 'Sawmill', r: 10 },
+        { x: w*0.52, y: h/2, label: 'Factory', r: 10 },
+        { x: w*0.72, y: h/2, label: 'Store', r: 10 }
+    ];
+    var flowPhase=0;
+
+    function draw(){
+        ctx.fillStyle='#08080a';
+        ctx.fillRect(0,0,w,h);
+
+        flowPhase+=0.018;
+        if(flowPhase>1)flowPhase=0;
+
+        for(var i=0;i<nodes.length-1;i++){
+            var a=nodes[i],b=nodes[i+1];
+            ctx.strokeStyle='rgba(255,140,66,0.12)';
+            ctx.lineWidth=2;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+
+            var tx=a.x+(b.x-a.x)*flowPhase;
+            var ty=a.y+(b.y-a.y)*flowPhase;
+            ctx.fillStyle='rgba(255,140,66,0.5)';
+            ctx.beginPath();
+            ctx.arc(tx,ty,4,0,Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle='rgba(255,140,66,0.4)';
+            ctx.lineWidth=1;
+            ctx.stroke();
+        }
+
+        nodes.forEach(function(n,i){
+            var pulse=0.92+0.08*Math.sin(Date.now()/800+i);
+            ctx.fillStyle='#0d0d0f';
+            ctx.beginPath();
+            ctx.arc(n.x,n.y,n.r*pulse+2,0,Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle=i===0?'rgba(68,180,100,0.5)':i===nodes.length-1?'rgba(100,180,255,0.5)':'rgba(255,140,66,0.45)';
+            ctx.lineWidth=1.5;
+            ctx.stroke();
+            ctx.fillStyle='rgba(255,255,255,0.85)';
+            ctx.font='9px JetBrains Mono';
+            ctx.textAlign='center';
+            ctx.fillText(n.label,n.x,n.y+h*0.28);
+        });
+    }
+
+    function loop(){ draw(); requestAnimationFrame(loop); }
+    loop();
+})();
+    </script>
+</body>
+</html>

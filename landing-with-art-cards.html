@@ -352,6 +352,7 @@
         .art-dice { background: #050508; }
         .art-mmo { background: #050508; }
         .art-probability { background: #050508; }
+        .art-forest-twin { background: #050508; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -645,6 +646,15 @@
                     </div>
                 </a>
 
+                <a class="art-card art-forest-twin" href="https://vziatkov.github.io/neuro/forest-supply-chain-live.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-forest-twin"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">Forest Supply Chain — Digital Twin</span>
+                        <span class="art-sub">Live simulation · sliders, network viz, profit & bottleneck</span>
+                    </div>
+                </a>
+
             </div>
         </div>
 
@@ -770,6 +780,7 @@
                 <a class="link" href="https://vziatkov.github.io/neuro/dice-room.html" target="_blank" rel="noopener noreferrer">Dice Room</a>
                 <a class="link" href="https://vziatkov.github.io/neuro/mmo-map.html" target="_blank" rel="noopener noreferrer">MMO Map</a>
                 <a class="link" href="https://vziatkov.github.io/neuro/crash-probability-explorer.html" target="_blank" rel="noopener noreferrer">Probability Explorer</a>
+                <a class="link" href="https://vziatkov.github.io/neuro/forest-supply-chain-live.html" target="_blank" rel="noopener noreferrer">Forest Supply Chain Digital Twin (live)</a>
             </div>
         </div>
 
@@ -1499,6 +1510,43 @@
     }
   }
 
+  function drawForestTwin(t) {
+    const s = initCanvas("art-forest-twin");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+    const nodes = [
+      { x: w * 0.15, y: h / 2 },
+      { x: w * 0.38, y: h / 2 },
+      { x: w * 0.61, y: h / 2 },
+      { x: w * 0.84, y: h / 2 },
+    ];
+    const phase = (t * 0.6) % 1;
+    for (let i = 0; i < nodes.length - 1; i++) {
+      ctx.strokeStyle = "rgba(255, 140, 66, 0.1)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(nodes[i].x, nodes[i].y);
+      ctx.lineTo(nodes[i + 1].x, nodes[i + 1].y);
+      ctx.stroke();
+      const tx = nodes[i].x + (nodes[i + 1].x - nodes[i].x) * phase;
+      const ty = nodes[i].y + (nodes[i + 1].y - nodes[i].y) * phase;
+      ctx.fillStyle = "rgba(255, 140, 66, 0.4)";
+      ctx.beginPath();
+      ctx.arc(tx, ty, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    nodes.forEach((n, i) => {
+      ctx.fillStyle = i === 0 ? "rgba(68,160,100,0.3)" : i === nodes.length - 1 ? "rgba(100,160,255,0.3)" : "rgba(255, 140, 66, 0.2)";
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 140, 66, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  }
+
   function drawMmo(t) {
     const s = initCanvas("art-mmo");
     if (!s) return;
@@ -1601,6 +1649,7 @@
     drawDice(t);
     drawMmo(t);
     drawProbability(t);
+    drawForestTwin(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forest Supply Chain — Live Simulation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{height:100%;background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;font-size:12px}
+        body{display:flex;flex-direction:column;min-height:0}
+        .header{flex-shrink:0;padding:12px 16px;border-bottom:1px solid #1a1a1a;text-align:center}
+        .header h1{font-size:13px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.95)}
+        .header .sub{font-size:10px;color:rgba(255,140,66,0.55);margin-top:4px}
+        .main{flex:1;min-height:0;display:grid;grid-template-columns:200px 1fr 220px;grid-template-rows:1fr auto;gap:10px;padding:10px}
+        .controls{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px;overflow-y:auto}
+        .controls .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+        .controls .row{margin-bottom:12px}
+        .controls .row label{display:block;font-size:9px;color:#888;margin-bottom:4px}
+        .controls input[type="range"]{width:100%;accent-color:#ff8c42}
+        .controls select{width:100%;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:4px;color:#ccc;font-family:inherit;font-size:10px;padding:4px 6px}
+        .controls .val{font-size:10px;color:#ff8c42;margin-top:2px}
+        .controls .btns{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+        .btn{background:rgba(255,140,66,0.08);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .btn:hover{background:rgba(255,140,66,0.18)}
+        .btn.secondary{background:rgba(255,255,255,0.05);border-color:#2a2a2a;color:#888}
+        .btn.secondary:hover{background:rgba(255,255,255,0.08);color:#ccc}
+        .viz{background:#08080a;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;position:relative;min-height:280px}
+        .viz canvas{display:block;width:100%;height:100%}
+        .kpi{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px;overflow-y:auto}
+        .kpi .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+        .kpi .card{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:6px;padding:8px 10px;margin-bottom:8px}
+        .kpi .card .name{font-size:9px;color:#666}
+        .kpi .card .v{font-size:14px;font-weight:600;color:#ff8c42;margin-top:2px}
+        .kpi .card .v.green{color:#44ff88}
+        .kpi .card .v.red{color:#ff6666}
+        .kpi .bottleneck{font-size:9px;color:#ff6666;margin-top:6px;padding:6px;background:rgba(255,100,100,0.06);border-radius:4px}
+        .decomp{margin-top:12px;padding-top:10px;border-top:1px solid #1a1a1a}
+        .decomp .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+        .decomp .line{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;color:#888}
+        .decomp .line .v{color:#ff8c42}
+        .decomp .line.total{margin-top:6px;padding-top:6px;border-top:1px dashed #1a1a1a;font-weight:600;color:#fff}
+        .charts{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;height:100px}
+        .charts .chart-wrap{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;position:relative}
+        .charts .chart-wrap .title{font-size:9px;color:#555;padding:6px 10px;border-bottom:1px solid #1a1a1a}
+        .charts .chart-wrap canvas{display:block;width:100%;height:60}
+        .foot{flex-shrink:0;padding:8px 16px;border-top:1px solid #1a1a1a;font-size:9px;color:#444;text-align:center}
+        .foot a{color:rgba(255,140,66,0.7);text-decoration:none}
+        .foot a:hover{text-decoration:underline}
+        @media (max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto}}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Forest Supply Chain — Live Simulation</h1>
+        <div class="sub">Move sliders → see profit, throughput and bottlenecks change across the network</div>
+    </div>
+
+    <div class="main">
+        <aside class="controls">
+            <div class="label">Controls</div>
+            <div class="row">
+                <label>Raw allocation to sawmill</label>
+                <input type="range" id="rawAlloc" min="0" max="100" value="70">
+                <span class="val" id="rawAllocVal">70%</span>
+            </div>
+            <div class="row">
+                <label>Factory utilization target</label>
+                <input type="range" id="factoryUtil" min="0" max="100" value="80">
+                <span class="val" id="factoryUtilVal">80%</span>
+            </div>
+            <div class="row">
+                <label>Inventory target</label>
+                <input type="range" id="inventoryTarget" min="0" max="100" value="50">
+                <span class="val" id="inventoryTargetVal">50%</span>
+            </div>
+            <div class="row">
+                <label>Transport mode</label>
+                <select id="transportMode">
+                    <option value="truck">Truck</option>
+                    <option value="rail">Rail</option>
+                    <option value="sea">Sea</option>
+                </select>
+            </div>
+            <div class="row">
+                <label>Risk level</label>
+                <input type="range" id="riskLevel" min="0" max="100" value="20">
+                <span class="val" id="riskLevelVal">20%</span>
+            </div>
+            <div class="row">
+                <label>Simulation mode</label>
+                <select id="simMode">
+                    <option value="interactive">Interactive</option>
+                    <option value="monte_carlo">Monte Carlo</option>
+                </select>
+            </div>
+            <div class="btns">
+                <button type="button" class="btn" id="btnReset">Reset</button>
+                <button type="button" class="btn" id="btnRun30">Run 30 days</button>
+                <button type="button" class="btn secondary" id="btnCompare">Compare scenario</button>
+            </div>
+        </aside>
+
+        <section class="viz">
+            <canvas id="network"></canvas>
+        </section>
+
+        <aside class="kpi">
+            <div class="label">KPI</div>
+            <div class="card"><div class="name">Total profit</div><div class="v" id="kpiProfit">—</div></div>
+            <div class="card"><div class="name">Total throughput</div><div class="v" id="kpiThroughput">—</div></div>
+            <div class="card"><div class="name">Avg logistics cost</div><div class="v" id="kpiLogistics">—</div></div>
+            <div class="card"><div class="name">Utilization</div><div class="v" id="kpiUtil">—</div></div>
+            <div class="bottleneck" id="kpiBottleneck">—</div>
+            <div class="decomp">
+                <div class="label">Profit decomposition</div>
+                <div class="line">Revenue <span class="v" id="dRevenue">—</span></div>
+                <div class="line">Raw cost <span class="v" id="dRaw">—</span></div>
+                <div class="line">Logistics <span class="v" id="dLogistics">—</span></div>
+                <div class="line">Production <span class="v" id="dProduction">—</span></div>
+                <div class="line">Storage <span class="v" id="dStorage">—</span></div>
+                <div class="line total">Profit <span class="v" id="dProfit">—</span></div>
+            </div>
+        </aside>
+
+        <div class="charts">
+            <div class="chart-wrap"><div class="title">Profit over time</div><canvas id="chartProfit"></canvas></div>
+            <div class="chart-wrap"><div class="title">Throughput over time</div><canvas id="chartThroughput"></canvas></div>
+            <div class="chart-wrap"><div class="title">Utilization over time</div><canvas id="chartUtil"></canvas></div>
+        </div>
+    </div>
+
+    <div class="foot">
+        Full model and engine live in <a href="https://github.com/vziatkov/neuro/tree/main/skills/forest-supply-chain-sim" target="_blank" rel="noopener">skills/forest-supply-chain-sim</a>
+        · <a href="forest-supply-chain.html">← Concept card</a>
+    </div>
+
+    <script>
+(function(){
+    var DPR=Math.min(2,window.devicePixelRatio||1);
+    var state={
+        day:0,
+        rawAlloc:70,
+        factoryUtil:80,
+        inventoryTarget:50,
+        transportMode:'truck',
+        riskLevel:20,
+        simMode:'interactive',
+        historyProfit:[],
+        historyThroughput:[],
+        historyUtil:[],
+        compareSnapshot:null
+    };
+    var MAX_HISTORY=80;
+
+    function getMetrics(){
+        var r=state.rawAlloc/100,u=state.factoryUtil/100,inv=state.inventoryTarget/100,risk=state.riskLevel/100;
+        var baseThroughput=20+ r*25;
+        var transportCost=state.transportMode==='truck'?2.5:state.transportMode==='rail'?1.5:1;
+        var riskMult=1-risk*0.3;
+        baseThroughput*=riskMult;
+        var revenue=baseThroughput*u*120;
+        var costRaw=baseThroughput*22;
+        var costLogistics=baseThroughput*transportCost;
+        var costProduction=400+u*200;
+        var costStorage=30+inv*40;
+        var profit=revenue-costRaw-costLogistics-costProduction-costStorage;
+        var util=Math.min(1,u*1.1+ (1-inv)*0.1);
+        return {
+            profit:Math.round(profit),
+            throughput:Math.round(baseThroughput*10)/10,
+            logisticsCost:Math.round(costLogistics*10)/10,
+            utilization:Math.round(util*100),
+            revenue:Math.round(revenue),
+            costRaw:Math.round(costRaw),
+            costLogistics:Math.round(costLogistics),
+            costProduction:Math.round(costProduction),
+            costStorage:Math.round(costStorage),
+            flow:baseThroughput
+        };
+    }
+
+    function getBottleneck(m){
+        if(m.utilization>=95)return 'Sawmill capacity (util '+m.utilization+'%)';
+        if(m.throughput>25)return 'Logistics limit';
+        return 'None';
+    }
+
+    function updateUI(){
+        var m=getMetrics();
+        document.getElementById('kpiProfit').textContent=m.profit>=0?'€'+m.profit:'-€'+(-m.profit);
+        document.getElementById('kpiProfit').className='v '+(m.profit>=0?'green':'red');
+        document.getElementById('kpiThroughput').textContent=m.throughput+' m³/d';
+        document.getElementById('kpiLogistics').textContent='€'+m.logisticsCost;
+        document.getElementById('kpiUtil').textContent=m.utilization+'%';
+        document.getElementById('kpiBottleneck').textContent=getBottleneck(m);
+        document.getElementById('dRevenue').textContent='€'+m.revenue;
+        document.getElementById('dRaw').textContent='-€'+m.costRaw;
+        document.getElementById('dLogistics').textContent='-€'+m.costLogistics;
+        document.getElementById('dProduction').textContent='-€'+m.costProduction;
+        document.getElementById('dStorage').textContent='-€'+m.costStorage;
+        document.getElementById('dProfit').textContent='€'+m.profit;
+        document.getElementById('dProfit').className='v '+(m.profit>=0?'green':'red');
+
+        state.historyProfit.push(m.profit);
+        state.historyThroughput.push(m.throughput);
+        state.historyUtil.push(m.utilization);
+        if(state.historyProfit.length>MAX_HISTORY){ state.historyProfit.shift(); state.historyThroughput.shift(); state.historyUtil.shift(); }
+        drawCharts();
+        drawNetwork(m);
+    }
+
+    function drawCharts(){
+        var charts=[
+            { id:'chartProfit', data:state.historyProfit, color:'#ff8c42' },
+            { id:'chartThroughput', data:state.historyThroughput, color:'#44ff88' },
+            { id:'chartUtil', data:state.historyUtil, color:'#6cc' }
+        ];
+        charts.forEach(function(c){
+            var el=document.getElementById(c.id);
+            if(!el)return;
+            var w=el.width=el.offsetWidth;
+            var h=el.height=60;
+            var ctx=el.getContext('2d');
+            ctx.clearRect(0,0,w,h);
+            var d=c.data;
+            if(d.length<2)return;
+            var min=Math.min.apply(null,d);
+            var max=Math.max.apply(null,d);
+            if(max===min)max=min+1;
+            var pad=2;
+            ctx.strokeStyle=c.color;
+            ctx.lineWidth=1.5;
+            ctx.beginPath();
+            for(var i=0;i<d.length;i++){
+                var x=pad+(w-pad*2)*(i/(d.length-1));
+                var y=h-pad-(h-pad*2)*((d[i]-min)/(max-min));
+                if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+            }
+            ctx.stroke();
+        });
+    }
+
+    var flowPhase=0;
+    function drawNetwork(m){
+        var c=document.getElementById('network');
+        var wrap=c.parentElement;
+        var w=wrap.clientWidth;
+        var h=wrap.clientHeight;
+        if(w<=0||h<=0)return;
+        c.width=Math.round(w*DPR);
+        c.height=Math.round(h*DPR);
+        c.style.width=w+'px';
+        c.style.height=h+'px';
+        var ctx=c.getContext('2d');
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.scale(DPR,DPR);
+        ctx.clearRect(0,0,w,h);
+
+        flowPhase+=0.02;
+        if(flowPhase>1)flowPhase=0;
+        var nodes=[
+            { x:w*0.1,y:h/2, label:'Forest', color:'#38a04a' },
+            { x:w*0.3,y:h/2, label:'Sawmill', color:'#ff8c42' },
+            { x:w*0.55,y:h/2, label:'Factory', color:'#ff8c42' },
+            { x:w*0.8,y:h/2, label:'Store', color:'#44ccff' }
+        ];
+        var flow=m.flow/30;
+        var thickness=0.5+flow*0.8;
+
+        for(var i=0;i<nodes.length-1;i++){
+            var a=nodes[i],b=nodes[i+1];
+            ctx.strokeStyle='rgba(255,140,66,0.15)';
+            ctx.lineWidth=thickness+4;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+            ctx.strokeStyle='rgba(255,140,66,0.5)';
+            ctx.lineWidth=thickness;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+
+            var tx=a.x+(b.x-a.x)*flowPhase;
+            var ty=a.y+(b.y-a.y)*flowPhase;
+            ctx.fillStyle='rgba(255,140,66,0.8)';
+            ctx.beginPath();
+            ctx.arc(tx,ty,4,0,Math.PI*2);
+            ctx.fill();
+        }
+
+        var overload=m.utilization>=90;
+        nodes.forEach(function(n,i){
+            var r=10;
+            if(overload&&i===1)r=14;
+            ctx.fillStyle=n.color;
+            ctx.globalAlpha=0.25;
+            ctx.beginPath();
+            ctx.arc(n.x,n.y,r+4,0,Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha=1;
+            ctx.strokeStyle=overload&&i===1?'#ff6666':'rgba(255,140,66,0.5)';
+            ctx.lineWidth=overload&&i===1?2:1;
+            ctx.beginPath();
+            ctx.arc(n.x,n.y,r,0,Math.PI*2);
+            ctx.stroke();
+            ctx.fillStyle='rgba(255,255,255,0.9)';
+            ctx.font='10px JetBrains Mono';
+            ctx.textAlign='center';
+            ctx.fillText(n.label,n.x,n.y+h*0.35);
+        });
+    }
+
+    function onSlider(){
+        state.rawAlloc=+document.getElementById('rawAlloc').value;
+        state.factoryUtil=+document.getElementById('factoryUtil').value;
+        state.inventoryTarget=+document.getElementById('inventoryTarget').value;
+        state.transportMode=document.getElementById('transportMode').value;
+        state.riskLevel=+document.getElementById('riskLevel').value;
+        state.simMode=document.getElementById('simMode').value;
+        document.getElementById('rawAllocVal').textContent=state.rawAlloc+'%';
+        document.getElementById('factoryUtilVal').textContent=state.factoryUtil+'%';
+        document.getElementById('inventoryTargetVal').textContent=state.inventoryTarget+'%';
+        document.getElementById('riskLevelVal').textContent=state.riskLevel+'%';
+        state.day++;
+        updateUI();
+    }
+
+    function reset(){
+        state.day=0;
+        state.rawAlloc=70;
+        state.factoryUtil=80;
+        state.inventoryTarget=50;
+        state.riskLevel=20;
+        state.historyProfit=[];
+        state.historyThroughput=[];
+        state.historyUtil=[];
+        document.getElementById('rawAlloc').value=70;
+        document.getElementById('factoryUtil').value=80;
+        document.getElementById('inventoryTarget').value=50;
+        document.getElementById('riskLevel').value=20;
+        document.getElementById('transportMode').value='truck';
+        document.getElementById('rawAllocVal').textContent='70%';
+        document.getElementById('factoryUtilVal').textContent='80%';
+        document.getElementById('inventoryTargetVal').textContent='50%';
+        document.getElementById('riskLevelVal').textContent='20%';
+        updateUI();
+    }
+
+    function run30(){
+        var steps=30;
+        for(var i=0;i<steps;i++){
+            state.day++;
+            state.rawAlloc=Math.min(100,state.rawAlloc+ (Math.random()-0.5)*4);
+            state.factoryUtil=Math.min(100,Math.max(0,state.factoryUtil+ (Math.random()-0.5)*6));
+            document.getElementById('rawAlloc').value=state.rawAlloc;
+            document.getElementById('factoryUtil').value=state.factoryUtil;
+            document.getElementById('rawAllocVal').textContent=Math.round(state.rawAlloc)+'%';
+            document.getElementById('factoryUtilVal').textContent=Math.round(state.factoryUtil)+'%';
+            updateUI();
+        }
+    }
+
+    function compare(){
+        state.compareSnapshot=getMetrics();
+        document.getElementById('btnCompare').textContent='Snapshot saved';
+        setTimeout(function(){ document.getElementById('btnCompare').textContent='Compare scenario'; },1200);
+    }
+
+    document.getElementById('rawAlloc').addEventListener('input',onSlider);
+    document.getElementById('factoryUtil').addEventListener('input',onSlider);
+    document.getElementById('inventoryTarget').addEventListener('input',onSlider);
+    document.getElementById('transportMode').addEventListener('change',onSlider);
+    document.getElementById('riskLevel').addEventListener('input',onSlider);
+    document.getElementById('simMode').addEventListener('change',onSlider);
+    document.getElementById('btnReset').addEventListener('click',reset);
+    document.getElementById('btnRun30').addEventListener('click',run30);
+    document.getElementById('btnCompare').addEventListener('click',compare);
+
+    window.addEventListener('resize',function(){ updateUI(); });
+    reset();
+
+    function tick(){
+        flowPhase+=0.012;
+        var m=getMetrics();
+        drawNetwork(m);
+        requestAnimationFrame(tick);
+    }
+    tick();
+})();
+    </script>
+</body>
+</html>
