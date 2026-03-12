@@ -6,6 +6,7 @@
     <title>Procedural MMO Map — No server</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         html,body{height:100%;overflow:hidden;background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace}
@@ -32,6 +33,14 @@
         }
         .back{flex-shrink:0;display:inline-block;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,140,66,0.8)}
+        .p2p-wrap{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+        .p2p-wrap .p2p-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:4px}
+        .p2p-wrap .p2p-btn{background:rgba(68,200,255,0.08);border:1px solid rgba(68,200,255,0.25);color:#6cc;font-family:inherit;font-size:10px;padding:5px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .p2p-wrap .p2p-btn:hover{background:rgba(68,200,255,0.18);color:#8ee}
+        .p2p-wrap .p2p-btn:disabled{opacity:0.4;cursor:not-allowed}
+        .p2p-wrap .p2p-dot{width:6px;height:6px;border-radius:50%;background:#555;display:inline-block;vertical-align:middle}
+        .p2p-wrap .p2p-dot.connected{background:#44ff88}
+        .p2p-wrap .p2p-status{font-size:9px;color:#666}
     </style>
 </head>
 <body>
@@ -49,6 +58,15 @@
             <div class="label">Position</div>
             <div class="coords" id="coords">x: <span id="px">0</span> · y: <span id="py">0</span></div>
         </div>
+    </div>
+
+    <div class="p2p-wrap">
+        <span class="p2p-label">Multiplayer</span>
+        <span class="p2p-dot" id="p2pDot"></span>
+        <button class="p2p-btn" id="p2pHost">Host</button>
+        <button class="p2p-btn" id="p2pJoin">Join</button>
+        <button class="p2p-btn" id="p2pLeave" disabled style="opacity:0.4">Leave</button>
+        <span class="p2p-status" id="p2pStatus">Same link = same map · Host/Join to see each other</span>
     </div>
 
     <div class="map-wrap">
@@ -78,6 +96,106 @@
         var playerX=0;
         var playerY=0;
         var mapWrap=document.querySelector('.map-wrap');
+
+        // P2P: same seed = same room, data channel for position sync (no server)
+        var peer=null;
+        var peerConns=[];
+        var peerPositions={};
+        var hostPeerId='mmo-'+(seed.length>20?seed.slice(0,20):seed).replace(/\s/g,'-');
+        var PEER_OPTS={host:'0.peerjs.com',secure:true,port:443};
+        var lastSendPos=0;
+        var POS_SEND_INTERVAL=120;
+
+        function p2pStatus(msg){document.getElementById('p2pStatus').textContent=msg||'';}
+        function p2pDot(c){document.getElementById('p2pDot').style.background=c;document.getElementById('p2pDot').className='p2p-dot'+(c==='#44ff88'?' connected':'');}
+        function p2pEnableHost(on){document.getElementById('p2pHost').disabled=!on;}
+        function p2pEnableJoin(on){document.getElementById('p2pJoin').disabled=!on;}
+        function p2pEnableLeave(on){document.getElementById('p2pLeave').disabled=!on;}
+
+        function setupPeerDataConn(conn){
+            conn.on('data',function(data){
+                if(data&&data.type==='pos'&&typeof data.x==='number'&&typeof data.y==='number')
+                    peerPositions[conn.peer]={x:data.x,y:data.y};
+            });
+            conn.on('close',function(){
+                delete peerPositions[conn.peer];
+                for(var i=0;i<peerConns.length;i++)if(peerConns[i]===conn){peerConns.splice(i,1);break;}
+            });
+            conn.on('error',function(){
+                delete peerPositions[conn.peer];
+                for(var i=0;i<peerConns.length;i++)if(peerConns[i]===conn){peerConns.splice(i,1);break;}
+            });
+            if(conn.open)peerPositions[conn.peer]=peerPositions[conn.peer]||{x:0,y:0};
+            peerConns.push(conn);
+        }
+
+        function sendPosition(){
+            var now=Date.now();
+            if(now-lastSendPos<POS_SEND_INTERVAL)return;
+            lastSendPos=now;
+            for(var i=0;i<peerConns.length;i++){
+                if(peerConns[i].open)
+                    peerConns[i].send({type:'pos',x:playerX,y:playerY});
+            }
+        }
+
+        function leaveP2P(){
+            peerConns=[];
+            peerPositions={};
+            if(peer){peer.destroy();peer=null;}
+            p2pDot('#555');
+            p2pStatus('Same link = same map · Host/Join to see each other');
+            p2pEnableHost(true);
+            p2pEnableJoin(true);
+            p2pEnableLeave(false);
+        }
+
+        document.getElementById('p2pHost').addEventListener('click',function(){
+            p2pEnableHost(false);
+            p2pEnableJoin(false);
+            p2pStatus('Waiting for peer…');
+            p2pDot('#ffaa44');
+            peer=new Peer(hostPeerId,PEER_OPTS);
+            peer.on('open',function(){
+                p2pStatus('You\'re host. Share link — other clicks Join.');
+                p2pEnableLeave(true);
+            });
+            peer.on('connection',function(conn){
+                setupPeerDataConn(conn);
+                p2pDot('#44ff88');
+                p2pStatus('Peer on map');
+            });
+            peer.on('error',function(err){
+                if(err.type==='unavailable-id')p2pStatus('Room has host. Click Join.');
+                else p2pStatus('PeerJS: '+err.message);
+                p2pEnableHost(true);
+                p2pEnableJoin(true);
+                leaveP2P();
+            });
+        });
+        document.getElementById('p2pJoin').addEventListener('click',function(){
+            p2pEnableHost(false);
+            p2pEnableJoin(false);
+            p2pStatus('Connecting…');
+            p2pDot('#ffaa44');
+            peer=new Peer(PEER_OPTS);
+            peer.on('open',function(){
+                var conn=peer.connect(hostPeerId);
+                setupPeerDataConn(conn);
+                conn.on('open',function(){
+                    p2pDot('#44ff88');
+                    p2pStatus('Peer on map');
+                    p2pEnableLeave(true);
+                });
+            });
+            peer.on('error',function(err){
+                p2pStatus('PeerJS: '+err.message);
+                p2pEnableHost(true);
+                p2pEnableJoin(true);
+                leaveP2P();
+            });
+        });
+        document.getElementById('p2pLeave').addEventListener('click',leaveP2P);
 
         function resizeCanvas(){
             var w=mapWrap.clientWidth;
@@ -230,6 +348,26 @@
             ctx.beginPath();
             ctx.arc(px-3,py-3,2.5,0,Math.PI*2);
             ctx.fill();
+
+            for(var pid in peerPositions){
+                var p=peerPositions[pid];
+                var dx=p.x-playerX;
+                var dy=p.y-playerY;
+                var sx=ox+dx*TILE;
+                var sy=oy+dy*TILE;
+                if(sx>=-16&&sx<cw+16&&sy>=-16&&sy<ch+16){
+                    ctx.shadowColor='rgba(68,200,255,0.5)';
+                    ctx.shadowBlur=10;
+                    ctx.fillStyle='#44ccff';
+                    ctx.beginPath();
+                    ctx.arc(sx+TILE/2,sy+TILE/2,6,0,Math.PI*2);
+                    ctx.fill();
+                    ctx.shadowBlur=0;
+                    ctx.strokeStyle='rgba(100,220,255,0.5)';
+                    ctx.lineWidth=1;
+                    ctx.stroke();
+                }
+            }
         }
 
         // Joystick-driven movement (no keyboard)
@@ -328,6 +466,7 @@
                 playerY+=joyVY*joyMag*SPEED*dt;
             }
 
+            sendPosition();
             drawWorld();
             document.getElementById('px').textContent=playerX.toFixed(1);
             document.getElementById('py').textContent=playerY.toFixed(1);
