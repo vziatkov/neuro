@@ -23,6 +23,8 @@ export default defineConfig({
         'dice-room': resolve(__dirname, 'dice-room.html'),
         'mmo-map': resolve(__dirname, 'mmo-map.html'),
         'crash-probability-explorer': resolve(__dirname, 'crash-probability-explorer.html'),
+        'forest-supply-chain': resolve(__dirname, 'forest-supply-chain.html'),
+        'forest-supply-chain-live': resolve(__dirname, 'forest-supply-chain-live.html'),
         'resume': resolve(__dirname, 'resume.html'),
       },
     },
