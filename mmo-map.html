@@ -96,6 +96,12 @@
         <div class="line" style="margin-top:6px;color:#888">Temples discovered: <span id="templesCount">0</span></div>
     </div>
 
+    <div class="radar" id="agentBlock">
+        <div class="label">AI Agents</div>
+        <div class="line" style="color:#888;font-size:9px">Connect: <code style="color:#6cc">window.AgentAPI</code> or <code style="color:#6cc">?agent_ws=ws://...</code></div>
+        <div id="agentList" style="margin-top:4px"><div class="line" style="color:#555">—</div></div>
+    </div>
+
     <div class="map-wrap">
         <canvas id="canvas"></canvas>
     </div>
@@ -260,6 +266,55 @@
         });
         document.getElementById('p2pLeave').addEventListener('click',leaveP2P);
 
+        var agentWs=null;
+        var agentDisplayName='';
+        var lastAgentState=null;
+        var agentWsUrl=params.get('agent_ws')||'';
+        if(agentWsUrl&&(agentWsUrl.indexOf('ws://')===0||agentWsUrl.indexOf('wss://')===0)){
+            try{
+                agentWs=new WebSocket(agentWsUrl);
+                agentWs.onopen=function(){ updateAgentUI(true); };
+                agentWs.onclose=function(){ updateAgentUI(false); };
+                agentWs.onerror=function(){ updateAgentUI(false); };
+                agentWs.onmessage=function(ev){
+                    var cmd;
+                    try{ cmd=JSON.parse(ev.data); }catch(_){ return; }
+                    if(!cmd||typeof cmd.type!=='string')return;
+                    if(cmd.type==='move'&&typeof cmd.dx==='number'&&typeof cmd.dy==='number')
+                        window.AgentAPI.move(cmd.dx,cmd.dy);
+                    if(cmd.type==='name'&& typeof cmd.name==='string'){ agentDisplayName=cmd.name; updateAgentUI(!!agentWs&&agentWs.readyState===1); }
+                    if(cmd.type==='scan'){
+                        var radius=typeof cmd.radius==='number'?cmd.radius:5;
+                        agentWs.send(JSON.stringify(window.AgentAPI.scan(radius)));
+                    }
+                    if(cmd.type==='state'){
+                        lastAgentState=window.AgentAPI.state();
+                        agentWs.send(JSON.stringify(lastAgentState));
+                        updateAgentUI(true);
+                    }
+                };
+            }catch(e){ console.warn('Agent WebSocket:',e); }
+        }
+        var agentLeaderboard=[];
+        function updateAgentUI(connected){
+            if(!connected){ agentLeaderboard=[]; }
+            else{
+                var name=agentDisplayName||'Agent';
+                var s=lastAgentState||{score:0,temples:0};
+                var idx=agentLeaderboard.findIndex(function(a){ return a.name===name; });
+                var row={ name:name, score:s.score, temples:s.temples };
+                if(idx>=0)agentLeaderboard[idx]=row;
+                else agentLeaderboard.push(row);
+            }
+            var listEl=document.getElementById('agentList');
+            if(!listEl)return;
+            if(agentLeaderboard.length===0){ listEl.innerHTML='<div class="line" style="color:#555">—</div>'; return; }
+            agentLeaderboard.sort(function(a,b){ return b.score-a.score; });
+            listEl.innerHTML=agentLeaderboard.map(function(a){
+                return '<div class="line peer">'+a.name+' — score '+a.score+(a.temples?', temples '+a.temples:'')+'</div>';
+            }).join('');
+        }
+
         function resizeCanvas(){
             var w=mapWrap.clientWidth;
             var h=mapWrap.clientHeight;
@@ -356,6 +411,69 @@
         var discoveredTemples={};
         var score=0;
         var lastPortalX=-999,lastPortalY=-999;
+
+        function getTerrain(wx,wy){
+            return getTileCached(wx,wy);
+        }
+        var lastAgentMove=0;
+        var AGENT_MOVE_DELAY=60;
+        window.AgentAPI={
+            move:function(dx,dy){
+                var now=performance.now();
+                if(now-lastAgentMove<AGENT_MOVE_DELAY)return false;
+                lastAgentMove=now;
+                playerX+=dx*0.5;
+                playerY+=dy*0.5;
+                return true;
+            },
+            state:function(){
+                return {
+                    x:playerX,
+                    y:playerY,
+                    score:score,
+                    temples:Object.keys(discoveredTemples).length
+                };
+            },
+            scan:function(radius){
+                if(typeof radius!=='number')radius=5;
+                if(radius>20)radius=20;
+                var cells=[];
+                var px=Math.floor(playerX);
+                var py=Math.floor(playerY);
+                for(var y=-radius;y<=radius;y++){
+                    for(var x=-radius;x<=radius;x++){
+                        var wx=px+x;
+                        var wy=py+y;
+                        var key=wx+','+wy;
+                        cells.push({
+                            x:wx,
+                            y:wy,
+                            terrain:getTerrain(wx,wy),
+                            resource:hasResource(wx,wy)&&!collected[key],
+                            temple:isTemple(wx,wy),
+                            portal:isPortal(wx,wy),
+                            collected:!!collected[key]
+                        });
+                    }
+                }
+                return cells;
+            },
+            scanTile:function(x,y){
+                var key=x+','+y;
+                return {
+                    x:x,
+                    y:y,
+                    terrain:getTerrain(x,y),
+                    resource:hasResource(x,y)&&!collected[key],
+                    temple:isTemple(x,y),
+                    portal:isPortal(x,y),
+                    collected:!!collected[key]
+                };
+            },
+            world:function(){
+                return { seed:seed, tileSize:TILE };
+            }
+        };
 
         function drawTile(type,sx,sy){
             var pad=1;
@@ -639,6 +757,11 @@
             document.getElementById('py').textContent=playerY.toFixed(1);
             document.getElementById('radarYou').textContent='('+playerX.toFixed(0)+', '+playerY.toFixed(0)+')';
             document.getElementById('templesCount').textContent=Object.keys(discoveredTemples).length;
+            if(agentWs&&agentWs.readyState===1){
+                lastAgentState=window.AgentAPI.state();
+                updateAgentUI(true);
+                try{ agentWs.send(JSON.stringify({ type:'tick', state:lastAgentState })); }catch(_){}
+            }
             var peersEl=document.getElementById('radarPeers');
             var pidKeys=Object.keys(peerPositions);
             if(pidKeys.length===0)peersEl.innerHTML='';
