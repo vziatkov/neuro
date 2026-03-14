@@ -52,12 +52,18 @@
         .foot-note{flex-shrink:0;font-size:9px;color:#333;margin-top:8px;text-align:center}
         .foot-note a{color:rgba(255,140,66,0.6);text-decoration:none}
         .foot-note a:hover{text-decoration:underline}
+        .api-ref{font-size:9px;color:#666;font-family:monospace;line-height:1.5;margin-top:6px}
+        .api-ref code{color:#6cc}
+        .ai-mode-label{font-size:9px;color:rgba(68,200,255,0.8);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+        body.ai-mode .joystick-wrap{display:none}
+        body.ai-mode .map-hint{display:none}
     </style>
 </head>
 <body>
     <div class="header">
         <h1>P2P MMO Map — No server</h1>
         <div class="sub">World = f(seed, x, y) · Deterministic: all peers see identical terrain, no map sync · Only positions over P2P · Host = relay + peer registry</div>
+        <div class="ai-mode-label" id="aiModeLabel" style="display:none">AI MODE ENABLED</div>
     </div>
 
     <div class="world-info">
@@ -99,7 +105,9 @@
     <div class="radar" id="agentBlock">
         <div class="label">AI Agents</div>
         <div class="line" style="color:#888;font-size:9px">Connect: <code style="color:#6cc">window.AgentAPI</code> or <code style="color:#6cc">?agent_ws=ws://...</code></div>
-        <div id="agentList" style="margin-top:4px"><div class="line" style="color:#555">—</div></div>
+        <div class="api-ref" id="agentApiRef">AgentAPI.move(dx,dy) · AgentAPI.scan(radius) · AgentAPI.scanTile(x,y) · AgentAPI.state() · AgentAPI.world()</div>
+        <div class="label" style="margin-top:8px">Agent leaderboard</div>
+        <div id="agentList" style="margin-top:2px"><div class="line" style="color:#555">—</div></div>
     </div>
 
     <div class="map-wrap">
@@ -128,6 +136,11 @@
         if(room){
             document.getElementById('roomWrap').style.display='block';
             document.getElementById('roomVal').textContent=room;
+        }
+        var aiMode=params.get('agent')==='1';
+        if(aiMode){
+            document.body.classList.add('ai-mode');
+            document.getElementById('aiModeLabel').style.display='block';
         }
 
         function getWorldLink(){
@@ -269,6 +282,8 @@
         var agentWs=null;
         var agentDisplayName='';
         var lastAgentState=null;
+        var lastTickSend=0;
+        var TICK_SEND_INTERVAL=200;
         var agentWsUrl=params.get('agent_ws')||'';
         if(agentWsUrl&&(agentWsUrl.indexOf('ws://')===0||agentWsUrl.indexOf('wss://')===0)){
             try{
@@ -311,7 +326,7 @@
             if(agentLeaderboard.length===0){ listEl.innerHTML='<div class="line" style="color:#555">—</div>'; return; }
             agentLeaderboard.sort(function(a,b){ return b.score-a.score; });
             listEl.innerHTML=agentLeaderboard.map(function(a){
-                return '<div class="line peer">'+a.name+' — score '+a.score+(a.temples?', temples '+a.temples:'')+'</div>';
+                return '<div class="line peer">'+a.name+' — score '+a.score+', temples '+a.temples+'</div>';
             }).join('');
         }
 
@@ -760,7 +775,10 @@
             if(agentWs&&agentWs.readyState===1){
                 lastAgentState=window.AgentAPI.state();
                 updateAgentUI(true);
-                try{ agentWs.send(JSON.stringify({ type:'tick', state:lastAgentState })); }catch(_){}
+                if(now-lastTickSend>=TICK_SEND_INTERVAL){
+                    lastTickSend=now;
+                    try{ agentWs.send(JSON.stringify({ type:'tick', state:lastAgentState })); }catch(_){}
+                }
             }
             var peersEl=document.getElementById('radarPeers');
             var pidKeys=Object.keys(peerPositions);
