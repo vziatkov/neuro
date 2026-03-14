@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procedural MMO Map — No server</title>
+    <title>P2P MMO Map — No server</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -41,12 +41,23 @@
         .p2p-wrap .p2p-dot{width:6px;height:6px;border-radius:50%;background:#555;display:inline-block;vertical-align:middle}
         .p2p-wrap .p2p-dot.connected{background:#44ff88}
         .p2p-wrap .p2p-status{font-size:9px;color:#666}
+        .world-link{display:block;margin-top:6px;font-size:9px;color:#555;cursor:pointer;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,0.2);word-break:break-all;max-width:720px}
+        .world-link:hover{color:#ff8c42;background:rgba(255,140,66,0.08)}
+        .world-link.copied{color:#44ff88}
+        .radar{flex-shrink:0;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:8px 12px;margin-bottom:8px;max-width:720px;width:100%}
+        .radar .label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+        .radar .line{font-size:10px;color:#888;margin-bottom:2px}
+        .radar .line.you{color:#ff8c42}
+        .radar .line.peer{color:#44ccff}
+        .foot-note{flex-shrink:0;font-size:9px;color:#333;margin-top:8px;text-align:center}
+        .foot-note a{color:rgba(255,140,66,0.6);text-decoration:none}
+        .foot-note a:hover{text-decoration:underline}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Procedural MMO Map</h1>
-        <div class="sub">World = f(seed, x, y) · Value noise → height · No server · Same link = same infinite map</div>
+        <h1>P2P MMO Map — No server</h1>
+        <div class="sub">World = f(seed, x, y) · Deterministic: all peers see identical terrain, no map sync · Only positions over P2P · Host = relay + peer registry</div>
     </div>
 
     <div class="world-info">
@@ -54,11 +65,16 @@
             <div class="label">World seed</div>
             <div class="seed" id="worldSeed">—</div>
         </div>
+        <div id="roomWrap" style="display:none">
+            <div class="label">Room</div>
+            <div class="seed" id="roomVal">—</div>
+        </div>
         <div>
             <div class="label">Position</div>
             <div class="coords" id="coords">x: <span id="px">0</span> · y: <span id="py">0</span></div>
         </div>
     </div>
+    <div class="world-link" id="worldLink" title="Click to copy">—</div>
 
     <div class="p2p-wrap">
         <span class="p2p-label">Multiplayer</span>
@@ -66,13 +82,21 @@
         <button class="p2p-btn" id="p2pHost">Host</button>
         <button class="p2p-btn" id="p2pJoin">Join</button>
         <button class="p2p-btn" id="p2pLeave" disabled style="opacity:0.4">Leave</button>
-        <span class="p2p-status" id="p2pStatus">Same link = same map · Host/Join to see each other</span>
+        <span class="p2p-status" id="p2pStatus">Same URL = same world + room · Host/Join to see each other</span>
+    </div>
+
+    <div class="radar" id="radar">
+        <div class="label">Radar</div>
+        <div class="line you">● you <span id="radarYou">(0, 0)</span></div>
+        <div id="radarPeers"></div>
     </div>
 
     <div class="map-wrap">
         <canvas id="canvas"></canvas>
     </div>
     <div class="map-hint">Drag the joystick to move · Map is infinite and identical for everyone with the same URL</div>
+
+    <div class="foot-note"><a href="https://github.com/vziatkov/neuro/blob/main/MMO-P2P-ARCHITECTURE.md" target="_blank" rel="noopener">P2P MMO architecture (serverless)</a></div>
 
     <div class="joystick-wrap">
         <div class="joystick-base" id="joyBase">
@@ -85,8 +109,32 @@
 
     <script>
     (function(){
-        var seed=location.hash.slice(1)||'world';
+        var params=new URLSearchParams(location.search);
+        var hashSeed=location.hash.slice(1)||'';
+        var seed=params.get('seed')||hashSeed||'world';
+        var room=params.get('room')||'';
         document.getElementById('worldSeed').textContent=seed||'world';
+        if(room){
+            document.getElementById('roomWrap').style.display='block';
+            document.getElementById('roomVal').textContent=room;
+        }
+
+        function getWorldLink(){
+            var u=location.origin+location.pathname;
+            u+='?seed='+encodeURIComponent(seed);
+            if(room)u+='&room='+encodeURIComponent(room);
+            return u;
+        }
+        function copyWorldLink(){
+            var el=document.getElementById('worldLink');
+            navigator.clipboard.writeText(getWorldLink()).then(function(){
+                el.textContent='Copied — send to friend';
+                el.classList.add('copied');
+                setTimeout(function(){ el.textContent=getWorldLink(); el.classList.remove('copied'); },2000);
+            });
+        }
+        document.getElementById('worldLink').addEventListener('click',copyWorldLink);
+        document.getElementById('worldLink').textContent=getWorldLink();
 
         var TILE=32;
         var VIEW_X=14;
@@ -97,11 +145,11 @@
         var playerY=0;
         var mapWrap=document.querySelector('.map-wrap');
 
-        // P2P: same seed = same room, data channel for position sync (no server)
+        // P2P: same seed + room = same world, data channel for position sync (no server)
         var peer=null;
         var peerConns=[];
         var peerPositions={};
-        var hostPeerId='mmo-'+(seed.length>20?seed.slice(0,20):seed).replace(/\s/g,'-');
+        var hostPeerId='mmo-'+(room||(seed.length>20?seed.slice(0,20):seed)).replace(/\s/g,'-').replace(/[^a-zA-Z0-9_-]/g,'');
         var PEER_OPTS={host:'0.peerjs.com',secure:true,port:443};
         var lastSendPos=0;
         var POS_SEND_INTERVAL=120;
@@ -144,7 +192,7 @@
             peerPositions={};
             if(peer){peer.destroy();peer=null;}
             p2pDot('#555');
-            p2pStatus('Same link = same map · Host/Join to see each other');
+            p2pStatus('Same URL = same world + room · Host/Join to see each other');
             p2pEnableHost(true);
             p2pEnableJoin(true);
             p2pEnableLeave(false);
@@ -157,7 +205,8 @@
             p2pDot('#ffaa44');
             peer=new Peer(hostPeerId,PEER_OPTS);
             peer.on('open',function(){
-                p2pStatus('You\'re host. Share link — other clicks Join.');
+                copyWorldLink();
+                p2pStatus('Link copied — send to friend. They open it and click Join.');
                 p2pEnableLeave(true);
             });
             peer.on('connection',function(conn){
@@ -470,6 +519,16 @@
             drawWorld();
             document.getElementById('px').textContent=playerX.toFixed(1);
             document.getElementById('py').textContent=playerY.toFixed(1);
+            document.getElementById('radarYou').textContent='('+playerX.toFixed(0)+', '+playerY.toFixed(0)+')';
+            var peersEl=document.getElementById('radarPeers');
+            var pidKeys=Object.keys(peerPositions);
+            if(pidKeys.length===0)peersEl.innerHTML='';
+            else{
+                peersEl.innerHTML=pidKeys.map(function(pid){
+                    var p=peerPositions[pid];
+                    return '<div class="line peer">○ peer ('+p.x.toFixed(0)+', '+p.y.toFixed(0)+')</div>';
+                }).join('');
+            }
             requestAnimationFrame(loop);
         }
         requestAnimationFrame(loop);
