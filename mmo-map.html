@@ -73,6 +73,10 @@
             <div class="label">Position</div>
             <div class="coords" id="coords">x: <span id="px">0</span> · y: <span id="py">0</span></div>
         </div>
+        <div>
+            <div class="label">Score</div>
+            <div class="seed" id="scoreVal">0</div>
+        </div>
     </div>
     <div class="world-link" id="worldLink" title="Click to copy">—</div>
 
@@ -89,6 +93,7 @@
         <div class="label">Radar</div>
         <div class="line you">● you <span id="radarYou">(0, 0)</span></div>
         <div id="radarPeers"></div>
+        <div class="line" style="margin-top:6px;color:#888">Temples discovered: <span id="templesCount">0</span></div>
     </div>
 
     <div class="map-wrap">
@@ -160,10 +165,19 @@
         function p2pEnableJoin(on){document.getElementById('p2pJoin').disabled=!on;}
         function p2pEnableLeave(on){document.getElementById('p2pLeave').disabled=!on;}
 
+        function broadcast(obj){
+            for(var i=0;i<peerConns.length;i++)
+                if(peerConns[i].open) peerConns[i].send(obj);
+        }
         function setupPeerDataConn(conn){
             conn.on('data',function(data){
-                if(data&&data.type==='pos'&&typeof data.x==='number'&&typeof data.y==='number')
+                if(!data||typeof data.type!=='string')return;
+                if(data.type==='pos'&&typeof data.x==='number'&&typeof data.y==='number')
                     peerPositions[conn.peer]={x:data.x,y:data.y};
+                if(data.type==='collect'&&typeof data.x==='number'&&typeof data.y==='number')
+                    collected[data.x+','+data.y]=true;
+                if(data.type==='discovery'&&data.kind==='temple'&&typeof data.x==='number'&&typeof data.y==='number')
+                    discoveredTemples[data.x+','+data.y]=true;
             });
             conn.on('close',function(){
                 delete peerPositions[conn.peer];
@@ -297,6 +311,52 @@
             return 'mountain';
         }
 
+        var CHUNK_SIZE=16;
+        var chunkCache={};
+        function getChunk(cx,cy){
+            var key=cx+','+cy;
+            if(chunkCache[key])return chunkCache[key];
+            var out=[];
+            for(var y=0;y<CHUNK_SIZE;y++){
+                for(var x=0;x<CHUNK_SIZE;x++){
+                    var wx=cx*CHUNK_SIZE+x;
+                    var wy=cy*CHUNK_SIZE+y;
+                    out.push(tileType(wx,wy));
+                }
+            }
+            chunkCache[key]=out;
+            return out;
+        }
+        function getTileCached(wx,wy){
+            var cx=Math.floor(wx/CHUNK_SIZE);
+            var cy=Math.floor(wy/CHUNK_SIZE);
+            var c=getChunk(cx,cy);
+            var tx=((wx%CHUNK_SIZE)+CHUNK_SIZE)%CHUNK_SIZE;
+            var ty=((wy%CHUNK_SIZE)+CHUNK_SIZE)%CHUNK_SIZE;
+            return c[ty*CHUNK_SIZE+tx];
+        }
+
+        function hasResource(x,y){
+            var cx=Math.floor(x/12);
+            var cy=Math.floor(y/12);
+            var cluster=rng(hash(seed+'cluster:'+cx+':'+cy));
+            if(cluster>=0.2)return false;
+            var r=rng(hash(seed+'res:'+x+':'+y));
+            return r<0.14;
+        }
+        function isPortal(x,y){
+            var r=rng(hash(seed+'portal:'+x+':'+y));
+            return r<0.001;
+        }
+        function isTemple(x,y){
+            var r=rng(hash(seed+'temple:'+x+':'+y));
+            return r<0.0002;
+        }
+        var collected={};
+        var discoveredTemples={};
+        var score=0;
+        var lastPortalX=-999,lastPortalY=-999;
+
         function drawTile(type,sx,sy){
             var pad=1;
             var x=sx+pad;
@@ -360,34 +420,66 @@
             }
         }
 
+        var cameraX=0,cameraY=0;
         function drawWorld(){
             var cw=canvas.width;
             var ch=canvas.height;
-            var ox=cw/2-TILE/2;
-            var oy=ch/2-TILE/2;
+            var centerX=cw/2;
+            var centerY=ch/2;
+
+            cameraX+=(playerX-cameraX)*0.15;
+            cameraY+=(playerY-cameraY)*0.15;
+            var camX=cameraX;
+            var camY=cameraY;
 
             ctx.fillStyle='#0a0a0c';
             ctx.fillRect(0,0,cw,ch);
 
-            for(var dy=-VIEW_Y;dy<=VIEW_Y;dy++){
-                for(var dx=-VIEW_X;dx<=VIEW_X;dx++){
-                    var wx=playerX+dx;
-                    var wy=playerY+dy;
-                    var type=tileType(wx,wy);
-                    var sx=ox+dx*TILE;
-                    var sy=oy+dy*TILE;
-                    if(sx>-TILE&&sx<cw+TILE&&sy>-TILE&&sy<ch+TILE)
+            var startX=Math.floor(camX)-VIEW_X;
+            var endX=Math.floor(camX)+VIEW_X;
+            var startY=Math.floor(camY)-VIEW_Y;
+            var endY=Math.floor(camY)+VIEW_Y;
+
+            for(var wx=startX;wx<=endX;wx++){
+                for(var wy=startY;wy<=endY;wy++){
+                    var type=getTileCached(wx,wy);
+                    var sx=centerX+(wx-camX)*TILE-TILE/2;
+                    var sy=centerY+(wy-camY)*TILE-TILE/2;
+                    if(sx>-TILE&&sx<cw+TILE&&sy>-TILE&&sy<ch+TILE){
                         drawTile(type,sx,sy);
+                        var key=wx+','+wy;
+                        if(hasResource(wx,wy)&&!collected[key]){
+                            ctx.fillStyle='#ffd700';
+                            ctx.shadowColor='rgba(255,215,0,0.5)';
+                            ctx.shadowBlur=6;
+                            ctx.beginPath();
+                            ctx.arc(sx+TILE/2,sy+TILE/2,4,0,Math.PI*2);
+                            ctx.fill();
+                            ctx.shadowBlur=0;
+                        }
+                        if(isPortal(wx,wy)){
+                            ctx.strokeStyle='rgba(180,100,255,0.7)';
+                            ctx.lineWidth=2;
+                            ctx.beginPath();
+                            ctx.arc(sx+TILE/2,sy+TILE/2,10,0,Math.PI*2);
+                            ctx.stroke();
+                        }
+                        if(isTemple(wx,wy)){
+                            ctx.fillStyle='rgba(220,180,100,0.5)';
+                            ctx.fillRect(sx+TILE/2-6,sy+TILE/2-6,12,12);
+                            ctx.strokeStyle='rgba(200,160,60,0.9)';
+                            ctx.lineWidth=1.5;
+                            ctx.strokeRect(sx+TILE/2-6,sy+TILE/2-6,12,12);
+                        }
+                    }
                 }
             }
 
-            var px=cw/2;
-            var py=ch/2;
             ctx.shadowColor='rgba(255,140,66,0.6)';
             ctx.shadowBlur=14;
             ctx.fillStyle='#ff8c42';
             ctx.beginPath();
-            ctx.arc(px,py,8,0,Math.PI*2);
+            ctx.arc(centerX,centerY,8,0,Math.PI*2);
             ctx.fill();
             ctx.shadowBlur=0;
             ctx.strokeStyle='rgba(255,200,150,0.5)';
@@ -395,21 +487,47 @@
             ctx.stroke();
             ctx.fillStyle='rgba(255,255,255,0.9)';
             ctx.beginPath();
-            ctx.arc(px-3,py-3,2.5,0,Math.PI*2);
+            ctx.arc(centerX-3,centerY-3,2.5,0,Math.PI*2);
             ctx.fill();
+
+            var tileX=Math.floor(playerX);
+            var tileY=Math.floor(playerY);
+            var tileKey=tileX+','+tileY;
+            if(hasResource(tileX,tileY)&&!collected[tileKey]){
+                collected[tileKey]=true;
+                score++;
+                document.getElementById('scoreVal').textContent=score;
+                broadcast({type:'collect',x:tileX,y:tileY});
+            }
+            if(isTemple(tileX,tileY)){
+                if(!discoveredTemples[tileKey]){
+                    discoveredTemples[tileKey]=true;
+                    broadcast({type:'discovery',kind:'temple',x:tileX,y:tileY});
+                }
+            }
+            if(isPortal(tileX,tileY)&&(tileX!==lastPortalX||tileY!==lastPortalY)){
+                lastPortalX=tileX;
+                lastPortalY=tileY;
+                var nx=Math.floor(rng(hash(seed+'tp:'+tileX+':'+tileY))*40)-20;
+                var ny=Math.floor(rng(hash(seed+'tp2:'+tileX+':'+tileY))*40)-20;
+                playerX=nx+0.5;
+                playerY=ny+0.5;
+                cameraX=playerX;
+                cameraY=playerY;
+            } else if(!isPortal(tileX,tileY)){ lastPortalX=-999; lastPortalY=-999; }
 
             for(var pid in peerPositions){
                 var p=peerPositions[pid];
-                var dx=p.x-playerX;
-                var dy=p.y-playerY;
-                var sx=ox+dx*TILE;
-                var sy=oy+dy*TILE;
-                if(sx>=-16&&sx<cw+16&&sy>=-16&&sy<ch+16){
+                var pwx=Math.round(p.x);
+                var pwy=Math.round(p.y);
+                var peerSx=centerX+(pwx-camX)*TILE;
+                var peerSy=centerY+(pwy-camY)*TILE;
+                if(peerSx>=-16&&peerSx<cw+16&&peerSy>=-16&&peerSy<ch+16){
                     ctx.shadowColor='rgba(68,200,255,0.5)';
                     ctx.shadowBlur=10;
                     ctx.fillStyle='#44ccff';
                     ctx.beginPath();
-                    ctx.arc(sx+TILE/2,sy+TILE/2,6,0,Math.PI*2);
+                    ctx.arc(peerSx,peerSy,6,0,Math.PI*2);
                     ctx.fill();
                     ctx.shadowBlur=0;
                     ctx.strokeStyle='rgba(100,220,255,0.5)';
@@ -520,6 +638,7 @@
             document.getElementById('px').textContent=playerX.toFixed(1);
             document.getElementById('py').textContent=playerY.toFixed(1);
             document.getElementById('radarYou').textContent='('+playerX.toFixed(0)+', '+playerY.toFixed(0)+')';
+            document.getElementById('templesCount').textContent=Object.keys(discoveredTemples).length;
             var peersEl=document.getElementById('radarPeers');
             var pidKeys=Object.keys(peerPositions);
             if(pidKeys.length===0)peersEl.innerHTML='';
