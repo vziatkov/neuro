@@ -26,6 +26,7 @@ export default defineConfig({
         'forest-supply-chain': resolve(__dirname, 'forest-supply-chain.html'),
         'forest-supply-chain-live': resolve(__dirname, 'forest-supply-chain-live.html'),
         'resume': resolve(__dirname, 'resume.html'),
+        'observatory-v2': resolve(__dirname, 'observatory-v2.html'),
       },
     },
   },
