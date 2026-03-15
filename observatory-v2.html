@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Observatory — Presence shapes the field</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #030304; color: #e5e5e5; font-family: 'JetBrains Mono', monospace; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 0; }
+        .bar { flex-shrink: 0; width: 100%; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(0,0,0,0.6); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 10; }
+        .bar-left { display: flex; align-items: center; gap: 12px; }
+        .bar h1 { font-size: 11px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+        .bar .hint { font-size: 9px; color: rgba(255,255,255,0.25); letter-spacing: 0.5px; }
+        .bar .signal { display: flex; align-items: center; gap: 6px; font-size: 9px; color: rgba(255,255,255,0.35); }
+        .bar .signal-dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
+        .bar .signal-dot.on { background: #44ff88; box-shadow: 0 0 8px rgba(68,255,136,0.5); }
+        .bar .signal-dot.host { background: #ff8c42; box-shadow: 0 0 8px rgba(255,140,66,0.4); }
+        .bar .btns { display: flex; gap: 6px; }
+        .bar button { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-family: inherit; font-size: 9px; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .bar button:hover { background: rgba(255,140,66,0.12); border-color: rgba(255,140,66,0.3); color: #ff8c42; }
+        .bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+        #c { display: block; flex: 1; min-height: 0; width: 100%; cursor: crosshair; touch-action: none; }
+        .overlay-msg { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 10px; color: rgba(255,255,255,0.35); pointer-events: none; z-index: 5; text-align: center; opacity: 0; transition: opacity 0.5s; letter-spacing: 2px; }
+        .back { position: fixed; bottom: 12px; right: 12px; font-size: 9px; color: rgba(255,255,255,0.2); text-decoration: none; z-index: 10; }
+        .back:hover { color: rgba(255,140,66,0.8); }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <div class="bar-left">
+            <h1>The Observatory</h1>
+            <span class="hint">Move · resonate · observe · the field listens</span>
+        </div>
+        <div class="signal" id="signal">
+            <span class="signal-dot" id="signalDot"></span>
+            <span id="signalLabel">No peer</span>
+        </div>
+        <div class="btns">
+            <button id="btnHost">Host</button>
+            <button id="btnJoin">Join</button>
+            <button id="btnLeave" disabled>Leave</button>
+            <button id="btnCopy">Copy link</button>
+        </div>
+    </div>
+    <canvas id="c"></canvas>
+    <div class="overlay-msg" id="overlayMsg"></div>
+    <a href="/neuro/" class="back">← Neuro</a>
+
+    <script>
+    (function() {
+        var canvas = document.getElementById('c');
+        var ctx = canvas.getContext('2d');
+        var dpr = Math.min(window.devicePixelRatio, 2);
+
+        var params = new URLSearchParams(window.location.search);
+        var hash = (window.location.hash || '').replace(/^#/, '');
+        var roomId = params.get('room') || hash || 'default';
+        roomId = 'obs-' + roomId.replace(/\s/g, '-').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'obs-default';
+
+        var myTrail = [];
+        var peerTrails = {};
+        var MAX_POINTS = 1200;
+        var LIVE_DECAY_MS = 12000;
+        var ECHO_DECAY_MS = 60000;
+        var SEND_INTERVAL = 55;
+        var lastSend = 0;
+        var lastMyPointTime = 0;
+
+        var peer = null;
+        var peerConns = [];
+        var PEER_OPTS = { host: '0.peerjs.com', secure: true, port: 443 };
+        var hostPeerId = roomId;
+
+        var bloomPhase = 0;
+        var bloomTarget = 0;
+        var constellationNodes = [];
+        var constellationEndTime = 0;
+        var lastConstellationCheck = 0;
+        var CONSTELLATION_DURATION_MS = 28000;
+        var GRID_CELLS = 18;
+        var lastListenerUpdate = 0;
+        var audioCtx = null;
+        var osc = null;
+        var filter = null;
+        var gainNode = null;
+        var listenerUnlocked = false;
+
+        function resize() {
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+        }
+
+        function addMyPoint(nx, ny) {
+            var t = Date.now();
+            myTrail.push({ x: nx, y: ny, t: t });
+            if (myTrail.length > MAX_POINTS) myTrail.shift();
+            lastMyPointTime = t;
+            if (t - lastSend >= SEND_INTERVAL) {
+                lastSend = t;
+                broadcast({ type: 'point', x: nx, y: ny, t: t });
+            }
+        }
+
+        function broadcast(obj) {
+            for (var i = 0; i < peerConns.length; i++)
+                if (peerConns[i].open) peerConns[i].send(obj);
+        }
+
+        function hueForPeer(pid) {
+            var h = 0;
+            for (var j = 0; j < pid.length; j++) h = (h * 31 + pid.charCodeAt(j)) | 0;
+            return Math.abs(h) % 360;
+        }
+
+        function computeSignature(points, now) {
+            var n = Math.min(30, points.length - 1);
+            if (n < 5) return null;
+            var speedSum = 0, curveSum = 0;
+            var recent = 0;
+            for (var i = points.length - 1 - n; i < points.length - 1; i++) {
+                if (i < 0) continue;
+                var a = points[i], b = points[i + 1];
+                var dx = b.x - a.x, dy = b.y - a.y;
+                speedSum += Math.sqrt(dx * dx + dy * dy);
+                if (i < points.length - 2) {
+                    var c = points[i + 2];
+                    var dx2 = c.x - b.x, dy2 = c.y - b.y;
+                    var ang1 = Math.atan2(dy, dx), ang2 = Math.atan2(dy2, dx2);
+                    var d = Math.abs(ang1 - ang2);
+                    if (d > Math.PI) d = 2 * Math.PI - d;
+                    curveSum += d;
+                }
+                if (now - b.t < 2000) recent++;
+            }
+            var speedAvg = speedSum / n;
+            var curvatureAvg = n > 1 ? curveSum / (n - 1) : 0;
+            var density = recent / 2;
+            return { speedAvg: speedAvg, curvatureAvg: curvatureAvg, density: density };
+        }
+
+        function signatureToRgb(sig) {
+            var hue = 240 - Math.min(240, sig.speedAvg * 400);
+            if (hue < 0) hue += 360;
+            var sat = 0.35 + 0.65 * Math.min(1, sig.curvatureAvg / 1.2);
+            var val = 0.5 + 0.5 * Math.min(1, sig.density / 15);
+            return hsvToRgb(hue, sat, val);
+        }
+
+        function hsvToRgb(h, s, v) {
+            var c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+            var r = 0, g = 0, b = 0;
+            if (h < 60) { r = c; g = x; b = 0; }
+            else if (h < 120) { r = x; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = x; }
+            else if (h < 240) { r = 0; g = x; b = c; }
+            else if (h < 300) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+        }
+
+        function getRecentPoints(withinMs) {
+            var now = Date.now();
+            var out = [];
+            function add(arr) {
+                for (var i = arr.length - 1; i >= 0; i--) {
+                    if (now - arr[i].t > withinMs) break;
+                    out.push(arr[i]);
+                }
+            }
+            add(myTrail);
+            for (var pid in peerTrails) add(peerTrails[pid]);
+            return out;
+        }
+
+        function getRecentPointsBySource(withinMs) {
+            var now = Date.now();
+            var bySource = { self: [] };
+            for (var i = myTrail.length - 1; i >= 0; i--) {
+                if (now - myTrail[i].t > withinMs) break;
+                bySource.self.push(myTrail[i]);
+            }
+            for (var pid in peerTrails) {
+                bySource[pid] = [];
+                var arr = peerTrails[pid];
+                for (var i = arr.length - 1; i >= 0; i--) {
+                    if (now - arr[i].t > withinMs) break;
+                    bySource[pid].push(arr[i]);
+                }
+            }
+            return bySource;
+        }
+
+        function drawTrail(points, isSelf, peerHue) {
+            var now = Date.now();
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            var live = [], echo = [];
+            for (var i = 0; i < points.length; i++) {
+                var age = now - points[i].t;
+                if (age > ECHO_DECAY_MS) continue;
+                if (age <= LIVE_DECAY_MS) live.push(points[i]);
+                else echo.push(points[i]);
+            }
+            function drawSegment(seg, r, g, b, lineW, alphaScale, cap) {
+                if (seg.length < 2) return;
+                ctx.beginPath();
+                ctx.moveTo(seg[0].x * w, seg[0].y * h);
+                for (var i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x * w, seg[i].y * h);
+                var tailAge = now - seg[seg.length - 1].t;
+                var alpha = Math.max(0.06, 1 - tailAge / (cap ? LIVE_DECAY_MS : ECHO_DECAY_MS)) * alphaScale;
+                ctx.strokeStyle = 'rgba(' + (r|0) + ',' + (g|0) + ',' + (b|0) + ',' + alpha + ')';
+                ctx.lineWidth = lineW;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            }
+            if (echo.length >= 2) {
+                var er = 140, eg = 160, eb = 200;
+                drawSegment(echo, er, eg, eb, 1, 0.35, false);
+            }
+            if (live.length >= 2) {
+                var r, g, b;
+                var sig = computeSignature(points, now);
+                if (sig) {
+                    var rgb = signatureToRgb(sig);
+                    r = rgb[0]; g = rgb[1]; b = rgb[2];
+                } else {
+                    if (isSelf) { r = 255; g = 140; b = 66; }
+                    else { var rgb = hsvToRgb(peerHue !== undefined ? peerHue : 200, 0.7, 1); r = rgb[0]; g = rgb[1]; b = rgb[2]; }
+                }
+                drawSegment(live, r, g, b, isSelf ? 2.5 : 2, 0.9, true);
+                ctx.strokeStyle = 'rgba(' + (r|0) + ',' + (g|0) + ',' + (b|0) + ',0.2)';
+                ctx.lineWidth = (isSelf ? 2.5 : 2) * 2.5;
+                ctx.stroke();
+            }
+        }
+
+        function updateBloom(now) {
+            var bySource = getRecentPointsBySource(2000);
+            var sources = 0;
+            var cx = 0, cy = 0, n = 0;
+            for (var k in bySource) {
+                var pts = bySource[k];
+                if (pts.length < 3) continue;
+                sources++;
+                for (var i = 0; i < pts.length; i++) { cx += pts[i].x; cy += pts[i].y; n++; }
+            }
+            if (sources >= 2 && n >= 6) {
+                cx /= n; cy /= n;
+                var varx = 0, vary = 0;
+                for (var k in bySource) {
+                    var pts = bySource[k];
+                    for (var i = 0; i < pts.length; i++) {
+                        varx += (pts[i].x - cx) * (pts[i].x - cx);
+                        vary += (pts[i].y - cy) * (pts[i].y - cy);
+                    }
+                }
+                var spread = Math.sqrt((varx + vary) / Math.max(1, n));
+                if (spread < 0.35) bloomTarget = 1;
+            } else bloomTarget = 0;
+            bloomPhase += (bloomTarget - bloomPhase) * 0.08;
+            if (bloomTarget === 0) bloomPhase *= 0.96;
+        }
+
+        function drawBloom(w, h) {
+            if (bloomPhase < 0.02) return;
+            var bySource = getRecentPointsBySource(2000);
+            var cx = 0, cy = 0, n = 0;
+            for (var k in bySource) {
+                var pts = bySource[k];
+                for (var i = 0; i < pts.length; i++) { cx += pts[i].x; cy += pts[i].y; n++; }
+            }
+            if (n < 4) return;
+            cx = (cx / n) * w; cy = (cy / n) * h;
+            var r = (40 + bloomPhase * 120) * (w + h) / 1200;
+            var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            g.addColorStop(0, 'rgba(255,200,120,' + 0.25 * bloomPhase + ')');
+            g.addColorStop(0.4, 'rgba(255,140,66,' + 0.12 * bloomPhase + ')');
+            g.addColorStop(1, 'rgba(255,80,20,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+        }
+
+        function findConstellationNodes(now) {
+            var pts = getRecentPoints(15000);
+            if (pts.length < 20) return [];
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            var gw = GRID_CELLS, gh = Math.max(1, Math.round(GRID_CELLS * h / w));
+            var grid = [];
+            for (var g = 0; g < gw * gh; g++) grid[g] = 0;
+            for (var i = 0; i < pts.length; i++) {
+                var gx = Math.min(gw - 1, Math.floor(pts[i].x * gw));
+                var gy = Math.min(gh - 1, Math.floor(pts[i].y * gh));
+                grid[gy * gw + gx]++;
+            }
+            var nodes = [];
+            for (var gy = 0; gy < gh; gy++) {
+                for (var gx = 0; gx < gw; gx++) {
+                    if (grid[gy * gw + gx] >= 2)
+                        nodes.push({ x: (gx + 0.5) / gw, y: (gy + 0.5) / gh });
+                }
+            }
+            return nodes;
+        }
+
+        function buildConstellationEdges(nodes, maxDist) {
+            if (nodes.length < 3) return [];
+            var edges = [];
+            for (var i = 0; i < nodes.length; i++) {
+                for (var j = i + 1; j < nodes.length; j++) {
+                    var dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+                    if (dx * dx + dy * dy <= maxDist * maxDist) edges.push([i, j]);
+                }
+            }
+            return edges;
+        }
+
+        function updateConstellation(now) {
+            if (now - lastConstellationCheck < 3000) return;
+            lastConstellationCheck = now;
+            if (now < constellationEndTime) return;
+            var nodes = findConstellationNodes(now);
+            var maxDist = 0.25;
+            var edges = buildConstellationEdges(nodes, maxDist);
+            if (nodes.length >= 3 && edges.length >= 2) {
+                constellationNodes = { nodes: nodes, edges: edges };
+                constellationEndTime = now + CONSTELLATION_DURATION_MS;
+                showOverlay('CONSTELLATION FORMED', 2500);
+            }
+        }
+
+        function drawConstellation(w, h, now) {
+            if (now >= constellationEndTime || !constellationNodes.nodes) return;
+            var fade = Math.min(1, (constellationEndTime - now) / 4000);
+            var alpha = 0.35 * fade;
+            ctx.strokeStyle = 'rgba(255,255,255,' + alpha + ')';
+            ctx.lineWidth = 1.2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            var n = constellationNodes.nodes, e = constellationNodes.edges;
+            for (var i = 0; i < e.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(n[e[i][0]].x * w, n[e[i][0]].y * h);
+                ctx.lineTo(n[e[i][1]].x * w, n[e[i][1]].y * h);
+                ctx.stroke();
+            }
+            for (var i = 0; i < n.length; i++) {
+                ctx.fillStyle = 'rgba(255,255,255,' + alpha * 0.8 + ')';
+                ctx.beginPath();
+                ctx.arc(n[i].x * w, n[i].y * h, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawObserverEffect(w, h, now) {
+            if (myTrail.length < 15) return;
+            var idle = now - lastMyPointTime;
+            if (idle < 5000) return;
+            var n = Math.min(30, myTrail.length);
+            var cx = 0, cy = 0;
+            for (var i = myTrail.length - n; i < myTrail.length; i++) {
+                cx += myTrail[i].x; cy += myTrail[i].y;
+            }
+            cx /= n; cy /= n;
+            var sx = 0, sy = 0;
+            for (var i = myTrail.length - n; i < myTrail.length; i++) {
+                sx += (myTrail[i].x - cx) * (myTrail[i].x - cx);
+                sy += (myTrail[i].y - cy) * (myTrail[i].y - cy);
+            }
+            var r = Math.min(w, h) * (0.04 + 0.04 * Math.sqrt((sx + sy) / n));
+            var pulse = 0.5 + 0.5 * Math.sin(now / 900);
+            ctx.strokeStyle = 'rgba(200,220,255,' + 0.06 * pulse + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx * w, cy * h, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function unlockAudio() {
+            if (listenerUnlocked) return;
+            listenerUnlocked = true;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                osc = audioCtx.createOscillator();
+                filter = audioCtx.createBiquadFilter();
+                gainNode = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 200;
+                filter.type = 'lowpass';
+                filter.frequency.value = 800;
+                gainNode.gain.value = 0;
+                osc.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start(0);
+            } catch (e) {}
+        }
+
+        function updateListener(now) {
+            if (!osc || !gainNode || !filter || now - lastListenerUpdate < 100) return;
+            lastListenerUpdate = now;
+            var peerCount = peerConns.length;
+            gainNode.gain.setTargetAtTime(0.04 * (1 + peerCount * 0.15), audioCtx.currentTime, 0.1);
+            if (myTrail.length < 5) {
+                filter.frequency.setTargetAtTime(400, audioCtx.currentTime, 0.1);
+                osc.frequency.setTargetAtTime(200, audioCtx.currentTime, 0.1);
+                return;
+            }
+            var speed = 0;
+            for (var i = myTrail.length - 5; i < myTrail.length - 1; i++) {
+                var dx = myTrail[i + 1].x - myTrail[i].x, dy = myTrail[i + 1].y - myTrail[i].y;
+                speed += Math.sqrt(dx * dx + dy * dy);
+            }
+            speed /= 4;
+            var curve = 0;
+            for (var i = myTrail.length - 6; i < myTrail.length - 2; i++) {
+                if (i < 0) continue;
+                var a = Math.atan2(myTrail[i + 1].y - myTrail[i].y, myTrail[i + 1].x - myTrail[i].x);
+                var b = Math.atan2(myTrail[i + 2].y - myTrail[i + 1].y, myTrail[i + 2].x - myTrail[i + 1].x);
+                curve += Math.abs(a - b);
+            }
+            var freq = 120 + speed * 500;
+            osc.frequency.setTargetAtTime(Math.min(800, freq), audioCtx.currentTime, 0.08);
+            filter.frequency.setTargetAtTime(400 + curve * 1500, audioCtx.currentTime, 0.08);
+        }
+
+        var overlayTimeout = 0;
+        function showOverlay(text, ms) {
+            var el = document.getElementById('overlayMsg');
+            el.textContent = text;
+            el.style.opacity = '1';
+            clearTimeout(overlayTimeout);
+            overlayTimeout = setTimeout(function() {
+                el.style.opacity = '0';
+                overlayTimeout = 0;
+            }, ms);
+        }
+
+        function draw() {
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            if (w <= 0 || h <= 0) return;
+            var now = Date.now();
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+
+            ctx.fillStyle = '#030304';
+            ctx.fillRect(0, 0, w, h);
+            var bg = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h) * 0.6);
+            bg.addColorStop(0, 'rgba(255,140,66,0.02)');
+            bg.addColorStop(0.5, 'rgba(255,80,30,0.008)');
+            bg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+
+            updateBloom(now);
+            updateConstellation(now);
+
+            for (var pid in peerTrails)
+                drawTrail(peerTrails[pid], false, hueForPeer(pid));
+            drawTrail(myTrail, true);
+
+            drawBloom(w, h);
+            drawConstellation(w, h, now);
+            drawObserverEffect(w, h, now);
+
+            if (listenerUnlocked) updateListener(now);
+
+            ctx.restore();
+        }
+
+        function loop() {
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function onPointer(nx, ny) {
+            if (nx >= 0 && nx <= 1 && ny >= 0 && ny <= 1) {
+                unlockAudio();
+                addMyPoint(nx, ny);
+            }
+        }
+
+        canvas.addEventListener('mousemove', function(e) {
+            var r = canvas.getBoundingClientRect();
+            onPointer((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+        });
+        canvas.addEventListener('mousedown', function(e) {
+            var r = canvas.getBoundingClientRect();
+            onPointer((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+        });
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!e.touches.length) return;
+            var r = canvas.getBoundingClientRect();
+            onPointer((e.touches[0].clientX - r.left) / r.width, (e.touches[0].clientY - r.top) / r.height);
+        }, { passive: false });
+        canvas.addEventListener('touchstart', function(e) {
+            if (!e.touches.length) return;
+            var r = canvas.getBoundingClientRect();
+            onPointer((e.touches[0].clientX - r.left) / r.width, (e.touches[0].clientY - r.top) / r.height);
+        }, { passive: true });
+
+        function setupConn(conn) {
+            conn.on('data', function(data) {
+                if (!data || data.type !== 'point' || typeof data.x !== 'number' || typeof data.y !== 'number') return;
+                var arr = peerTrails[conn.peer] = peerTrails[conn.peer] || [];
+                arr.push({ x: data.x, y: data.y, t: typeof data.t === 'number' ? data.t : Date.now() });
+                if (arr.length > MAX_POINTS) arr.shift();
+            });
+            conn.on('close', function() {
+                delete peerTrails[conn.peer];
+                for (var i = 0; i < peerConns.length; i++) if (peerConns[i] === conn) { peerConns.splice(i, 1); break; }
+                updateSignalUI();
+            });
+            conn.on('error', function() {
+                delete peerTrails[conn.peer];
+                for (var i = 0; i < peerConns.length; i++) if (peerConns[i] === conn) { peerConns.splice(i, 1); break; }
+                updateSignalUI();
+            });
+            peerConns.push(conn);
+            updateSignalUI();
+        }
+
+        function updateSignalUI() {
+            var n = peerConns.length;
+            var dot = document.getElementById('signalDot');
+            var label = document.getElementById('signalLabel');
+            if (n === 0) {
+                dot.className = 'signal-dot';
+                label.textContent = 'No peer';
+            } else {
+                dot.className = 'signal-dot on';
+                label.textContent = n === 1 ? '1 peer' : n + ' peers';
+            }
+        }
+
+        function leaveP2P() {
+            peerConns = [];
+            peerTrails = {};
+            if (peer) { peer.destroy(); peer = null; }
+            document.getElementById('signalDot').className = 'signal-dot';
+            document.getElementById('signalLabel').textContent = 'No peer';
+            document.getElementById('btnHost').disabled = false;
+            document.getElementById('btnJoin').disabled = false;
+            document.getElementById('btnLeave').disabled = true;
+        }
+
+        document.getElementById('btnHost').addEventListener('click', function() {
+            document.getElementById('btnHost').disabled = true;
+            document.getElementById('btnJoin').disabled = true;
+            document.getElementById('signalLabel').textContent = 'Waiting…';
+            document.getElementById('signalDot').className = 'signal-dot host';
+            peer = new Peer(hostPeerId, PEER_OPTS);
+            peer.on('open', function() {
+                document.getElementById('signalLabel').textContent = 'Share link — then Join';
+                document.getElementById('btnLeave').disabled = false;
+                copyLink();
+            });
+            peer.on('connection', function(conn) { setupConn(conn); });
+            peer.on('error', function(err) {
+                if (err.type === 'unavailable-id') document.getElementById('signalLabel').textContent = 'Room taken — click Join';
+                else document.getElementById('signalLabel').textContent = err.message || 'Error';
+                document.getElementById('btnHost').disabled = false;
+                document.getElementById('btnJoin').disabled = false;
+                leaveP2P();
+            });
+        });
+
+        document.getElementById('btnJoin').addEventListener('click', function() {
+            document.getElementById('btnHost').disabled = true;
+            document.getElementById('btnJoin').disabled = true;
+            document.getElementById('signalLabel').textContent = 'Connecting…';
+            document.getElementById('signalDot').className = 'signal-dot host';
+            peer = new Peer(PEER_OPTS);
+            peer.on('open', function() {
+                var conn = peer.connect(hostPeerId);
+                setupConn(conn);
+                conn.on('open', function() {
+                    document.getElementById('signalDot').className = 'signal-dot on';
+                    document.getElementById('signalLabel').textContent = '1 peer';
+                    document.getElementById('btnLeave').disabled = false;
+                });
+            });
+            peer.on('error', function(err) {
+                document.getElementById('signalLabel').textContent = err.message || 'Error';
+                document.getElementById('btnHost').disabled = false;
+                document.getElementById('btnJoin').disabled = false;
+                leaveP2P();
+            });
+        });
+
+        document.getElementById('btnLeave').addEventListener('click', leaveP2P);
+
+        function copyLink() {
+            var url = window.location.href.split('?')[0].split('#')[0];
+            if (roomId !== 'obs-default') url += '?room=' + roomId.replace(/^obs-/, '');
+            navigator.clipboard.writeText(url).then(function() {
+                var lbl = document.getElementById('signalLabel');
+                var prev = lbl.textContent;
+                lbl.textContent = 'Link copied';
+                setTimeout(function() { lbl.textContent = prev; }, 1500);
+            });
+        }
+        document.getElementById('btnCopy').addEventListener('click', copyLink);
+
+
+        window.addEventListener('resize', resize);
+        resize();
+        requestAnimationFrame(loop);
+    })();
+    </script>
+</body>
+</html>

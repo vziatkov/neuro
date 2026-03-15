@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Observatory — Shared Presence as Geometry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #030304; color: #e5e5e5; font-family: 'JetBrains Mono', monospace; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 0; }
+        .bar { flex-shrink: 0; width: 100%; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(0,0,0,0.6); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 10; }
+        .bar-left { display: flex; align-items: center; gap: 12px; }
+        .bar h1 { font-size: 11px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+        .bar .hint { font-size: 9px; color: rgba(255,255,255,0.25); letter-spacing: 0.5px; }
+        .bar .signal { display: flex; align-items: center; gap: 6px; font-size: 9px; color: rgba(255,255,255,0.35); }
+        .bar .signal-dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
+        .bar .signal-dot.on { background: #44ff88; box-shadow: 0 0 8px rgba(68,255,136,0.5); }
+        .bar .signal-dot.host { background: #ff8c42; box-shadow: 0 0 8px rgba(255,140,66,0.4); }
+        .bar .btns { display: flex; gap: 6px; }
+        .bar button { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-family: inherit; font-size: 9px; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .bar button:hover { background: rgba(255,140,66,0.12); border-color: rgba(255,140,66,0.3); color: #ff8c42; }
+        .bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+        #c { display: block; flex: 1; min-height: 0; width: 100%; cursor: crosshair; touch-action: none; }
+        .back { position: fixed; bottom: 12px; right: 12px; font-size: 9px; color: rgba(255,255,255,0.2); text-decoration: none; z-index: 10; }
+        .back:hover { color: rgba(255,140,66,0.8); }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <div class="bar-left">
+            <h1>The Observatory</h1>
+            <span class="hint">Shared presence as geometry · move to leave a trace</span>
+        </div>
+        <div class="signal" id="signal">
+            <span class="signal-dot" id="signalDot"></span>
+            <span id="signalLabel">No peer</span>
+        </div>
+        <div class="btns">
+            <button id="btnHost">Host</button>
+            <button id="btnJoin">Join</button>
+            <button id="btnLeave" disabled>Leave</button>
+            <button id="btnCopy">Copy link</button>
+        </div>
+    </div>
+    <canvas id="c"></canvas>
+    <a href="/neuro/" class="back">← Neuro</a>
+
+    <script>
+    (function() {
+        var canvas = document.getElementById('c');
+        var ctx = canvas.getContext('2d');
+        var dpr = Math.min(window.devicePixelRatio, 2);
+
+        // Room from URL
+        var params = new URLSearchParams(window.location.search);
+        var hash = (window.location.hash || '').replace(/^#/, '');
+        var roomId = params.get('room') || hash || 'default';
+        roomId = 'obs-' + roomId.replace(/\s/g, '-').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'obs-default';
+
+        // Trails: self and peers. Each point { x, y, t } normalized 0..1, t = Date.now()
+        var myTrail = [];
+        var peerTrails = {};
+        var MAX_POINTS = 800;
+        var DECAY_MS = 12000;
+        var SEND_INTERVAL = 55;
+        var lastSend = 0;
+        var lastX = -1, lastY = -1;
+
+        // P2P
+        var peer = null;
+        var peerConns = [];
+        var PEER_OPTS = { host: '0.peerjs.com', secure: true, port: 443 };
+        var hostPeerId = roomId;
+
+        function resize() {
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+        }
+
+        function addMyPoint(nx, ny) {
+            var t = Date.now();
+            myTrail.push({ x: nx, y: ny, t: t });
+            if (myTrail.length > MAX_POINTS) myTrail.shift();
+            lastX = nx;
+            lastY = ny;
+            if (t - lastSend >= SEND_INTERVAL) {
+                lastSend = t;
+                broadcast({ type: 'point', x: nx, y: ny, t: t });
+            }
+        }
+
+        function broadcast(obj) {
+            for (var i = 0; i < peerConns.length; i++)
+                if (peerConns[i].open) peerConns[i].send(obj);
+        }
+
+        function hueForPeer(pid) {
+            var h = 0;
+            for (var j = 0; j < pid.length; j++) h = (h * 31 + pid.charCodeAt(j)) | 0;
+            return Math.abs(h) % 360;
+        }
+
+        function drawTrail(points, isSelf, peerHue) {
+            var now = Date.now();
+            var filtered = [];
+            for (var i = 0; i < points.length; i++) {
+                if (now - points[i].t > DECAY_MS) continue;
+                filtered.push(points[i]);
+            }
+            if (filtered.length < 2) return;
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            ctx.beginPath();
+            ctx.moveTo(filtered[0].x * w, filtered[0].y * h);
+            for (var i = 1; i < filtered.length; i++)
+                ctx.lineTo(filtered[i].x * w, filtered[i].y * h);
+            var r, g, b;
+            if (isSelf) {
+                r = 255; g = 140; b = 66;
+            } else {
+                var hsv = peerHue !== undefined ? peerHue : 200;
+                var s = 0.7, v = 1;
+                var c = v * s, x = c * (1 - Math.abs((hsv / 60) % 2 - 1)), m = v - c;
+                if (hsv < 60) { r = c; g = x; b = 0; }
+                else if (hsv < 120) { r = x; g = c; b = 0; }
+                else if (hsv < 180) { r = 0; g = c; b = x; }
+                else if (hsv < 240) { r = 0; g = x; b = c; }
+                else if (hsv < 300) { r = x; g = 0; b = c; }
+                else { r = c; g = 0; b = x; }
+                r = (r + m) * 255; g = (g + m) * 255; b = (b + m) * 255;
+            }
+            var age = now - filtered[filtered.length - 1].t;
+            var headAlpha = Math.max(0.15, 1 - age / 4000);
+            ctx.strokeStyle = 'rgba(' + (r|0) + ',' + (g|0) + ',' + (b|0) + ',' + headAlpha * 0.9 + ')';
+            ctx.lineWidth = isSelf ? 2.5 : 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(' + (r|0) + ',' + (g|0) + ',' + (b|0) + ',' + headAlpha * 0.25 + ')';
+            ctx.lineWidth = (isSelf ? 2.5 : 2) * 3;
+            ctx.stroke();
+        }
+
+        function draw() {
+            var w = canvas.clientWidth;
+            var h = canvas.clientHeight;
+            if (w <= 0 || h <= 0) return;
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            ctx.fillStyle = '#030304';
+            ctx.fillRect(0, 0, w, h);
+            var g = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h) * 0.6);
+            g.addColorStop(0, 'rgba(255,140,66,0.02)');
+            g.addColorStop(0.5, 'rgba(255,80,30,0.01)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, w, h);
+            var now = Date.now();
+            for (var pid in peerTrails)
+                drawTrail(peerTrails[pid], false, hueForPeer(pid));
+            drawTrail(myTrail, true);
+            ctx.restore();
+        }
+
+        function loop() {
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        canvas.addEventListener('mousemove', function(e) {
+            var r = canvas.getBoundingClientRect();
+            var x = (e.clientX - r.left) / r.width;
+            var y = (e.clientY - r.top) / r.height;
+            if (x >= 0 && x <= 1 && y >= 0 && y <= 1) addMyPoint(x, y);
+        });
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!e.touches.length) return;
+            var r = canvas.getBoundingClientRect();
+            var x = (e.touches[0].clientX - r.left) / r.width;
+            var y = (e.touches[0].clientY - r.top) / r.height;
+            if (x >= 0 && x <= 1 && y >= 0 && y <= 1) addMyPoint(x, y);
+        }, { passive: false });
+
+        function setupConn(conn) {
+            conn.on('data', function(data) {
+                if (!data || data.type !== 'point' || typeof data.x !== 'number' || typeof data.y !== 'number') return;
+                var arr = peerTrails[conn.peer] = peerTrails[conn.peer] || [];
+                arr.push({ x: data.x, y: data.y, t: typeof data.t === 'number' ? data.t : Date.now() });
+                if (arr.length > MAX_POINTS) arr.shift();
+            });
+            conn.on('close', function() {
+                delete peerTrails[conn.peer];
+                for (var i = 0; i < peerConns.length; i++) if (peerConns[i] === conn) { peerConns.splice(i, 1); break; }
+                updateSignalUI();
+            });
+            conn.on('error', function() {
+                delete peerTrails[conn.peer];
+                for (var i = 0; i < peerConns.length; i++) if (peerConns[i] === conn) { peerConns.splice(i, 1); break; }
+                updateSignalUI();
+            });
+            peerConns.push(conn);
+            updateSignalUI();
+        }
+
+        function updateSignalUI() {
+            var n = peerConns.length;
+            var dot = document.getElementById('signalDot');
+            var label = document.getElementById('signalLabel');
+            if (n === 0) {
+                dot.className = 'signal-dot';
+                label.textContent = 'No peer';
+            } else {
+                dot.className = 'signal-dot on';
+                label.textContent = n === 1 ? '1 peer' : n + ' peers';
+            }
+        }
+
+        function leaveP2P() {
+            peerConns = [];
+            peerTrails = {};
+            if (peer) { peer.destroy(); peer = null; }
+            document.getElementById('signalDot').className = 'signal-dot';
+            document.getElementById('signalLabel').textContent = 'No peer';
+            document.getElementById('btnHost').disabled = false;
+            document.getElementById('btnJoin').disabled = false;
+            document.getElementById('btnLeave').disabled = true;
+        }
+
+        document.getElementById('btnHost').addEventListener('click', function() {
+            document.getElementById('btnHost').disabled = true;
+            document.getElementById('btnJoin').disabled = true;
+            document.getElementById('signalLabel').textContent = 'Waiting…';
+            document.getElementById('signalDot').className = 'signal-dot host';
+            peer = new Peer(hostPeerId, PEER_OPTS);
+            peer.on('open', function() {
+                document.getElementById('signalLabel').textContent = 'Share link — then Join';
+                document.getElementById('btnLeave').disabled = false;
+                copyLink();
+            });
+            peer.on('connection', function(conn) {
+                setupConn(conn);
+            });
+            peer.on('error', function(err) {
+                if (err.type === 'unavailable-id') document.getElementById('signalLabel').textContent = 'Room taken — click Join';
+                else document.getElementById('signalLabel').textContent = err.message || 'Error';
+                document.getElementById('btnHost').disabled = false;
+                document.getElementById('btnJoin').disabled = false;
+                leaveP2P();
+            });
+        });
+
+        document.getElementById('btnJoin').addEventListener('click', function() {
+            document.getElementById('btnHost').disabled = true;
+            document.getElementById('btnJoin').disabled = true;
+            document.getElementById('signalLabel').textContent = 'Connecting…';
+            document.getElementById('signalDot').className = 'signal-dot host';
+            peer = new Peer(PEER_OPTS);
+            peer.on('open', function() {
+                var conn = peer.connect(hostPeerId);
+                setupConn(conn);
+                conn.on('open', function() {
+                    document.getElementById('signalDot').className = 'signal-dot on';
+                    document.getElementById('signalLabel').textContent = '1 peer';
+                    document.getElementById('btnLeave').disabled = false;
+                });
+            });
+            peer.on('error', function(err) {
+                document.getElementById('signalLabel').textContent = err.message || 'Error';
+                document.getElementById('btnHost').disabled = false;
+                document.getElementById('btnJoin').disabled = false;
+                leaveP2P();
+            });
+        });
+
+        document.getElementById('btnLeave').addEventListener('click', leaveP2P);
+
+        function copyLink() {
+            var url = window.location.href.split('?')[0].split('#')[0];
+            if (roomId !== 'obs-default') url += '?room=' + roomId.replace(/^obs-/, '');
+            navigator.clipboard.writeText(url).then(function() {
+                var lbl = document.getElementById('signalLabel');
+                var prev = lbl.textContent;
+                lbl.textContent = 'Link copied';
+                setTimeout(function() { lbl.textContent = prev; }, 1500);
+            });
+        }
+        document.getElementById('btnCopy').addEventListener('click', copyLink);
+
+        window.addEventListener('resize', resize);
+        resize();
+        requestAnimationFrame(loop);
+    })();
+    </script>
+</body>
+</html>

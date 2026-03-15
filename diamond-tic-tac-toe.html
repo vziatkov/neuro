@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamond — крестики-нолики на двоих</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050508;
+            color: #e5e5e5;
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .header {
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.85);
+            text-transform: uppercase;
+        }
+        .header .sub {
+            font-size: 10px;
+            color: rgba(255,255,255,0.35);
+            margin-top: 4px;
+        }
+        #board {
+            display: block;
+            cursor: pointer;
+            border-radius: 8px;
+            background: #0a0a0e;
+        }
+        .status {
+            margin-top: 14px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+        .status .turn { color: #ff8c42; font-weight: 600; }
+        .status .scores { margin-top: 4px; color: rgba(255,255,255,0.4); }
+        .again {
+            margin-top: 12px;
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 11px;
+            background: rgba(255, 95, 31, 0.15);
+            border: 1px solid rgba(255, 95, 31, 0.4);
+            color: #ff8c42;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .again:hover {
+            background: rgba(255, 95, 31, 0.25);
+            border-color: rgba(255, 95, 31, 0.6);
+        }
+        .back {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.25);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back:hover { color: rgba(255,95,31,0.8); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Diamond — крестики-нолики</h1>
+        <div class="sub">По очереди ставите по одной палочке. Кто закрыл клетку — ставит в неё свой знак.</div>
+    </div>
+    <canvas id="board"></canvas>
+    <div class="status" id="status"></div>
+    <button class="again" id="again" style="display:none;">Новая игра</button>
+    <a href="/neuro/" class="back">← Neuro</a>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const againBtn = document.getElementById('again');
+        const dpr = Math.min(window.devicePixelRatio, 2);
+
+        const N = 4; // radius: 7x7 grid, 16 cells in diamond
+        const gridSize = 2 * N - 1; // 7
+        const cellPx = 36;
+        const dotR = 3;
+        const edgeHitRadius = 10;
+
+        let width, height, offX, offY;
+        let drawnEdges = new Set();
+        let claimed = {}; // "r,c" -> "X" | "0"
+        let currentPlayer = 'X';
+        let gameOver = false;
+
+        function inDiamond(r, c) {
+            const n = N - 1;
+            const center = gridSize >> 1;
+            return Math.abs(r - center) + Math.abs(c - center) <= center;
+        }
+
+        function getEdges() {
+            const edges = [];
+            for (let r = 0; r <= gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (inDiamond(r, c) || (r > 0 && inDiamond(r - 1, c)))
+                        edges.push({ type: 'h', r, c, key: 'h,' + r + ',' + c });
+                }
+            }
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c <= gridSize; c++) {
+                    if (inDiamond(r, c) || (c > 0 && inDiamond(r, c - 1)))
+                        edges.push({ type: 'v', r, c, key: 'v,' + r + ',' + c });
+                }
+            }
+            return edges;
+        }
+
+        const allEdges = getEdges();
+        const edgeByKey = {};
+        allEdges.forEach(e => { edgeByKey[e.key] = e; });
+
+        function countEdgesOfCell(r, c) {
+            let n = 0;
+            if (drawnEdges.has('h,' + r + ',' + c)) n++;
+            if (drawnEdges.has('h,' + (r + 1) + ',' + c)) n++;
+            if (drawnEdges.has('v,' + r + ',' + c)) n++;
+            if (drawnEdges.has('v,' + r + ',' + (c + 1))) n++;
+            return n;
+        }
+
+        function cellsTouchedByEdge(key) {
+            const parts = key.split(',');
+            const type = parts[0];
+            const r = +parts[1], c = +parts[2];
+            const cells = [];
+            if (type === 'h') {
+                if (r > 0 && inDiamond(r - 1, c)) cells.push([r - 1, c]);
+                if (inDiamond(r, c)) cells.push([r, c]);
+            } else {
+                if (c > 0 && inDiamond(r, c - 1)) cells.push([r, c - 1]);
+                if (inDiamond(r, c)) cells.push([r, c]);
+            }
+            return cells;
+        }
+
+        function toScreen(r, c) {
+            const center = gridSize / 2;
+            const x = offX + (c - center) * cellPx * 0.5 + (r - center) * cellPx * 0.5;
+            const y = offY + (r - center) * cellPx * 0.5 - (c - center) * cellPx * 0.5;
+            return { x, y };
+        }
+
+        function toScreenDot(dr, dc) {
+            return toScreen(dr, dc);
+        }
+
+        function hitEdge(sx, sy) {
+            for (const e of allEdges) {
+                if (drawnEdges.has(e.key)) continue;
+                let x0, y0, x1, y1;
+                if (e.type === 'h') {
+                    const p0 = toScreenDot(e.r, e.c);
+                    const p1 = toScreenDot(e.r, e.c + 1);
+                    x0 = p0.x; y0 = p0.y; x1 = p1.x; y1 = p1.y;
+                } else {
+                    const p0 = toScreenDot(e.r, e.c);
+                    const p1 = toScreenDot(e.r + 1, e.c);
+                    x0 = p0.x; y0 = p0.y; x1 = p1.x; y1 = p1.y;
+                }
+                const dx = x1 - x0, dy = y1 - y0;
+                const len = Math.hypot(dx, dy) || 1;
+                const nx = -dy / len, ny = dx / len;
+                const t = ((sx - x0) * dx + (sy - y0) * dy) / (len * len);
+                const dist = Math.abs((sx - x0) * ny - (sy - y0) * nx);
+                if (t >= -0.1 && t <= 1.1 && dist <= edgeHitRadius) return e.key;
+            }
+            return null;
+        }
+
+        function resize() {
+            const side = gridSize * cellPx * 0.7;
+            width = side * 1.4;
+            height = side * 1.4;
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            offX = width / 2;
+            offY = height / 2;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            draw();
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0e';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+
+            for (let r = 0; r <= gridSize; r++) {
+                for (let c = 0; c <= gridSize; c++) {
+                    const p = toScreenDot(r, c);
+                    const inD = (r < gridSize && c < gridSize && inDiamond(r, c)) ||
+                                (r > 0 && c < gridSize && inDiamond(r - 1, c)) ||
+                                (r < gridSize && c > 0 && inDiamond(r, c - 1)) ||
+                                (r > 0 && c > 0 && inDiamond(r - 1, c - 1));
+                    if (!inD) continue;
+                    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            allEdges.forEach(e => {
+                if (!drawnEdges.has(e.key)) return;
+                let x0, y0, x1, y1;
+                if (e.type === 'h') {
+                    const p0 = toScreenDot(e.r, e.c);
+                    const p1 = toScreenDot(e.r, e.c + 1);
+                    x0 = p0.x; y0 = p0.y; x1 = p1.x; y1 = p1.y;
+                } else {
+                    const p0 = toScreenDot(e.r, e.c);
+                    const p1 = toScreenDot(e.r + 1, e.c);
+                    x0 = p0.x; y0 = p0.y; x1 = p1.x; y1 = p1.y;
+                }
+                ctx.strokeStyle = 'rgba(255, 140, 66, 0.85)';
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x0, y0);
+                ctx.lineTo(x1, y1);
+                ctx.stroke();
+            });
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.lineCap = 'butt';
+
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (!inDiamond(r, c)) continue;
+                    const k = r + ',' + c;
+                    const center = toScreen(r + 0.5, c + 0.5);
+                    if (claimed[k]) {
+                        ctx.font = 'bold ' + (cellPx * 0.35) + 'px JetBrains Mono';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = claimed[k] === 'X' ? '#ff8c42' : '#44aaff';
+                        ctx.fillText(claimed[k], center.x, center.y);
+                    }
+                }
+            }
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+        function updateStatus() {
+            const totalCells = [...Array(gridSize)].reduce((acc, _, r) =>
+                acc + [...Array(gridSize)].filter((_, c) => inDiamond(r, c)).length, 0);
+            const countX = Object.values(claimed).filter(v => v === 'X').length;
+            const count0 = Object.values(claimed).filter(v => v === '0').length;
+            const allDrawn = allEdges.every(e => drawnEdges.has(e.key));
+
+            if (gameOver || allDrawn) {
+                gameOver = true;
+                againBtn.style.display = 'block';
+                if (countX > count0) statusEl.innerHTML = 'Победил <span class="turn">X</span>. Счёт: X = ' + countX + ', 0 = ' + count0;
+                else if (count0 > countX) statusEl.innerHTML = 'Победил <span class="turn">0</span>. Счёт: X = ' + countX + ', 0 = ' + count0;
+                else statusEl.innerHTML = 'Ничья. Счёт: X = ' + countX + ', 0 = ' + count0;
+            } else {
+                statusEl.innerHTML = 'Ход: <span class="turn">' + currentPlayer + '</span>. Поставьте одну палочку на сторону клетки.<br><span class="scores">X = ' + countX + ', 0 = ' + count0 + '</span>';
+            }
+        }
+
+        function doMove(key) {
+            if (drawnEdges.has(key) || gameOver) return false;
+            drawnEdges.add(key);
+            let gotExtra = false;
+            for (const [r, c] of cellsTouchedByEdge(key)) {
+                if (claimed[r + ',' + c]) continue;
+                if (countEdgesOfCell(r, c) === 4) {
+                    claimed[r + ',' + c] = currentPlayer;
+                    gotExtra = true;
+                }
+            }
+            if (!gotExtra) currentPlayer = currentPlayer === 'X' ? '0' : 'X';
+            draw();
+            updateStatus();
+            return true;
+        }
+
+        canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            const key = hitEdge(sx, sy);
+            if (key) doMove(key);
+        });
+
+        againBtn.addEventListener('click', function() {
+            drawnEdges.clear();
+            for (const k of Object.keys(claimed)) delete claimed[k];
+            currentPlayer = 'X';
+            gameOver = false;
+            againBtn.style.display = 'none';
+            draw();
+            updateStatus();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        updateStatus();
+    })();
+    </script>
+</body>
+</html>
