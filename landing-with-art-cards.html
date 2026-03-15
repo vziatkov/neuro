@@ -355,6 +355,7 @@
         .art-mmo { background: #050508; }
         .art-probability { background: #050508; }
         .art-forest-twin { background: #050508; }
+        .art-observatory { background: radial-gradient(ellipse 80% 50% at 50% 50%, #0a0a12 0%, #050508 100%); }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -675,6 +676,15 @@
                     </div>
                 </a>
 
+                <a class="art-card art-observatory" href="https://vziatkov.github.io/neuro/observatory-v2.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-observatory"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">The Observatory — Presence shapes the field</span>
+                        <span class="art-sub">Echo · Bloom · Constellations · Listener · Observer Effect · P2P</span>
+                    </div>
+                </a>
+
             </div>
         </div>
 
@@ -802,6 +812,7 @@
                 <a class="link" href="https://github.com/vziatkov/neuro/blob/main/AGENT_API.md" target="_blank" rel="noopener noreferrer">MMO Agent API (move, scan, state)</a>
                 <a class="link" href="https://vziatkov.github.io/neuro/crash-probability-explorer.html" target="_blank" rel="noopener noreferrer">Probability Explorer</a>
                 <a class="link" href="https://vziatkov.github.io/neuro/forest-supply-chain-live.html" target="_blank" rel="noopener noreferrer">Forest Supply Chain Digital Twin (live)</a>
+                <a class="link" href="https://vziatkov.github.io/neuro/observatory-v2.html" target="_blank" rel="noopener noreferrer">Observatory (P2P presence, Echo, Bloom, Constellations)</a>
             </div>
         </div>
 
@@ -1560,6 +1571,32 @@
     });
   }
 
+  function drawObservatory(t) {
+    var s = initCanvas("art-observatory"); if (!s) return;
+    var ctx = s.ctx, w = s.w, h = s.h;
+    ctx.clearRect(0, 0, w, h);
+    var n = 5, nodes = [];
+    for (var i = 0; i < n; i++) {
+      var a = (i / n) * Math.PI * 2 + t * 0.2;
+      nodes.push({ x: w / 2 + Math.cos(a) * w * 0.35, y: h / 2 + Math.sin(a) * h * 0.3 });
+    }
+    for (var i = 0; i < nodes.length; i++) {
+      for (var j = i + 1; j < nodes.length; j++) {
+        var d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+        if (d < w * 0.45) {
+          ctx.strokeStyle = "rgba(255, 200, 150, " + (0.06 * (1 - d / (w * 0.5))) + ")";
+          ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+    nodes.forEach(function(p, i) {
+      ctx.shadowColor = "rgba(255, 180, 120, 0.5)"; ctx.shadowBlur = 8;
+      ctx.fillStyle = "rgba(255, 200, 160, " + (0.25 + 0.15 * Math.sin(t + i)) + ")";
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  }
+
   const start = performance.now();
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1581,6 +1618,7 @@
     drawMmo(t);
     drawProbability(t);
     drawForestTwin(t);
+    drawObservatory(t);
     if (!prefersReducedMotion) requestAnimationFrame(loop);
   }
 
