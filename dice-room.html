@@ -33,6 +33,12 @@
         .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center;gap:16px;position:relative}
         .dice-3d-wrap{width:110px;height:110px;min-width:110px;min-height:110px;position:relative;flex-shrink:0;aspect-ratio:1}
         #dice3dCanvas{width:100%;height:100%;display:block;border-radius:12px;border:1px solid rgba(255,140,66,0.2);pointer-events:none}
+        .dice-countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:600;line-height:1;color:rgba(255,140,66,0.92);text-shadow:0 0 20px rgba(255,140,66,0.4);font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;pointer-events:none;opacity:0;transition:opacity 0.25s ease,color 0.2s ease;border-radius:12px}
+        .dice-countdown.show{opacity:1}
+        .dice-countdown.result{font-size:48px;font-weight:700}
+        .dice-countdown.result.win{color:rgba(68,255,136,0.95);text-shadow:0 0 24px rgba(68,255,136,0.5)}
+        .dice-countdown.result.loss{color:rgba(255,68,68,0.95);text-shadow:0 0 24px rgba(255,68,68,0.4)}
+        .dice-countdown.result.neutral{color:rgba(100,200,220,0.9);text-shadow:0 0 24px rgba(100,200,220,0.4)}
         .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,140,66,0.4),0 0 40px rgba(255,140,66,0.25),inset 0 0 20px rgba(255,140,66,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
         .dice-face.reveal{animation:diceReveal 0.35s ease-out}
         .dice-face.rolling{animation:none}
@@ -153,6 +159,7 @@
                 <div class="dice-face-wrap">
                     <div class="dice-3d-wrap">
                         <canvas id="dice3dCanvas" aria-hidden="true"></canvas>
+                        <div class="dice-countdown" id="diceCountdown" aria-hidden="true" role="status"></div>
                     </div>
                     <div class="dice-face" id="diceFace" aria-hidden="true">
                         <span class="dice-pip p1"></span><span class="dice-pip p2"></span><span class="dice-pip p3"></span>
@@ -583,6 +590,11 @@
                 document.getElementById('resultLine').className='result-line';
                 var dw=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
                 if(dw)dw.classList.remove('roll-result','win','loss');
+                var countdownEl=document.getElementById('diceCountdown');
+                var timeUntilResult=(PICK_PHASE*ROUND_TIME+ROLLING_PHASE_MS)-(elapsed%ROUND_TIME);
+                var secLeft=Math.max(0,Math.ceil(timeUntilResult/1000));
+                countdownEl.textContent=String(secLeft);
+                countdownEl.className='dice-countdown show';
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
                 var chosen=myChoiceByRound[currentRound+1];
                 document.querySelectorAll('.pick-btn').forEach(function(b){
@@ -607,6 +619,11 @@
                 diceValEl.textContent='';
                 diceValEl.className='dice-value';
                 rollAnimationDoneForRound=-1;
+                var countdownEl=document.getElementById('diceCountdown');
+                var timeUntilResult=(PICK_PHASE*ROUND_TIME+ROLLING_PHASE_MS)-(elapsed%ROUND_TIME);
+                var secLeft=Math.max(0,Math.ceil(timeUntilResult/1000));
+                countdownEl.textContent=String(secLeft);
+                countdownEl.className='dice-countdown show';
             }else if(isResultPhase){
                 lastPhaseWasPick=false;
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
@@ -621,6 +638,15 @@
                 var diceValEl=document.getElementById('diceValue');
                 var diceWrap=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
                 var resultPhaseElapsed=timeIntoReveal-ROLLING_PHASE_MS;
+                var countdownEl=document.getElementById('diceCountdown');
+                var myChoice=myChoiceByRound[currentRound+1];
+                if(resultPhaseElapsed<600){
+                    countdownEl.textContent='0';
+                    countdownEl.className='dice-countdown show';
+                }else{
+                    countdownEl.textContent=String(roll);
+                    countdownEl.className='dice-countdown show result '+(myChoice===roll?'win':myChoice!==undefined?'loss':'neutral');
+                }
 
                 if(resultPhaseElapsed<400){
                     var faceNum=(Math.floor(resultPhaseElapsed/70)%6)+1;
