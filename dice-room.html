@@ -42,13 +42,14 @@
         .dice-face.win{border-color:rgba(68,255,136,0.5);box-shadow:0 0 24px rgba(68,255,136,0.2)}
         .dice-face.loss{border-color:rgba(255,68,68,0.4);box-shadow:0 0 20px rgba(255,68,68,0.12)}
         .dice-face.pending{animation:diceShake 0.6s ease-in-out infinite}
-        .dice-face.pending .dice-pip{opacity:0.35;animation:dicePulse 1.2s ease-in-out infinite}
+        .dice-face.pending .dice-pip{display:none}
+        .dice-face.pending:not(.face-1):not(.face-2):not(.face-3):not(.face-4):not(.face-5):not(.face-6)::after{content:'?';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:32px;font-weight:700;color:rgba(255,140,66,0.85);text-shadow:0 0 12px rgba(255,140,66,0.4);font-family:inherit}
+        .dice-face-wrap:has(.dice-face.pending) .dice-value{visibility:hidden}
         @keyframes diceReveal{0%{transform:scale(0.92);opacity:0.7}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1);opacity:1}}
         @keyframes dicePulse{0%,100%{opacity:0.35}50%{opacity:0.6}}
         @keyframes diceShake{0%,100%{transform:translate(0,0) rotate(0deg)}10%{transform:translate(-1px,-2px) rotate(-0.5deg)}30%{transform:translate(2px,1px) rotate(0.4deg)}50%{transform:translate(-1px,1px) rotate(0.3deg)}70%{transform:translate(1px,-1px) rotate(-0.4deg)}90%{transform:translate(-2px,0) rotate(0.2deg)}}
         .dice-pip{display:none;position:absolute;width:12px;height:12px;border-radius:50%;background:#ff9f5c;box-shadow:0 0 8px rgba(255,140,66,0.5),inset 0 1px 0 rgba(255,255,255,0.25);transform:translate(-50%,-50%)}
         .dice-face.face-1 .dice-pip.p5,.dice-face.face-2 .dice-pip.p1,.dice-face.face-2 .dice-pip.p9,.dice-face.face-3 .dice-pip.p1,.dice-face.face-3 .dice-pip.p5,.dice-face.face-3 .dice-pip.p9,.dice-face.face-4 .dice-pip.p1,.dice-face.face-4 .dice-pip.p3,.dice-face.face-4 .dice-pip.p7,.dice-face.face-4 .dice-pip.p9,.dice-face.face-5 .dice-pip.p1,.dice-face.face-5 .dice-pip.p3,.dice-face.face-5 .dice-pip.p5,.dice-face.face-5 .dice-pip.p7,.dice-face.face-5 .dice-pip.p9,.dice-face.face-6 .dice-pip.p1,.dice-face.face-6 .dice-pip.p4,.dice-face.face-6 .dice-pip.p7,.dice-face.face-6 .dice-pip.p3,.dice-face.face-6 .dice-pip.p6,.dice-face.face-6 .dice-pip.p9{display:block}
-        .dice-face.pending .dice-pip.p1,.dice-face.pending .dice-pip.p3,.dice-face.pending .dice-pip.p5,.dice-face.pending .dice-pip.p7,.dice-face.pending .dice-pip.p9{display:block}
         .dice-pip.p1{left:25%;top:25%}.dice-pip.p2{left:50%;top:25%}.dice-pip.p3{left:75%;top:25%}.dice-pip.p4{left:25%;top:50%}.dice-pip.p5{left:50%;top:50%}.dice-pip.p6{left:75%;top:50%}.dice-pip.p7{left:25%;top:75%}.dice-pip.p8{left:50%;top:75%}.dice-pip.p9{left:75%;top:75%}
         .dice-value{color:#ff8c42;font-size:24px;margin-left:10px}
         .pick-label{font-size:10px;color:#555;margin-bottom:12px}
@@ -145,7 +146,7 @@
             <div class="pick-btns" id="pickBtns"></div>
             <div class="result-line" id="resultLine"></div>
             <div class="proof-line" id="proofLine" aria-hidden="true"></div>
-            <button type="button" class="proof-verify" id="proofVerify" style="display:none">Verify roll</button>
+            <button type="button" class="proof-verify" id="proofVerify">Verify roll</button>
             <div class="proof-detail" id="proofDetail"></div>
             <div class="timer-bar" id="timerBar"></div>
         </div>
@@ -279,8 +280,10 @@
             return Math.floor(rng()*6)+1;
         }
 
-        var ROUND_TIME=8500;
         var PICK_PHASE=0.62;
+        var ROLLING_PHASE_MS=3000;
+        var RESULT_PHASE_MS=3000;
+        var ROUND_TIME=Math.ceil((ROLLING_PHASE_MS+RESULT_PHASE_MS)/(1-PICK_PHASE));
         var GOAL=5;
         var rollAnimationDoneForRound=-1;
         var rollAnimationStart=0;
@@ -497,7 +500,10 @@
             var elapsed=now-epoch;
             var currentRound=Math.floor(elapsed/ROUND_TIME);
             var phase=(elapsed%ROUND_TIME)/ROUND_TIME;
+            var timeIntoReveal=(elapsed%ROUND_TIME)-PICK_PHASE*ROUND_TIME;
             var isPickPhase=phase<PICK_PHASE;
+            var isRollingPhase=phase>=PICK_PHASE&&timeIntoReveal<ROLLING_PHASE_MS;
+            var isResultPhase=phase>=PICK_PHASE&&timeIntoReveal>=ROLLING_PHASE_MS;
 
             document.getElementById('roundNum').textContent='ROUND '+(currentRound+1);
             document.getElementById('timerBar').style.width=(phase*100)+'%';
@@ -527,13 +533,10 @@
                 var diceFace=document.getElementById('diceFace');
                 var diceValEl=document.getElementById('diceValue');
                 diceFace.className='dice-face pending';
-                diceValEl.textContent='?';
+                diceValEl.textContent='';
                 diceValEl.className='dice-value';
                 document.getElementById('resultLine').textContent='';
                 document.getElementById('resultLine').className='result-line';
-                document.getElementById('proofLine').textContent='';
-                document.getElementById('proofVerify').style.display='none';
-                document.getElementById('proofDetail').classList.remove('show');
                 var dw=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
                 if(dw)dw.classList.remove('roll-result','win','loss');
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
@@ -545,30 +548,42 @@
                 lastPhaseWasPick=true;
                 fallStartedForRound=-1;
                 rollAnimationDoneForRound=-1;
-            }else if(phase>=PICK_PHASE){
+            }else if(isRollingPhase){
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
+                var chosen=myChoiceByRound[currentRound+1];
+                document.querySelectorAll('.pick-btn').forEach(function(b){
+                    b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
+                });
+                document.getElementById('pickLabel').textContent='Pick 1–6 — dice rolling…';
+                var diceFace=document.getElementById('diceFace');
+                var diceValEl=document.getElementById('diceValue');
+                diceFace.classList.remove('pending','face-1','face-2','face-3','face-4','face-5','face-6','win','loss','reveal');
+                var faceNum=(Math.floor(timeIntoReveal/100)%6)+1;
+                diceFace.className=diceFace.className.replace(/\sface-\d/g,'').replace(/\srolling/g,'')+' rolling face-'+faceNum;
+                diceValEl.textContent='';
+                diceValEl.className='dice-value';
+                rollAnimationDoneForRound=-1;
+            }else if(isResultPhase){
+                lastPhaseWasPick=false;
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
                 var roll=getRollForRound(currentRound+1);
-                if(lastPhaseWasPick&&fallStartedForRound!==currentRound&&dice3d.startFall){
+                if(fallStartedForRound!==currentRound&&dice3d.startFall){
                     dice3d.startFall(roll);
                     fallStartedForRound=currentRound;
                 }
-                lastPhaseWasPick=false;
                 if(dice3d.setRoll)dice3d.setRoll(roll);
 
                 var diceFace=document.getElementById('diceFace');
                 var diceValEl=document.getElementById('diceValue');
                 var diceWrap=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
+                var resultPhaseElapsed=timeIntoReveal-ROLLING_PHASE_MS;
 
-                if(rollAnimationDoneForRound!==currentRound){
-                    if(!rollAnimationStart)rollAnimationStart=now;
-                    var animElapsed=now-rollAnimationStart;
-                    if(animElapsed<400){
-                        var faceNum=(Math.floor(animElapsed/70)%6)+1;
-                        diceFace.className=diceFace.className.replace(/\sface-\d/g,'').replace(/\srolling/g,'')+' rolling face-'+faceNum;
-                        diceFace.classList.remove('win','loss','reveal');
-                        diceValEl.textContent='?';
-                    }else{
-                        rollAnimationStart=0;
+                if(resultPhaseElapsed<400){
+                    var faceNum=(Math.floor(resultPhaseElapsed/70)%6)+1;
+                    diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','win','loss','reveal');
+                    diceFace.className=(diceFace.className.replace(/\sface-\d/g,'').replace(/\srolling/g,'')||'dice-face').trim()+' rolling face-'+faceNum;
+                    diceValEl.textContent='';
+                }else if(rollAnimationDoneForRound!==currentRound){
                         rollAnimationDoneForRound=currentRound;
                         document.body.style.filter='brightness(1.28)';
                         setTimeout(function(){document.body.style.filter='';},120);
@@ -583,7 +598,6 @@
                         diceFace.classList.add('reveal');
                         setTimeout(function(){diceFace.classList.remove('reveal');},450);
                         document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
-                        document.getElementById('proofVerify').style.display='inline-block';
                         document.getElementById('proofDetail').innerHTML='<div>Seed: <span>'+roomSeed.toString(36).toUpperCase()+'</span></div><div>Round: <span>'+(currentRound+1)+'</span></div><div>Hash: <span>'+proofHash(currentRound+1)+'</span></div><div>Result: <span>'+roll+'</span></div>';
                         document.getElementById('proofDetail').classList.remove('show');
                         if(myChoice!==undefined&&lastScoredRound!==currentRound){
@@ -603,7 +617,6 @@
                             document.getElementById('resultLine').className='result-line';
                             lastScoredRound=currentRound;
                         }
-                    }
                 }else{
                     diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','rolling');
                     diceFace.classList.add('face-'+roll);
