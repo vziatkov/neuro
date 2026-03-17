@@ -17,14 +17,18 @@
         .header{margin-bottom:20px;text-align:center;max-width:600px}
         .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.85)}
         .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:4px}
-        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center;max-width:600px;width:100%;transition:transform 0.2s}
+        .page-wrap{max-width:1200px;width:100%;margin:0 auto}
+        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:12px;text-align:center;max-width:600px;width:100%;margin-left:auto;margin-right:auto;transition:transform 0.2s}
         .room-info:hover{transform:scale(1.01)}
         .room-id{font-size:20px;font-weight:600;color:#ff8c42;letter-spacing:3px;margin:8px 0}
         .room-seed{font-size:10px;color:#555;letter-spacing:1px;margin-bottom:4px}
         .room-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
-        .share-btn{background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 16px;border-radius:5px;cursor:pointer;margin-top:8px;transition:all 0.2s}
+        .share-btn{background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 16px;border-radius:5px;cursor:pointer;margin-top:8px;transition:all 0.25s ease}
         .share-btn:hover{background:rgba(255,140,66,0.2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
+        .share-btn.host-copy-prompt{background:rgba(68,255,136,0.15);border-color:rgba(68,255,136,0.45);color:#44ff88;box-shadow:0 0 20px rgba(68,255,136,0.25);animation:sharePulse 1.5s ease-in-out infinite}
+        @keyframes sharePulse{0%,100%{box-shadow:0 0 20px rgba(68,255,136,0.25)}50%{box-shadow:0 0 28px rgba(68,255,136,0.4),0 0 0 2px rgba(68,255,136,0.2)}}
         .share-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
+        .share-status.copy-hint{color:rgba(255,255,255,0.85);font-size:10px}
         .game-area{max-width:600px;width:100%;margin-bottom:16px}
         .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden;transition:transform 0.2s}
         .round-display:hover{transform:scale(1.01)}
@@ -99,13 +103,16 @@
         .leaderboard .lb-scores .peer{color:#6cc}
         .win-banner{background:rgba(68,255,136,0.1);border:1px solid rgba(68,255,136,0.3);border-radius:8px;padding:16px;text-align:center;color:#44ff88;font-size:14px;margin-bottom:16px;display:none}
         .win-banner.show{display:block}
-        .p2p-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
+        .p2p-section{max-width:600px;width:100%;margin:0 auto 20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
         .p2p-section .p2p-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
         .p2p-section .p2p-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
         .p2p-section .p2p-spectator{font-size:9px;color:#333;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px;display:none}
         .p2p-section .p2p-spectator.show{display:block}
         .p2p-section .p2p-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+        .p2p-section .p2p-hint{font-size:9px;color:rgba(255,140,66,0.7);margin-bottom:8px}
         .p2p-section .p2p-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:6px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .p2p-section .p2p-btn.p2p-host-primary{background:rgba(255,140,66,0.12);border-color:rgba(255,140,66,0.4);color:#ff8c42;font-weight:600}
+        .p2p-section .p2p-btn.p2p-host-primary:hover{background:rgba(255,140,66,0.22);box-shadow:0 0 16px rgba(255,140,66,0.3)}
         .p2p-section .p2p-btn:hover{background:rgba(100,200,255,0.15);color:#8ee;transform:translateY(-2px);box-shadow:0 4px 12px rgba(100,200,255,0.25)}
         .p2p-section .p2p-btn:disabled{opacity:0.4;cursor:not-allowed}
         .p2p-section .p2p-status{font-size:9px;color:#44ff88;margin-bottom:12px;min-height:14px}
@@ -132,6 +139,16 @@
             .chat-messages{max-height:120px}
             .chat-form .chat-input{font-size:16px}
         }
+        .chat-messages-side{display:none;flex-direction:column;gap:6px;padding:8px;max-height:320px;overflow-y:auto;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;-webkit-overflow-scrolling:touch}
+        .chat-messages-side .chat-msg{font-size:10px;padding:6px 8px;border-radius:6px;max-width:100%}
+        .chat-messages-side .chat-msg.self{align-self:flex-end}
+        .chat-messages-side .chat-msg.peer{align-self:flex-start}
+        @media (min-width:900px){
+            .content-grid{display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start;max-width:900px;width:100%;margin:0 auto 16px}
+            .content-grid .game-area{max-width:100%}
+            .chat-messages-side{display:flex;min-height:120px}
+            .p2p-section .chat-wrap .chat-messages{display:none}
+        }
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,95,31,0.8)}
     </style>
@@ -143,6 +160,7 @@
         <div class="sub">Same link = same sequence of rolls · guess 1–6 each round · first to 5 points wins</div>
     </div>
 
+    <div class="page-wrap">
     <div class="room-info">
         <div class="room-label">Room</div>
         <div class="room-id" id="roomId"></div>
@@ -151,6 +169,28 @@
         <div class="share-status" id="shareStatus"></div>
     </div>
 
+    <div class="p2p-section" id="p2pSection">
+        <div class="p2p-title">P2P · Chat & leaderboard <span id="p2pConnDot" class="dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
+        <div class="p2p-hint">No one here? Click Host first, then copy the link and send it.</div>
+        <div class="p2p-desc">Same room link. One clicks Host, the other Join — no mic, only messages and scores.</div>
+        <div class="p2p-spectator" id="p2pSpectator">Spectator — same rolls for everyone with this link; connect P2P to chat and see leaderboard.</div>
+        <div class="p2p-btns">
+            <button class="p2p-btn p2p-host-primary" id="p2pHost">Host (wait for guest)</button>
+            <button class="p2p-btn" id="p2pJoin">Join (connect to host)</button>
+            <button class="p2p-btn" id="p2pHangup" disabled style="opacity:0.3">✕ Disconnect</button>
+        </div>
+        <div class="p2p-status" id="p2pStatus"></div>
+        <div class="chat-wrap" id="chatWrap">
+            <button type="button" class="chat-toggle" id="chatToggle" aria-expanded="true">Chat <span class="dot"></span></button>
+            <div class="chat-messages" id="chatMessages"></div>
+            <form class="chat-form" id="chatForm" action="#" method="post">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Message…" maxlength="500" autocomplete="off" />
+                <button type="submit" class="chat-send" id="chatSend">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="content-grid">
     <div class="game-area">
         <div class="win-banner" id="winBanner">🎲 You win! First to 5.</div>
         <div class="round-display">
@@ -197,25 +237,8 @@
             <span class="lb-scores">You: <span class="you" id="lbYou">0</span> · Peer: <span class="peer" id="lbPeer">—</span></span>
         </div>
     </div>
-
-    <div class="p2p-section" id="p2pSection">
-        <div class="p2p-title">P2P · Chat & leaderboard <span id="p2pConnDot" class="dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
-        <div class="p2p-desc">Same room link. One clicks Host, the other Join — no mic, only messages and scores.</div>
-        <div class="p2p-spectator" id="p2pSpectator">Spectator — same rolls for everyone with this link; connect P2P to chat and see leaderboard.</div>
-        <div class="p2p-btns">
-            <button class="p2p-btn" id="p2pHost">Host (wait for guest)</button>
-            <button class="p2p-btn" id="p2pJoin">Join (connect to host)</button>
-            <button class="p2p-btn" id="p2pHangup" disabled style="opacity:0.3">✕ Disconnect</button>
-        </div>
-        <div class="p2p-status" id="p2pStatus"></div>
-        <div class="chat-wrap" id="chatWrap">
-            <button type="button" class="chat-toggle" id="chatToggle" aria-expanded="true">Chat <span class="dot"></span></button>
-            <div class="chat-messages" id="chatMessages"></div>
-            <form class="chat-form" id="chatForm" action="#" method="post">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Message…" maxlength="500" autocomplete="off" />
-                <button type="submit" class="chat-send" id="chatSend">Send</button>
-            </form>
-        </div>
+    <div class="chat-messages-side" id="chatMessagesSide" aria-label="Chat messages"></div>
+    </div>
     </div>
 
     <a href="crash-room.html" class="back">← Crash Room</a>
@@ -291,9 +314,13 @@
 
         document.getElementById('shareBtn').addEventListener('click',function(){
             var url=location.href;
+            var shareStatusEl=document.getElementById('shareStatus');
+            var shareBtnEl=document.getElementById('shareBtn');
             if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){
-                document.getElementById('shareStatus').textContent='✓ Link copied — share to see same dice';
-                setTimeout(function(){document.getElementById('shareStatus').textContent=''},3000);
+                shareBtnEl.classList.remove('host-copy-prompt');
+                shareStatusEl.classList.remove('copy-hint');
+                shareStatusEl.textContent='✓ Link copied — share to see same dice';
+                setTimeout(function(){shareStatusEl.textContent='';},3000);
             });
         });
 
@@ -480,6 +507,8 @@
             div.innerHTML='<span class="who">'+(who==='self'?'You':'Peer')+'</span> '+escapeHtml(text);
             chatMessagesEl.appendChild(div);
             chatMessagesEl.scrollTop=chatMessagesEl.scrollHeight;
+            var side=document.getElementById('chatMessagesSide');
+            if(side){var clone=div.cloneNode(true);side.appendChild(clone);side.scrollTop=side.scrollHeight;}
         }
         function escapeHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
         function sendChatText(text){
@@ -718,6 +747,9 @@
             enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);enableP2PBtn('p2pHangup',false);
             document.getElementById('chatWrap').classList.remove('connected');
             document.getElementById('p2pSpectator').classList.add('show');
+            document.getElementById('shareBtn').classList.remove('host-copy-prompt');
+            document.getElementById('shareStatus').textContent='';
+            document.getElementById('shareStatus').className='share-status';
             if(typeof updateChatSendState==='function')updateChatSendState();
         }
         document.getElementById('p2pHost').addEventListener('click',function(){
@@ -728,6 +760,10 @@
             peer.on('open',function(){
                 p2pStat('You\'re host. Share room link — guest clicks Join.');
                 enableP2PBtn('p2pHangup',true);
+                document.getElementById('shareBtn').classList.add('host-copy-prompt');
+                var sh=document.getElementById('shareStatus');
+                sh.textContent='👆 Click here and copy this link';
+                sh.className='share-status copy-hint';
             });
             peer.on('connection',function(conn){
                 setupPeerDataConn(conn);
