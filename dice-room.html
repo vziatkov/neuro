@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/three@0.181.0/build/three.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
@@ -24,7 +25,9 @@
         .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
         .round-num{font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase}
         .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:100px;display:flex;align-items:center;justify-content:center;gap:8px}
-        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center}
+        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center;gap:16px}
+        .dice-3d-wrap{width:88px;height:88px;position:relative;flex-shrink:0}
+        #dice3dCanvas{width:100%;height:100%;display:block;border-radius:10px;background:rgba(10,8,6,0.95)}
         .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,100,40,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
         .dice-face.reveal{animation:diceReveal 0.35s ease-out}
         .dice-face.win{border-color:rgba(68,255,136,0.5);box-shadow:0 0 24px rgba(68,255,136,0.2)}
@@ -101,6 +104,9 @@
             <div class="round-num" id="roundNum">ROUND 1</div>
             <div class="dice-display" id="diceDisplay">
                 <div class="dice-face-wrap">
+                    <div class="dice-3d-wrap">
+                        <canvas id="dice3dCanvas" aria-hidden="true"></canvas>
+                    </div>
                     <div class="dice-face" id="diceFace" aria-hidden="true">
                         <span class="dice-pip p1"></span><span class="dice-pip p2"></span><span class="dice-pip p3"></span>
                         <span class="dice-pip p4"></span><span class="dice-pip p5"></span><span class="dice-pip p6"></span>
@@ -201,9 +207,119 @@
         var today=new Date();today.setUTCHours(0,0,0,0);
         var epoch=today.getTime();
 
+        // 3D dice (Three.js)
+        var dice3d={};
+        (function(){
+            var canvas=document.getElementById('dice3dCanvas');
+            if(!canvas||!window.THREE)return;
+            var scene=new THREE.Scene();
+            var camera=new THREE.PerspectiveCamera(50,1,0.1,100);
+            camera.position.set(0,0,3.2);
+            camera.lookAt(0,0,0);
+            var renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:true});
+            renderer.setClearColor(0x0a0806,0.95);
+            var diceMesh,diceGroup;
+            var pipMat=new THREE.MeshBasicMaterial({color:0xff9f5c});
+            var faceMat=new THREE.MeshPhongMaterial({color:0x1a1410,shininess:20,specular:0x332211});
+            var pipPos={1:[[0,0]],2:[[-0.25,-0.25],[0.25,0.25]],3:[[-0.25,-0.25],[0,0],[0.25,0.25]],4:[[-0.25,-0.25],[-0.25,0.25],[0.25,-0.25],[0.25,0.25]],5:[[-0.25,-0.25],[-0.25,0.25],[0,0],[0.25,-0.25],[0.25,0.25]],6:[[-0.25,-0.25],[-0.25,0],[0.25,-0.25],[0.25,0],[-0.25,0.25],[0.25,0.25]]};
+            var faceOffsets=[[0,0,0.5],[0.5,0,0],[0,0.5,0],[0,-0.5,0],[-0.5,0,0],[0,0,-0.5]];
+            var faceAxes=[[1,0,0,1,0,0],[0,0,1,0,0,1],[1,0,0,0,0,1],[1,0,0,0,0,1],[0,0,1,0,0,1],[1,0,0,1,0,0]];
+            var faceRotations=[[0,0,0],[0,-Math.PI/2,0],[Math.PI/2,0,0],[-Math.PI/2,0,0],[0,Math.PI/2,0],[0,Math.PI,0]];
+            function addPipsToFace(faceNum){
+                var g=new THREE.Group();
+                var positions=pipPos[faceNum];
+                var o=faceOffsets[faceNum-1];
+                var ax=faceAxes[faceNum-1];
+                for(var i=0;i<positions.length;i++){
+                    var p=positions[i];
+                    var pip=new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8),pipMat);
+                    var u=p[0]*0.4,v=p[1]*0.4;
+                    pip.position.set(o[0]+ax[0]*u+ax[1]*v,o[1]+ax[2]*u+ax[3]*v,o[2]+ax[4]*u+ax[5]*v);
+                    g.add(pip);
+                }
+                return g;
+            }
+            diceGroup=new THREE.Group();
+            var box=new THREE.Mesh(new THREE.BoxGeometry(0.98,0.98,0.98),faceMat);
+            diceGroup.add(box);
+            for(var f=1;f<=6;f++){
+                var pg=addPipsToFace(f);
+                diceGroup.add(pg);
+            }
+            var light=new THREE.DirectionalLight(0xffffff,1);
+            light.position.set(2,2,3);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x664422,0.6));
+            scene.add(diceGroup);
+            diceMesh=diceGroup;
+            var fallStart=0,fallDuration=450,fallFromY=2.5,targetRoll=1,animating=false;
+            var lastRoll=-1;
+            function resize(){
+                var w=canvas.clientWidth,h=canvas.clientHeight;
+                if(w<=0||h<=0)return;
+                renderer.setSize(w,h);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+                camera.aspect=w/h;
+                camera.updateProjectionMatrix();
+            }
+            function render(){
+                renderer.render(scene,camera);
+            }
+            dice3d.setRoll=function(n){
+                targetRoll=n;
+            };
+            dice3d.startFall=function(roll){
+                targetRoll=roll;
+                fallStart=Date.now();
+                animating=true;
+            };
+            dice3d.setPending=function(){
+                animating=true;
+                fallStart=Date.now();
+                targetRoll=0;
+            };
+            dice3d.setIdle=function(){
+                animating=false;
+            };
+            dice3d.update=function(now){
+                if(!diceMesh)return;
+                resize();
+                if(animating&&targetRoll>0){
+                    var t=Math.min(1,(now-fallStart)/fallDuration);
+                    var ease=1-Math.pow(1-t,2.5);
+                    var y=fallFromY*(1-ease);
+                    var bounce=Math.max(0,Math.sin(t*Math.PI)*0.15);
+                    diceMesh.position.y=-y+bounce;
+                    diceMesh.rotation.x+=0.08;
+                    diceMesh.rotation.z+=0.06;
+                    if(t>=1){
+                        animating=false;
+                        lastRoll=targetRoll;
+                        var r=faceRotations[targetRoll-1];
+                        diceMesh.rotation.set(r[0],r[1],r[2]);
+                        diceMesh.position.y=0;
+                    }
+                }else if(animating&&targetRoll===0){
+                    var t=(now-fallStart)/2000;
+                    diceMesh.rotation.y=t*0.5;
+                    diceMesh.rotation.x=Math.sin(t*0.5)*0.08;
+                    diceMesh.rotation.z=Math.cos(t*0.3)*0.05;
+                }else if(lastRoll>0){
+                    var r=faceRotations[lastRoll-1];
+                    diceMesh.rotation.set(r[0],r[1],r[2]);
+                    diceMesh.position.y=0;
+                }
+                render();
+            };
+            window.addEventListener('resize',resize);
+            resize();
+        })();
+
         var score=0;
         var lastScoredRound=-1;
         var myChoiceByRound={};
+        var lastPhaseWasPick=false;
+        var fallStartedForRound=-1;
 
         var peerScore=null;
         var dataChannel=null;
@@ -283,6 +399,7 @@
                 document.getElementById('winBanner').classList.add('show');
                 document.getElementById('pickLabel').textContent='Game over — you won!';
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
+                if(dice3d.setIdle)dice3d.setIdle();
             }else if(isPickPhase){
                 document.getElementById('pickLabel').textContent='Pick 1–6 before time runs out';
                 var diceFace=document.getElementById('diceFace');
@@ -298,9 +415,18 @@
                 document.querySelectorAll('.pick-btn').forEach(function(b){
                     b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
                 });
+                if(dice3d.setPending)dice3d.setPending();
+                lastPhaseWasPick=true;
+                fallStartedForRound=-1;
             }else{
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
                 var roll=getRollForRound(currentRound+1);
+                if(lastPhaseWasPick&&fallStartedForRound!==currentRound&&dice3d.startFall){
+                    dice3d.startFall(roll);
+                    fallStartedForRound=currentRound;
+                }
+                lastPhaseWasPick=false;
+                if(dice3d.setRoll)dice3d.setRoll(roll);
                 var diceFace=document.getElementById('diceFace');
                 var diceValEl=document.getElementById('diceValue');
                 diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','win','loss');
@@ -344,6 +470,7 @@
                 }
             }
 
+            if(dice3d.update)dice3d.update(now);
             requestAnimationFrame(tick);
         }
         tick();
