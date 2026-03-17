@@ -66,15 +66,15 @@
         .pick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
         .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s;transform:scale(1);position:relative;overflow:visible}
         .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42;transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
-        .pick-btn.preset{border-color:#555;color:#888;box-shadow:none}
-        .pick-btn.preset:hover{border-color:rgba(255,140,66,0.3);color:#ff8c42}
+        .pick-btn.preset{border-color:#555;color:#888 !important;box-shadow:none}
+        .pick-btn.preset:hover{border-color:rgba(255,140,66,0.3);color:#ff8c42 !important}
         .pick-btn.chosen:hover{transform:scale(1.06) translateY(-2px)}
         .pick-btn.chosen{background:rgba(255,140,66,0.2);border-color:#ff8c42;color:#ff8c42;box-shadow:0 0 16px rgba(255,140,66,0.35),0 0 0 2px rgba(255,140,66,0.25);transform:scale(1.06)}
         .pick-btn.chosen::after{content:'';position:absolute;inset:-3px;border-radius:11px;border:1px solid rgba(255,140,66,0.4);pointer-events:none;animation:pickRing 1.2s ease-out infinite}
         @keyframes pickRing{0%{opacity:0.8;transform:scale(1.05)}100%{opacity:0;transform:scale(1.15)}}
         .pick-btn:disabled{opacity:0.5;cursor:not-allowed}
         @media (max-width:480px),(orientation:portrait){
-            .pick-btn.preset{border-color:#555;color:#888;box-shadow:none}
+            .pick-btn.preset{border-color:#555;color:#888 !important;box-shadow:none}
             .pick-btn.chosen{background:rgba(255,140,66,0.2);border-color:#ff8c42;color:#ff8c42;box-shadow:0 0 16px rgba(255,140,66,0.35),0 0 0 2px rgba(255,140,66,0.25)}
         }
         .result-line{font-size:11px;color:#888;margin-top:8px;min-height:18px}
