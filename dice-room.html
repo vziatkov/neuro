@@ -93,19 +93,39 @@
         .leaderboard .lb-scores .peer{color:#6cc}
         .win-banner{background:rgba(68,255,136,0.1);border:1px solid rgba(68,255,136,0.3);border-radius:8px;padding:16px;text-align:center;color:#44ff88;font-size:14px;margin-bottom:16px;display:none}
         .win-banner.show{display:block}
-        .voice-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
-        .voice-section .v-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-        .voice-section .v-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
-        .voice-section .v-spectator{font-size:9px;color:#333;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px;display:none}
-        .voice-section .v-spectator.show{display:block}
-        .voice-section textarea{width:100%;min-height:60px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;color:#888;font-family:inherit;font-size:9px;padding:8px;resize:vertical;margin-bottom:8px}
-        .voice-section .v-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-        .voice-section .v-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s}
-        .voice-section .v-btn:hover{background:rgba(100,200,255,0.15);color:#8ee;transform:translateY(-2px);box-shadow:0 4px 12px rgba(100,200,255,0.25)}
-        .voice-section .v-btn:disabled{opacity:0.4;cursor:not-allowed}
-        .voice-section .v-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
-        .voice-section .v-status.err{color:#ff4444}
-        .voice-section audio{display:block;margin-top:8px;width:100%;max-height:32px}
+        .p2p-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
+        .p2p-section .p2p-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+        .p2p-section .p2p-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
+        .p2p-section .p2p-spectator{font-size:9px;color:#333;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px;display:none}
+        .p2p-section .p2p-spectator.show{display:block}
+        .p2p-section .p2p-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+        .p2p-section .p2p-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:6px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .p2p-section .p2p-btn:hover{background:rgba(100,200,255,0.15);color:#8ee;transform:translateY(-2px);box-shadow:0 4px 12px rgba(100,200,255,0.25)}
+        .p2p-section .p2p-btn:disabled{opacity:0.4;cursor:not-allowed}
+        .p2p-section .p2p-status{font-size:9px;color:#44ff88;margin-bottom:12px;min-height:14px}
+        .p2p-section .p2p-status.err{color:#ff4444}
+        .chat-wrap{margin-top:12px;border:1px solid #1a1a1a;border-radius:8px;background:#0d0d0f;overflow:hidden;display:flex;flex-direction:column}
+        .chat-toggle{width:100%;padding:8px 12px;font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;background:transparent;border:none;border-bottom:1px solid #1a1a1a;cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;justify-content:space-between}
+        .chat-toggle:hover{color:#888;background:rgba(255,255,255,0.03)}
+        .chat-toggle .dot{width:6px;height:6px;border-radius:50%;background:#555;flex-shrink:0;margin-left:8px}
+        .chat-wrap.connected .chat-toggle .dot{background:#44ff88}
+        .chat-messages{max-height:140px;min-height:60px;overflow-y:auto;overflow-x:hidden;padding:8px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+        .chat-messages.collapsed{display:none}
+        .chat-msg{font-size:10px;line-height:1.4;word-break:break-word;padding:6px 8px;border-radius:6px;max-width:92%}
+        .chat-msg.self{background:rgba(255,140,66,0.15);border:1px solid rgba(255,140,66,0.25);align-self:flex-end;margin-left:auto}
+        .chat-msg.peer{background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.2);align-self:flex-start}
+        .chat-msg .who{font-size:8px;color:#555;margin-bottom:2px}
+        .chat-form{display:flex;gap:6px;padding:8px;border-top:1px solid #1a1a1a}
+        .chat-form.collapsed{display:none}
+        .chat-input{flex:1;min-width:0;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:6px;color:#e5e5e5;font-family:inherit;font-size:11px;padding:8px 10px}
+        .chat-input::placeholder{color:#444}
+        .chat-send{flex-shrink:0;padding:8px 14px;background:rgba(255,140,66,0.2);border:1px solid rgba(255,140,66,0.35);color:#ff8c42;font-family:inherit;font-size:10px;border-radius:6px;cursor:pointer;transition:all 0.2s}
+        .chat-send:hover:not(:disabled){background:rgba(255,140,66,0.3);transform:translateY(-1px)}
+        .chat-send:disabled{opacity:0.4;cursor:not-allowed}
+        @media (max-width:480px){
+            .chat-messages{max-height:120px}
+            .chat-form .chat-input{font-size:16px}
+        }
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,95,31,0.8)}
     </style>
@@ -171,18 +191,24 @@
         </div>
     </div>
 
-    <div class="voice-section" id="voiceSection">
-        <div class="v-title">P2P Voice & leaderboard <span id="vConnDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
-        <div class="v-desc">PeerJS — same room link. One clicks Host, the other Join. No copy-paste.</div>
-        <div class="v-spectator" id="vSpectator">Spectator — same rolls for everyone with this link; join voice to see leaderboard.</div>
-        <div class="v-btns" id="vBtns">
-            <button class="v-btn" id="vHost">🎤 Host (wait for guest)</button>
-            <button class="v-btn" id="vJoin">📥 Join (connect to host)</button>
-            <button class="v-btn" id="vMute" disabled style="opacity:0.3">🔇 Mute</button>
-            <button class="v-btn" id="vHangup" disabled style="opacity:0.3">✕ Hang up</button>
+    <div class="p2p-section" id="p2pSection">
+        <div class="p2p-title">P2P · Chat & leaderboard <span id="p2pConnDot" class="dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
+        <div class="p2p-desc">Same room link. One clicks Host, the other Join — no mic, only messages and scores.</div>
+        <div class="p2p-spectator" id="p2pSpectator">Spectator — same rolls for everyone with this link; connect P2P to chat and see leaderboard.</div>
+        <div class="p2p-btns">
+            <button class="p2p-btn" id="p2pHost">Host (wait for guest)</button>
+            <button class="p2p-btn" id="p2pJoin">Join (connect to host)</button>
+            <button class="p2p-btn" id="p2pHangup" disabled style="opacity:0.3">✕ Disconnect</button>
         </div>
-        <div class="v-status" id="vStatus"></div>
-        <audio id="vRemote" autoplay playsinline></audio>
+        <div class="p2p-status" id="p2pStatus"></div>
+        <div class="chat-wrap" id="chatWrap">
+            <button type="button" class="chat-toggle" id="chatToggle" aria-expanded="true">Chat <span class="dot"></span></button>
+            <div class="chat-messages" id="chatMessages"></div>
+            <form class="chat-form" id="chatForm" action="#" method="post">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Message…" maxlength="500" autocomplete="off" />
+                <button type="submit" class="chat-send" id="chatSend">Send</button>
+            </form>
+        </div>
     </div>
 
     <a href="crash-room.html" class="back">← Crash Room</a>
@@ -436,12 +462,30 @@
             document.getElementById('lbPeer').textContent=peerScore===null||peerScore===undefined?'—':peerScore;
         }
         function sendScore(){
-            if(dataChannel&&dataChannel.open){try{dataChannel.send({score:score});}catch(e){}}
+            if(dataChannel&&dataChannel.open){try{dataChannel.send({type:'score',score:score});}catch(e){}}
+        }
+        var chatMessagesEl=document.getElementById('chatMessages');
+        var chatFormEl=document.getElementById('chatForm');
+        var chatInputEl=document.getElementById('chatInput');
+        function appendChatMessage(who,text){
+            var div=document.createElement('div');
+            div.className='chat-msg '+(who==='self'?'self':'peer');
+            div.innerHTML='<span class="who">'+(who==='self'?'You':'Peer')+'</span> '+escapeHtml(text);
+            chatMessagesEl.appendChild(div);
+            chatMessagesEl.scrollTop=chatMessagesEl.scrollHeight;
+        }
+        function escapeHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+        function sendChatText(text){
+            var t=(text||'').trim();if(!t)return;
+            if(dataChannel&&dataChannel.open){try{dataChannel.send({type:'chat',text:t});}catch(e){}}
+            appendChatMessage('self',t);
         }
         function setupPeerDataConn(conn){
             dataChannel=conn;
             conn.on('data',function(data){
-                if(data&&typeof data.score==='number'){peerScore=data.score;updateLeaderboard();}
+                if(!data)return;
+                if(data.type==='chat'&&typeof data.text==='string')appendChatMessage('peer',data.text);
+                if((data.type==='score'&&typeof data.score==='number')||(typeof data.score==='number')){peerScore=data.score;updateLeaderboard();}
             });
             if(conn.open)sendScore();else conn.on('open',sendScore);
         }
@@ -634,85 +678,88 @@
         }
         tick();
 
-        var peer=null,localStream=null,isMuted=false;
+        var peer=null;
         var hostPeerId='dice-'+roomSeed.toString(36)+'-host';
         var PEER_OPTS={host:'0.peerjs.com',secure:true,port:443};
-        document.getElementById('vSpectator').classList.add('show');
-        function vStat(msg,err){var el=document.getElementById('vStatus');el.textContent=msg||'';el.className='v-status'+(err?' err':'');}
-        function vDot(c){document.getElementById('vConnDot').style.background=c;}
-        function enableBtn(id,on){var b=document.getElementById(id);b.disabled=!on;b.style.opacity=on?'1':'0.3';}
-        function getMic(){return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+        document.getElementById('p2pSpectator').classList.add('show');
+        function p2pStat(msg,err){var el=document.getElementById('p2pStatus');el.textContent=msg||'';el.className='p2p-status'+(err?' err':'');}
+        function p2pDot(c){document.getElementById('p2pConnDot').style.background=c;}
+        function enableP2PBtn(id,on){var b=document.getElementById(id);if(b){b.disabled=!on;b.style.opacity=on?'1':'0.3';}}
         function hangup(){
-            if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
             if(peer){peer.destroy();peer=null;}
             peerScore=null;dataChannel=null;updateLeaderboard();
-            document.getElementById('vRemote').srcObject=null;
-            vDot('#555');vStat('');isMuted=false;
-            enableBtn('vMute',false);enableBtn('vHangup',false);
-            enableBtn('vHost',true);enableBtn('vJoin',true);
-            document.getElementById('vMute').textContent='🔇 Mute';
-            document.getElementById('vSpectator').classList.add('show');
+            p2pDot('#555');p2pStat('');
+            enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);enableP2PBtn('p2pHangup',false);
+            document.getElementById('chatWrap').classList.remove('connected');
+            document.getElementById('p2pSpectator').classList.add('show');
+            if(typeof updateChatSendState==='function')updateChatSendState();
         }
-        document.getElementById('vHost').addEventListener('click',function(){
-            document.getElementById('vSpectator').classList.remove('show');
-            enableBtn('vHost',false);enableBtn('vJoin',false);
-            vStat('Requesting microphone…');vDot('#ffaa44');
-            getMic().then(function(stream){
-                localStream=stream;
-                peer=new Peer(hostPeerId,PEER_OPTS);
-                peer.on('open',function(){
-                    vStat('You\'re host. Share room link — guest clicks Join.');
-                    enableBtn('vMute',true);enableBtn('vHangup',true);
-                });
-                peer.on('connection',function(conn){
-                    setupPeerDataConn(conn);
-                    vDot('#44ff88');vStat('🔊 Guest connected');
-                });
-                peer.on('call',function(call){
-                    call.answer(localStream);
-                    call.on('stream',function(remoteStream){
-                        document.getElementById('vRemote').srcObject=remoteStream;
-                    });
-                });
-                peer.on('error',function(err){
-                    if(err.type==='unavailable-id')vStat('Room has a host already. Click Join.',true);
-                    else vStat('PeerJS: '+err.message,true);
-                    enableBtn('vHost',true);enableBtn('vJoin',true);
-                    document.getElementById('vSpectator').classList.add('show');
-                });
-            }).catch(function(e){vStat('Microphone error: '+e.message,true);enableBtn('vHost',true);enableBtn('vJoin',true);document.getElementById('vSpectator').classList.add('show');});
+        document.getElementById('p2pHost').addEventListener('click',function(){
+            document.getElementById('p2pSpectator').classList.remove('show');
+            enableP2PBtn('p2pHost',false);enableP2PBtn('p2pJoin',false);
+            p2pStat('Waiting…');p2pDot('#ffaa44');
+            peer=new Peer(hostPeerId,PEER_OPTS);
+            peer.on('open',function(){
+                p2pStat('You\'re host. Share room link — guest clicks Join.');
+                enableP2PBtn('p2pHangup',true);
+            });
+            peer.on('connection',function(conn){
+                setupPeerDataConn(conn);
+                p2pDot('#44ff88');p2pStat('Guest connected');
+                document.getElementById('chatWrap').classList.add('connected');
+            });
+            peer.on('error',function(err){
+                if(err.type==='unavailable-id')p2pStat('Room has a host already. Click Join.',true);
+                else p2pStat('PeerJS: '+err.message,true);
+                enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);
+                document.getElementById('p2pSpectator').classList.add('show');
+                hangup();
+            });
         });
-        document.getElementById('vJoin').addEventListener('click',function(){
-            document.getElementById('vSpectator').classList.remove('show');
-            enableBtn('vHost',false);enableBtn('vJoin',false);
-            vStat('Requesting microphone…');vDot('#ffaa44');
-            getMic().then(function(stream){
-                localStream=stream;
-                peer=new Peer(PEER_OPTS);
-                peer.on('open',function(){
-                    var conn=peer.connect(hostPeerId);
-                    setupPeerDataConn(conn);
-                    var call=peer.call(hostPeerId,stream);
-                    if(call)call.on('stream',function(remoteStream){
-                        document.getElementById('vRemote').srcObject=remoteStream;
-                    });
-                    vDot('#44ff88');vStat('🔊 Connected to host');
-                    enableBtn('vMute',true);enableBtn('vHangup',true);
+        document.getElementById('p2pJoin').addEventListener('click',function(){
+            document.getElementById('p2pSpectator').classList.remove('show');
+            enableP2PBtn('p2pHost',false);enableP2PBtn('p2pJoin',false);
+            p2pStat('Connecting…');p2pDot('#ffaa44');
+            peer=new Peer(PEER_OPTS);
+            peer.on('open',function(){
+                var conn=peer.connect(hostPeerId);
+                setupPeerDataConn(conn);
+                conn.on('open',function(){
+                    p2pDot('#44ff88');p2pStat('Connected to host');
+                    document.getElementById('chatWrap').classList.add('connected');
                 });
-                peer.on('error',function(err){
-                    vStat('PeerJS: '+err.message,true);
-                    enableBtn('vHost',true);enableBtn('vJoin',true);
-                    document.getElementById('vSpectator').classList.add('show');
-                });
-            }).catch(function(e){vStat('Microphone error: '+e.message,true);enableBtn('vHost',true);enableBtn('vJoin',true);document.getElementById('vSpectator').classList.add('show');});
+                enableP2PBtn('p2pHangup',true);
+            });
+            peer.on('error',function(err){
+                p2pStat('PeerJS: '+err.message,true);
+                enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);
+                document.getElementById('p2pSpectator').classList.add('show');
+                hangup();
+            });
         });
-        document.getElementById('vMute').addEventListener('click',function(){
-            if(!localStream)return;
-            isMuted=!isMuted;
-            localStream.getAudioTracks().forEach(function(t){t.enabled=!isMuted;});
-            this.textContent=isMuted?'🔊 Unmute':'🔇 Mute';
+        document.getElementById('p2pHangup').addEventListener('click',hangup);
+
+        document.getElementById('chatToggle').addEventListener('click',function(){
+            var wrap=document.getElementById('chatWrap');
+            var open=chatMessagesEl.classList.toggle('collapsed');
+            chatFormEl.classList.toggle('collapsed',open);
+            this.setAttribute('aria-expanded',!open);
         });
-        document.getElementById('vHangup').addEventListener('click',hangup);
+        chatFormEl.addEventListener('submit',function(e){
+            e.preventDefault();
+            sendChatText(chatInputEl.value);
+            chatInputEl.value='';
+        });
+        document.getElementById('chatSend').disabled=!dataChannel||!dataChannel.open;
+        function updateChatSendState(){document.getElementById('chatSend').disabled=!dataChannel||!dataChannel.open;}
+        var origSetupConn=setupPeerDataConn;
+        setupPeerDataConn=function(conn){
+            origSetupConn(conn);
+            updateChatSendState();
+            conn.on('open',updateChatSendState);
+            conn.on('close',updateChatSendState);
+            conn.on('error',updateChatSendState);
+        };
     })();
     </script>
 </body>
