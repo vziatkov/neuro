@@ -7,47 +7,81 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/three@0.181.0/build/three.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+        body{background:#020203;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden;transition:filter 0.12s ease-out}
+        body::before{content:'';position:fixed;inset:-20%;z-index:-3;background:radial-gradient(circle,#ff8c42 0%,transparent 60%);opacity:0.12;animation:bgPulse 8s ease-in-out infinite;pointer-events:none}
+        @keyframes bgPulse{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+        #bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:-2;display:block;pointer-events:none}
         .header{margin-bottom:20px;text-align:center;max-width:600px}
         .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.85)}
         .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:4px}
-        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center;max-width:600px;width:100%}
+        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center;max-width:600px;width:100%;transition:transform 0.2s}
+        .room-info:hover{transform:scale(1.01)}
         .room-id{font-size:20px;font-weight:600;color:#ff8c42;letter-spacing:3px;margin:8px 0}
         .room-seed{font-size:10px;color:#555;letter-spacing:1px;margin-bottom:4px}
         .room-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
         .share-btn{background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 16px;border-radius:5px;cursor:pointer;margin-top:8px;transition:all 0.2s}
-        .share-btn:hover{background:rgba(255,140,66,0.2)}
+        .share-btn:hover{background:rgba(255,140,66,0.2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
         .share-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
         .game-area{max-width:600px;width:100%;margin-bottom:16px}
-        .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
+        .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden;transition:transform 0.2s}
+        .round-display:hover{transform:scale(1.01)}
         .round-num{font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase}
-        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:100px;display:flex;align-items:center;justify-content:center;gap:8px}
-        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center}
-        .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,100,40,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
+        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:120px;display:flex;align-items:center;justify-content:center;gap:12px}
+        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center;gap:16px;position:relative}
+        .dice-3d-wrap{width:110px;height:110px;min-width:110px;min-height:110px;position:relative;flex-shrink:0;aspect-ratio:1}
+        #dice3dCanvas{width:100%;height:100%;display:block;border-radius:12px;border:1px solid rgba(255,140,66,0.2);pointer-events:none}
+        .dice-countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:600;line-height:1;color:rgba(255,140,66,0.92);text-shadow:0 0 20px rgba(255,140,66,0.4);font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;pointer-events:none;opacity:0;transition:opacity 0.25s ease,color 0.2s ease;border-radius:12px}
+        .dice-countdown.show{opacity:1}
+        .dice-countdown.result{font-size:48px;font-weight:700}
+        .dice-countdown.result.win{color:rgba(68,255,136,0.95);text-shadow:0 0 24px rgba(68,255,136,0.5)}
+        .dice-countdown.result.loss{color:rgba(255,68,68,0.95);text-shadow:0 0 24px rgba(255,68,68,0.4)}
+        .dice-countdown.result.neutral{color:rgba(100,200,220,0.9);text-shadow:0 0 24px rgba(100,200,220,0.4)}
+        .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,140,66,0.4),0 0 40px rgba(255,140,66,0.25),inset 0 0 20px rgba(255,140,66,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
         .dice-face.reveal{animation:diceReveal 0.35s ease-out}
+        .dice-face.rolling{animation:none}
+        .dice-face-wrap.roll-result .dice-face{animation:diceReveal 0.4s ease-out;box-shadow:0 0 28px rgba(255,140,66,0.25)}
+        .dice-face-wrap.roll-result.win .dice-face{box-shadow:0 0 32px rgba(68,255,136,0.3)}
+        .dice-face-wrap.roll-result.loss .dice-face{box-shadow:0 0 24px rgba(255,68,68,0.2)}
         .dice-face.win{border-color:rgba(68,255,136,0.5);box-shadow:0 0 24px rgba(68,255,136,0.2)}
         .dice-face.loss{border-color:rgba(255,68,68,0.4);box-shadow:0 0 20px rgba(255,68,68,0.12)}
-        .dice-face.pending .dice-pip{opacity:0.35;animation:dicePulse 1.2s ease-in-out infinite}
+        .dice-face.pending{animation:diceShake 0.6s ease-in-out infinite}
+        .dice-face.pending .dice-pip{display:none}
+        .dice-face.pending:not(.face-1):not(.face-2):not(.face-3):not(.face-4):not(.face-5):not(.face-6)::after{content:'?';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:32px;font-weight:700;color:rgba(255,140,66,0.85);text-shadow:0 0 12px rgba(255,140,66,0.4);font-family:inherit}
+        .dice-face-wrap:has(.dice-face.pending) .dice-value{visibility:hidden}
         @keyframes diceReveal{0%{transform:scale(0.92);opacity:0.7}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1);opacity:1}}
         @keyframes dicePulse{0%,100%{opacity:0.35}50%{opacity:0.6}}
+        @keyframes diceShake{0%,100%{transform:translate(0,0) rotate(0deg)}10%{transform:translate(-1px,-2px) rotate(-0.5deg)}30%{transform:translate(2px,1px) rotate(0.4deg)}50%{transform:translate(-1px,1px) rotate(0.3deg)}70%{transform:translate(1px,-1px) rotate(-0.4deg)}90%{transform:translate(-2px,0) rotate(0.2deg)}}
         .dice-pip{display:none;position:absolute;width:12px;height:12px;border-radius:50%;background:#ff9f5c;box-shadow:0 0 8px rgba(255,140,66,0.5),inset 0 1px 0 rgba(255,255,255,0.25);transform:translate(-50%,-50%)}
         .dice-face.face-1 .dice-pip.p5,.dice-face.face-2 .dice-pip.p1,.dice-face.face-2 .dice-pip.p9,.dice-face.face-3 .dice-pip.p1,.dice-face.face-3 .dice-pip.p5,.dice-face.face-3 .dice-pip.p9,.dice-face.face-4 .dice-pip.p1,.dice-face.face-4 .dice-pip.p3,.dice-face.face-4 .dice-pip.p7,.dice-face.face-4 .dice-pip.p9,.dice-face.face-5 .dice-pip.p1,.dice-face.face-5 .dice-pip.p3,.dice-face.face-5 .dice-pip.p5,.dice-face.face-5 .dice-pip.p7,.dice-face.face-5 .dice-pip.p9,.dice-face.face-6 .dice-pip.p1,.dice-face.face-6 .dice-pip.p4,.dice-face.face-6 .dice-pip.p7,.dice-face.face-6 .dice-pip.p3,.dice-face.face-6 .dice-pip.p6,.dice-face.face-6 .dice-pip.p9{display:block}
-        .dice-face.pending .dice-pip.p1,.dice-face.pending .dice-pip.p3,.dice-face.pending .dice-pip.p5,.dice-face.pending .dice-pip.p7,.dice-face.pending .dice-pip.p9{display:block}
         .dice-pip.p1{left:25%;top:25%}.dice-pip.p2{left:50%;top:25%}.dice-pip.p3{left:75%;top:25%}.dice-pip.p4{left:25%;top:50%}.dice-pip.p5{left:50%;top:50%}.dice-pip.p6{left:75%;top:50%}.dice-pip.p7{left:25%;top:75%}.dice-pip.p8{left:50%;top:75%}.dice-pip.p9{left:75%;top:75%}
         .dice-value{color:#ff8c42;font-size:24px;margin-left:10px}
         .pick-label{font-size:10px;color:#555;margin-bottom:12px}
         .pick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
-        .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s}
-        .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42}
-        .pick-btn.chosen{background:rgba(255,140,66,0.15);border-color:#ff8c42;color:#ff8c42}
+        .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s;transform:scale(1);position:relative;overflow:visible}
+        .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42;transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
+        .pick-btn.chosen:hover{transform:scale(1.06) translateY(-2px)}
+        .pick-btn.chosen{background:rgba(255,140,66,0.2);border-color:#ff8c42;color:#ff8c42;box-shadow:0 0 16px rgba(255,140,66,0.35),0 0 0 2px rgba(255,140,66,0.25);transform:scale(1.06)}
+        .pick-btn.chosen::after{content:'';position:absolute;inset:-3px;border-radius:11px;border:1px solid rgba(255,140,66,0.4);pointer-events:none;animation:pickRing 1.2s ease-out infinite}
+        @keyframes pickRing{0%{opacity:0.8;transform:scale(1.05)}100%{opacity:0;transform:scale(1.15)}}
         .pick-btn:disabled{opacity:0.5;cursor:not-allowed}
         .result-line{font-size:11px;color:#888;margin-top:8px;min-height:18px}
         .result-line.win{color:#44ff88}
         .result-line.loss{color:#ff4444}
         .proof-line{font-size:9px;color:#333;margin-top:4px;letter-spacing:0.5px}
-        .timer-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,140,66,0.5);transition:width 0.1s linear;border-radius:0 0 10px 10px}
+        .timer-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,140,66,0.5);transition:width 0.15s linear;border-radius:0 0 10px 10px}
+        .dist-chart{display:grid;grid-template-columns:20px 1fr 36px;gap:6px 12px;align-items:center;font-size:10px;color:#555;margin-top:10px}
+        .dist-chart .dist-n{color:rgba(255,140,66,0.9);font-weight:600;text-align:right}
+        .dist-chart .dist-c{color:#555;text-align:right}
+        .dist-bar{height:8px;background:#0d0d0f;border-radius:4px;overflow:hidden;border:1px solid #1a1a1a}
+        .dist-bar-inner{height:100%;background:linear-gradient(90deg,rgba(255,100,40,0.4),#ff8c42);border-radius:3px;transition:width 0.35s ease-out;width:0}
+        .proof-verify{display:inline-block;margin-top:6px;font-size:9px;padding:4px 10px;background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;border-radius:4px;cursor:pointer;transition:all 0.2s}
+        .proof-verify:hover{background:rgba(255,140,66,0.2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.3)}
+        .proof-detail{display:none;margin-top:8px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;font-size:9px;color:#888;line-height:1.6}
+        .proof-detail.show{display:block}
+        .proof-detail span{color:#ff8c42}
         .score-row{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
         .score-item{font-size:12px;color:#555}
         .score-item span{color:#ff8c42;font-weight:600}
@@ -57,31 +91,53 @@
         .history-list{display:flex;flex-wrap:wrap;gap:6px}
         .history-item{width:28px;height:28px;border-radius:6px;background:rgba(15,12,10,0.9);border:1px solid rgba(255,140,66,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:rgba(255,140,66,0.9)}
         .history-item.empty{color:#333;border-color:#1a1a1a}
-        .leaderboard{max-width:600px;width:100%;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+        .leaderboard{max-width:600px;width:100%;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;transition:transform 0.2s}
+        .leaderboard:hover{transform:scale(1.01)}
         .leaderboard .lb-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
         .leaderboard .lb-scores{font-size:12px;color:#888}
         .leaderboard .lb-scores .you{color:#ff8c42}
         .leaderboard .lb-scores .peer{color:#6cc}
         .win-banner{background:rgba(68,255,136,0.1);border:1px solid rgba(68,255,136,0.3);border-radius:8px;padding:16px;text-align:center;color:#44ff88;font-size:14px;margin-bottom:16px;display:none}
         .win-banner.show{display:block}
-        .voice-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
-        .voice-section .v-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-        .voice-section .v-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
-        .voice-section .v-spectator{font-size:9px;color:#333;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px;display:none}
-        .voice-section .v-spectator.show{display:block}
-        .voice-section textarea{width:100%;min-height:60px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;color:#888;font-family:inherit;font-size:9px;padding:8px;resize:vertical;margin-bottom:8px}
-        .voice-section .v-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-        .voice-section .v-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s}
-        .voice-section .v-btn:hover{background:rgba(100,200,255,0.15);color:#8ee}
-        .voice-section .v-btn:disabled{opacity:0.4;cursor:not-allowed}
-        .voice-section .v-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
-        .voice-section .v-status.err{color:#ff4444}
-        .voice-section audio{display:block;margin-top:8px;width:100%;max-height:32px}
+        .p2p-section{max-width:600px;width:100%;margin-top:20px;padding:16px;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:8px}
+        .p2p-section .p2p-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+        .p2p-section .p2p-desc{font-size:9px;color:#444;margin-bottom:12px;line-height:1.4}
+        .p2p-section .p2p-spectator{font-size:9px;color:#333;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px;display:none}
+        .p2p-section .p2p-spectator.show{display:block}
+        .p2p-section .p2p-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+        .p2p-section .p2p-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:6px 12px;border-radius:5px;cursor:pointer;transition:all 0.2s}
+        .p2p-section .p2p-btn:hover{background:rgba(100,200,255,0.15);color:#8ee;transform:translateY(-2px);box-shadow:0 4px 12px rgba(100,200,255,0.25)}
+        .p2p-section .p2p-btn:disabled{opacity:0.4;cursor:not-allowed}
+        .p2p-section .p2p-status{font-size:9px;color:#44ff88;margin-bottom:12px;min-height:14px}
+        .p2p-section .p2p-status.err{color:#ff4444}
+        .chat-wrap{margin-top:12px;border:1px solid #1a1a1a;border-radius:8px;background:#0d0d0f;overflow:hidden;display:flex;flex-direction:column}
+        .chat-toggle{width:100%;padding:8px 12px;font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;background:transparent;border:none;border-bottom:1px solid #1a1a1a;cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;justify-content:space-between}
+        .chat-toggle:hover{color:#888;background:rgba(255,255,255,0.03)}
+        .chat-toggle .dot{width:6px;height:6px;border-radius:50%;background:#555;flex-shrink:0;margin-left:8px}
+        .chat-wrap.connected .chat-toggle .dot{background:#44ff88}
+        .chat-messages{max-height:140px;min-height:60px;overflow-y:auto;overflow-x:hidden;padding:8px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+        .chat-messages.collapsed{display:none}
+        .chat-msg{font-size:10px;line-height:1.4;word-break:break-word;padding:6px 8px;border-radius:6px;max-width:92%}
+        .chat-msg.self{background:rgba(255,140,66,0.15);border:1px solid rgba(255,140,66,0.25);align-self:flex-end;margin-left:auto}
+        .chat-msg.peer{background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.2);align-self:flex-start}
+        .chat-msg .who{font-size:8px;color:#555;margin-bottom:2px}
+        .chat-form{display:flex;gap:6px;padding:8px;border-top:1px solid #1a1a1a}
+        .chat-form.collapsed{display:none}
+        .chat-input{flex:1;min-width:0;background:#0a0a0c;border:1px solid #1a1a1a;border-radius:6px;color:#e5e5e5;font-family:inherit;font-size:11px;padding:8px 10px}
+        .chat-input::placeholder{color:#444}
+        .chat-send{flex-shrink:0;padding:8px 14px;background:rgba(255,140,66,0.2);border:1px solid rgba(255,140,66,0.35);color:#ff8c42;font-family:inherit;font-size:10px;border-radius:6px;cursor:pointer;transition:all 0.2s}
+        .chat-send:hover:not(:disabled){background:rgba(255,140,66,0.3);transform:translateY(-1px)}
+        .chat-send:disabled{opacity:0.4;cursor:not-allowed}
+        @media (max-width:480px){
+            .chat-messages{max-height:120px}
+            .chat-form .chat-input{font-size:16px}
+        }
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,95,31,0.8)}
     </style>
 </head>
 <body>
+    <canvas id="bgCanvas"></canvas>
     <div class="header">
         <h1>Dice Room</h1>
         <div class="sub">Same link = same sequence of rolls · guess 1–6 each round · first to 5 points wins</div>
@@ -101,6 +157,10 @@
             <div class="round-num" id="roundNum">ROUND 1</div>
             <div class="dice-display" id="diceDisplay">
                 <div class="dice-face-wrap">
+                    <div class="dice-3d-wrap">
+                        <canvas id="dice3dCanvas" aria-hidden="true"></canvas>
+                        <div class="dice-countdown" id="diceCountdown" aria-hidden="true" role="status"></div>
+                    </div>
                     <div class="dice-face" id="diceFace" aria-hidden="true">
                         <span class="dice-pip p1"></span><span class="dice-pip p2"></span><span class="dice-pip p3"></span>
                         <span class="dice-pip p4"></span><span class="dice-pip p5"></span><span class="dice-pip p6"></span>
@@ -113,6 +173,8 @@
             <div class="pick-btns" id="pickBtns"></div>
             <div class="result-line" id="resultLine"></div>
             <div class="proof-line" id="proofLine" aria-hidden="true"></div>
+            <button type="button" class="proof-verify" id="proofVerify">Verify roll</button>
+            <div class="proof-detail" id="proofDetail"></div>
             <div class="timer-bar" id="timerBar"></div>
         </div>
         <div class="score-row">
@@ -121,6 +183,14 @@
         <div class="history-row">
             <div class="history-label">Last 15 rolls</div>
             <div class="history-list" id="historyList"></div>
+            <div class="dist-chart" id="distChart">
+                <span class="dist-n">1</span><div class="dist-bar"><div class="dist-bar-inner" data-n="1"></div></div><span class="dist-c" id="distC1">0</span>
+                <span class="dist-n">2</span><div class="dist-bar"><div class="dist-bar-inner" data-n="2"></div></div><span class="dist-c" id="distC2">0</span>
+                <span class="dist-n">3</span><div class="dist-bar"><div class="dist-bar-inner" data-n="3"></div></div><span class="dist-c" id="distC3">0</span>
+                <span class="dist-n">4</span><div class="dist-bar"><div class="dist-bar-inner" data-n="4"></div></div><span class="dist-c" id="distC4">0</span>
+                <span class="dist-n">5</span><div class="dist-bar"><div class="dist-bar-inner" data-n="5"></div></div><span class="dist-c" id="distC5">0</span>
+                <span class="dist-n">6</span><div class="dist-bar"><div class="dist-bar-inner" data-n="6"></div></div><span class="dist-c" id="distC6">0</span>
+            </div>
         </div>
         <div class="leaderboard" id="leaderboard">
             <span class="lb-title">Leaderboard (P2P)</span>
@@ -128,25 +198,75 @@
         </div>
     </div>
 
-    <div class="voice-section" id="voiceSection">
-        <div class="v-title">P2P Voice & leaderboard <span id="vConnDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
-        <div class="v-desc">PeerJS — same room link. One clicks Host, the other Join. No copy-paste.</div>
-        <div class="v-spectator" id="vSpectator">Spectator — same rolls for everyone with this link; join voice to see leaderboard.</div>
-        <div class="v-btns" id="vBtns">
-            <button class="v-btn" id="vHost">🎤 Host (wait for guest)</button>
-            <button class="v-btn" id="vJoin">📥 Join (connect to host)</button>
-            <button class="v-btn" id="vMute" disabled style="opacity:0.3">🔇 Mute</button>
-            <button class="v-btn" id="vHangup" disabled style="opacity:0.3">✕ Hang up</button>
+    <div class="p2p-section" id="p2pSection">
+        <div class="p2p-title">P2P · Chat & leaderboard <span id="p2pConnDot" class="dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#555;margin-left:6px;vertical-align:middle"></span></div>
+        <div class="p2p-desc">Same room link. One clicks Host, the other Join — no mic, only messages and scores.</div>
+        <div class="p2p-spectator" id="p2pSpectator">Spectator — same rolls for everyone with this link; connect P2P to chat and see leaderboard.</div>
+        <div class="p2p-btns">
+            <button class="p2p-btn" id="p2pHost">Host (wait for guest)</button>
+            <button class="p2p-btn" id="p2pJoin">Join (connect to host)</button>
+            <button class="p2p-btn" id="p2pHangup" disabled style="opacity:0.3">✕ Disconnect</button>
         </div>
-        <div class="v-status" id="vStatus"></div>
-        <audio id="vRemote" autoplay playsinline></audio>
+        <div class="p2p-status" id="p2pStatus"></div>
+        <div class="chat-wrap" id="chatWrap">
+            <button type="button" class="chat-toggle" id="chatToggle" aria-expanded="true">Chat <span class="dot"></span></button>
+            <div class="chat-messages" id="chatMessages"></div>
+            <form class="chat-form" id="chatForm" action="#" method="post">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Message…" maxlength="500" autocomplete="off" />
+                <button type="submit" class="chat-send" id="chatSend">Send</button>
+            </form>
+        </div>
     </div>
 
     <a href="crash-room.html" class="back">← Crash Room</a>
 
     <script>
     (function(){
-        // Deterministic PRNG (xoshiro128**)
+        var bgCanvas=document.getElementById('bgCanvas');
+        var bgCtx=bgCanvas.getContext('2d');
+        function resizeBg(){
+            var w=window.innerWidth,h=window.innerHeight;
+            var dpr=Math.min(window.devicePixelRatio,2);
+            bgCanvas.width=Math.round(w*dpr);
+            bgCanvas.height=Math.round(h*dpr);
+            bgCanvas.style.width=w+'px';
+            bgCanvas.style.height=h+'px';
+            bgCtx.setTransform(dpr,0,0,dpr,0,0);
+        }
+        function drawBg(){
+            var w=window.innerWidth,h=window.innerHeight;
+            if(w<=0||h<=0)return;
+            var phase=(Math.sin(Date.now()*0.0002)+1)/2;
+            var bg=bgCtx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h));
+            bg.addColorStop(0,'rgba(255,140,66,'+(0.03+phase*0.05)+')');
+            bg.addColorStop(0.4,'#050304');
+            bg.addColorStop(1,'#020203');
+            bgCtx.fillStyle=bg;
+            bgCtx.fillRect(0,0,w,h);
+            bgCtx.globalCompositeOperation='lighter';
+            for(var i=0;i<20;i++){
+                var x=Math.random()*w;
+                var y=Math.random()*h;
+                bgCtx.fillStyle='rgba(255,140,66,0.06)';
+                bgCtx.beginPath();
+                bgCtx.arc(x,y,1.5,0,Math.PI*2);
+                bgCtx.fill();
+            }
+            for(var i=0;i<30;i++){
+                var x=(i*137+Date.now()*0.01)%w;
+                var y=(i*71)%h;
+                bgCtx.fillStyle='rgba(255,140,66,0.04)';
+                bgCtx.fillRect(x,y,2,2);
+            }
+            bgCtx.globalCompositeOperation='source-over';
+            requestAnimationFrame(drawBg);
+        }
+        resizeBg();
+        window.addEventListener('resize',resizeBg);
+        drawBg();
+    })();
+
+    (function(){
         function mkRng(seed){
             var s=new Uint32Array(4);
             s[0]=seed^0x9E3779B9;s[1]=seed^0x6C078965;s[2]=seed^0xBB67AE85;s[3]=seed^0x3C6EF372;
@@ -158,7 +278,6 @@
             };
         }
 
-        // Room seed from URL hash
         var roomSeed;
         if(location.hash&&location.hash.length>1){
             roomSeed=parseInt(location.hash.slice(1),36);
@@ -178,7 +297,6 @@
             });
         });
 
-        // Dice roll for round (1–6, deterministic); cache to avoid recalc every frame
         var historyRollCache={};
         function getRollForRound(roundIdx){
             if(!(roundIdx in historyRollCache))historyRollCache[roundIdx]=rollForRound(roundIdx);
@@ -195,31 +313,186 @@
             return Math.floor(rng()*6)+1;
         }
 
-        var ROUND_TIME=6000;
-        var PICK_PHASE=0.65;
+        var PICK_PHASE=0.62;
+        var ROLLING_PHASE_MS=3000;
+        var RESULT_PHASE_MS=3000;
+        var ROUND_TIME=Math.ceil((ROLLING_PHASE_MS+RESULT_PHASE_MS)/(1-PICK_PHASE));
         var GOAL=5;
+        var rollAnimationDoneForRound=-1;
+        var rollAnimationStart=0;
         var today=new Date();today.setUTCHours(0,0,0,0);
         var epoch=today.getTime();
 
-        var score=0;
-        var lastScoredRound=-1;
-        var myChoiceByRound={};
+        // Three.js 3D dice — real cube, 6 textures, shadows, smooth roll, zero jitter
+        var dice3d={};
+        (function(){
+            var canvas=document.getElementById('dice3dCanvas');
+            if(!canvas||!window.THREE)return;
+            var T=THREE;
+            var scene=new T.Scene();
+            var camera=new T.PerspectiveCamera(52,1,0.1,50);
+            camera.position.set(1.4,1.2,2.2);
+            camera.lookAt(0,0,0);
+            var renderer=new T.WebGLRenderer({canvas:canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
+            renderer.setClearColor(0x080604,0);
+            renderer.shadowMap.enabled=true;
+            renderer.shadowMap.type=T.PCFSoftShadowMap;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 
-        var peerScore=null;
-        var dataChannel=null;
+            function createFaceTexture(faceNum){
+                var s=128;
+                var c=document.createElement('canvas');
+                c.width=s;c.height=s;
+                var ctx=c.getContext('2d');
+                ctx.fillStyle='#1a1410';
+                ctx.fillRect(0,0,s,s);
+                ctx.fillStyle='#ff9f5c';
+                var pipPos={1:[[0.5,0.5]],2:[[0.25,0.25],[0.75,0.75]],3:[[0.25,0.25],[0.5,0.5],[0.75,0.75]],4:[[0.25,0.25],[0.75,0.25],[0.25,0.75],[0.75,0.75]],5:[[0.25,0.25],[0.75,0.25],[0.5,0.5],[0.25,0.75],[0.75,0.75]],6:[[0.25,0.25],[0.5,0.25],[0.75,0.25],[0.25,0.75],[0.5,0.75],[0.75,0.75]]};
+                var pts=pipPos[faceNum]||[];
+                for(var i=0;i<pts.length;i++){
+                    ctx.beginPath();
+                    ctx.arc(pts[i][0]*s,pts[i][1]*s,10,0,Math.PI*2);
+                    ctx.fill();
+                }
+                var tex=new T.CanvasTexture(c);
+                tex.needsUpdate=true;
+                return tex;
+            }
+            var faceOrder=[2,5,3,4,1,6];
+            var mats=[];
+            for(var i=0;i<6;i++){
+                mats.push(new T.MeshStandardMaterial({
+                    map:createFaceTexture(faceOrder[i]),
+                    color:0xffffff,
+                    roughness:0.6,
+                    metalness:0.1
+                }));
+            }
+            var geo=new T.BoxGeometry(0.9,0.9,0.9);
+            var diceMesh=new T.Mesh(geo,mats);
+            diceMesh.castShadow=true;
+            diceMesh.receiveShadow=true;
+            scene.add(diceMesh);
+
+            var ambient=new T.AmbientLight(0x664422,0.6);
+            scene.add(ambient);
+            var dirLight=new T.DirectionalLight(0xffeedd,1.1);
+            dirLight.position.set(2.5,2.5,3);
+            dirLight.castShadow=true;
+            dirLight.shadow.mapSize.width=512;
+            dirLight.shadow.mapSize.height=512;
+            dirLight.shadow.camera.near=0.5;
+            dirLight.shadow.camera.far=8;
+            dirLight.shadow.camera.left=-2;
+            dirLight.shadow.camera.right=2;
+            dirLight.shadow.camera.top=2;
+            dirLight.shadow.camera.bottom=-2;
+            dirLight.shadow.radius=3;
+            dirLight.shadow.bias=-0.0001;
+            scene.add(dirLight);
+
+            var planeGeo=new T.PlaneGeometry(4,4);
+            var planeMat=new T.ShadowMaterial({opacity:0.25});
+            var plane=new T.Mesh(planeGeo,planeMat);
+            plane.rotation.x=-Math.PI/2;
+            plane.position.y=-0.6;
+            plane.receiveShadow=true;
+            scene.add(plane);
+
+            var faceRotations=[[0,0,0],[0,-Math.PI/2,0],[Math.PI/2,0,0],[-Math.PI/2,0,0],[0,Math.PI/2,0],[0,Math.PI,0]];
+            var rollStart=0,rollDuration=520,rollFrom={x:0,y:0,z:0},rollTo={x:0,y:0,z:0},targetRoll=-1,lastRoll=-1,state='idle';
+            var PI=Math.PI;
+
+            function easeOutCubic(t){return 1-Math.pow(1-t,3);}
+
+            function resize(){
+                var w=canvas.clientWidth,h=canvas.clientHeight;
+                if(w<=0||h<=0)return;
+                renderer.setSize(w,h);
+                camera.aspect=w/h;
+                camera.updateProjectionMatrix();
+            }
+
+            dice3d.setRoll=function(n){targetRoll=n;};
+            dice3d.startFall=function(roll){
+                targetRoll=roll;
+                rollFrom={x:diceMesh.rotation.x,y:diceMesh.rotation.y,z:diceMesh.rotation.z};
+                var r=faceRotations[roll-1];
+                rollTo={x:r[0]+PI*2*(1.5+Math.random()),y:r[1]+PI*2*(2+Math.random()),z:r[2]+PI*2*(1+Math.random()*0.5)};
+                rollStart=Date.now();
+                state='rolling';
+            };
+            dice3d.setPending=function(){
+                state='pending';
+                rollStart=Date.now();
+            };
+            dice3d.setIdle=function(){state='idle';};
+
+            dice3d.update=function(now){
+                resize();
+                if(state==='rolling'&&targetRoll>0){
+                    var t=Math.min(1,(now-rollStart)/rollDuration);
+                    var e=easeOutCubic(t);
+                    diceMesh.rotation.x=rollFrom.x+(rollTo.x-rollFrom.x)*e;
+                    diceMesh.rotation.y=rollFrom.y+(rollTo.y-rollFrom.y)*e;
+                    diceMesh.rotation.z=rollFrom.z+(rollTo.z-rollFrom.z)*e;
+                    if(t>=1){
+                        var r=faceRotations[targetRoll-1];
+                        diceMesh.rotation.set(r[0],r[1],r[2]);
+                        lastRoll=targetRoll;
+                        state='frozen';
+                    }
+                }else if(state==='pending'){
+                    var dt=(now-rollStart)*0.001;
+                    diceMesh.rotation.y=dt*0.5;
+                    diceMesh.rotation.x=Math.sin(dt*0.4)*0.12;
+                    diceMesh.rotation.z=Math.cos(dt*0.3)*0.08;
+                }else if(state==='frozen'&&lastRoll>0){
+                    var r=faceRotations[lastRoll-1];
+                    diceMesh.rotation.set(r[0],r[1],r[2]);
+                }else if(state==='idle'){
+                    var dt=now*0.0005;
+                    diceMesh.rotation.y=dt*0.3;
+                    diceMesh.rotation.x=Math.sin(dt*0.2)*0.1;
+                }
+                renderer.render(scene,camera);
+            };
+
+            window.addEventListener('resize',resize);
+            resize();
+        })();
+
+        var score=0,lastScoredRound=-1,myChoiceByRound={},lastPhaseWasPick=false,fallStartedForRound=-1;
+        var peerScore=null,dataChannel=null;
         function updateLeaderboard(){
             document.getElementById('lbYou').textContent=score;
             document.getElementById('lbPeer').textContent=peerScore===null||peerScore===undefined?'—':peerScore;
         }
         function sendScore(){
-            if(dataChannel&&dataChannel.open){
-                try{dataChannel.send({score:score});}catch(e){}
-            }
+            if(dataChannel&&dataChannel.open){try{dataChannel.send({type:'score',score:score});}catch(e){}}
+        }
+        var chatMessagesEl=document.getElementById('chatMessages');
+        var chatFormEl=document.getElementById('chatForm');
+        var chatInputEl=document.getElementById('chatInput');
+        function appendChatMessage(who,text){
+            var div=document.createElement('div');
+            div.className='chat-msg '+(who==='self'?'self':'peer');
+            div.innerHTML='<span class="who">'+(who==='self'?'You':'Peer')+'</span> '+escapeHtml(text);
+            chatMessagesEl.appendChild(div);
+            chatMessagesEl.scrollTop=chatMessagesEl.scrollHeight;
+        }
+        function escapeHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+        function sendChatText(text){
+            var t=(text||'').trim();if(!t)return;
+            if(dataChannel&&dataChannel.open){try{dataChannel.send({type:'chat',text:t});}catch(e){}}
+            appendChatMessage('self',t);
         }
         function setupPeerDataConn(conn){
             dataChannel=conn;
             conn.on('data',function(data){
-                if(data&&typeof data.score==='number'){peerScore=data.score;updateLeaderboard();}
+                if(!data)return;
+                if(data.type==='chat'&&typeof data.text==='string')appendChatMessage('peer',data.text);
+                if((data.type==='score'&&typeof data.score==='number')||(typeof data.score==='number')){peerScore=data.score;updateLeaderboard();}
             });
             if(conn.open)sendScore();else conn.on('open',sendScore);
         }
@@ -245,8 +518,7 @@
             var btn=e.target.closest('.pick-btn');
             if(!btn||btn.disabled)return;
             var num=parseInt(btn.dataset.num,10);
-            var roundEl=document.getElementById('roundNum');
-            var roundStr=roundEl.textContent.replace('ROUND ','');
+            var roundStr=document.getElementById('roundNum').textContent.replace('ROUND ','');
             var r=parseInt(roundStr,10);
             if(isNaN(r))return;
             myChoiceByRound[r]=num;
@@ -254,24 +526,47 @@
             btn.classList.add('chosen');
         });
 
+        var countDist=function(){
+            var now=Date.now(),elapsed=now-epoch,currentRound=Math.floor(elapsed/ROUND_TIME);
+            var c=[0,0,0,0,0,0];
+            for(var r=1;r<=Math.max(0,currentRound);r++){var v=getRollForRound(r);if(v>=1&&v<=6)c[v-1]++;}
+            return c;
+        };
+        function updateDistChart(){
+            var c=countDist();
+            var max=Math.max(1,Math.max.apply(null,c));
+            for(var i=1;i<=6;i++){
+                var inner=document.querySelector('.dist-bar-inner[data-n="'+i+'"]');
+                var span=document.getElementById('distC'+i);
+                if(inner)inner.style.width=(max?(c[i-1]/max)*100:0)+'%';
+                if(span)span.textContent=c[i-1];
+            }
+        }
+        document.getElementById('proofVerify').addEventListener('click',function(){
+            document.getElementById('proofDetail').classList.toggle('show');
+        });
+
         function tick(){
             var now=Date.now();
             var elapsed=now-epoch;
             var currentRound=Math.floor(elapsed/ROUND_TIME);
             var phase=(elapsed%ROUND_TIME)/ROUND_TIME;
+            var timeIntoReveal=(elapsed%ROUND_TIME)-PICK_PHASE*ROUND_TIME;
             var isPickPhase=phase<PICK_PHASE;
+            var isRollingPhase=phase>=PICK_PHASE&&timeIntoReveal<ROLLING_PHASE_MS;
+            var isResultPhase=phase>=PICK_PHASE&&timeIntoReveal>=ROLLING_PHASE_MS;
 
             document.getElementById('roundNum').textContent='ROUND '+(currentRound+1);
             document.getElementById('timerBar').style.width=(phase*100)+'%';
             document.getElementById('scoreVal').textContent=score;
             updateLeaderboard();
+            updateDistChart();
 
             var historyItems=historyListEl.querySelectorAll('.history-item');
             for(var hi=0;hi<15;hi++){
                 var roundIndex=currentRound-15+hi;
                 if(roundIndex>=0&&roundIndex<currentRound){
-                    var r=roundIndex+1;
-                    historyItems[hi].textContent=getRollForRound(r);
+                    historyItems[hi].textContent=getRollForRound(roundIndex+1);
                     historyItems[hi].classList.remove('empty');
                 }else{
                     historyItems[hi].textContent='—';
@@ -283,153 +578,214 @@
                 document.getElementById('winBanner').classList.add('show');
                 document.getElementById('pickLabel').textContent='Game over — you won!';
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
+                if(dice3d.setIdle)dice3d.setIdle();
             }else if(isPickPhase){
                 document.getElementById('pickLabel').textContent='Pick 1–6 before time runs out';
                 var diceFace=document.getElementById('diceFace');
                 var diceValEl=document.getElementById('diceValue');
                 diceFace.className='dice-face pending';
-                diceValEl.textContent='?';
+                diceValEl.textContent='';
                 diceValEl.className='dice-value';
                 document.getElementById('resultLine').textContent='';
                 document.getElementById('resultLine').className='result-line';
-                document.getElementById('proofLine').textContent='';
+                var dw=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
+                if(dw)dw.classList.remove('roll-result','win','loss');
+                var countdownEl=document.getElementById('diceCountdown');
+                var timeUntilResult=(PICK_PHASE*ROUND_TIME+ROLLING_PHASE_MS)-(elapsed%ROUND_TIME);
+                var secLeft=Math.max(0,Math.ceil(timeUntilResult/1000));
+                countdownEl.textContent=String(secLeft);
+                countdownEl.className='dice-countdown show';
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
                 var chosen=myChoiceByRound[currentRound+1];
                 document.querySelectorAll('.pick-btn').forEach(function(b){
                     b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
                 });
-            }else{
-                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
-                var roll=getRollForRound(currentRound+1);
+                if(dice3d.setPending)dice3d.setPending();
+                lastPhaseWasPick=true;
+                fallStartedForRound=-1;
+                rollAnimationDoneForRound=-1;
+            }else if(isRollingPhase){
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
+                var chosen=myChoiceByRound[currentRound+1];
+                document.querySelectorAll('.pick-btn').forEach(function(b){
+                    b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
+                });
+                document.getElementById('pickLabel').textContent='Pick 1–6 — dice rolling…';
                 var diceFace=document.getElementById('diceFace');
                 var diceValEl=document.getElementById('diceValue');
-                diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','win','loss');
-                diceFace.classList.add('face-'+roll);
-                diceValEl.textContent=roll;
+                diceFace.classList.remove('pending','face-1','face-2','face-3','face-4','face-5','face-6','win','loss','reveal');
+                var faceNum=(Math.floor(timeIntoReveal/100)%6)+1;
+                diceFace.className=diceFace.className.replace(/\sface-\d/g,'').replace(/\srolling/g,'')+' rolling face-'+faceNum;
+                diceValEl.textContent='';
                 diceValEl.className='dice-value';
+                rollAnimationDoneForRound=-1;
+                var countdownEl=document.getElementById('diceCountdown');
+                var timeUntilResult=(PICK_PHASE*ROUND_TIME+ROLLING_PHASE_MS)-(elapsed%ROUND_TIME);
+                var secLeft=Math.max(0,Math.ceil(timeUntilResult/1000));
+                countdownEl.textContent=String(secLeft);
+                countdownEl.className='dice-countdown show';
+            }else if(isResultPhase){
+                lastPhaseWasPick=false;
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
+                var roll=getRollForRound(currentRound+1);
+                if(fallStartedForRound!==currentRound&&dice3d.startFall){
+                    dice3d.startFall(roll);
+                    fallStartedForRound=currentRound;
+                }
+                if(dice3d.setRoll)dice3d.setRoll(roll);
+
+                var diceFace=document.getElementById('diceFace');
+                var diceValEl=document.getElementById('diceValue');
+                var diceWrap=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
+                var resultPhaseElapsed=timeIntoReveal-ROLLING_PHASE_MS;
+                var countdownEl=document.getElementById('diceCountdown');
                 var myChoice=myChoiceByRound[currentRound+1];
-                if(myChoice!==undefined&&lastScoredRound!==currentRound){
-                    if(myChoice===roll){
-                        score++;
-                        sendScore();
-                        lastScoredRound=currentRound;
-                        diceFace.classList.add('win');
+                if(resultPhaseElapsed<600){
+                    countdownEl.textContent='0';
+                    countdownEl.className='dice-countdown show';
+                }else{
+                    countdownEl.textContent=String(roll);
+                    countdownEl.className='dice-countdown show result '+(myChoice===roll?'win':myChoice!==undefined?'loss':'neutral');
+                }
+
+                if(resultPhaseElapsed<400){
+                    var faceNum=(Math.floor(resultPhaseElapsed/70)%6)+1;
+                    diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','win','loss','reveal');
+                    diceFace.className=(diceFace.className.replace(/\sface-\d/g,'').replace(/\srolling/g,'')||'dice-face').trim()+' rolling face-'+faceNum;
+                    diceValEl.textContent='';
+                }else if(rollAnimationDoneForRound!==currentRound){
+                        rollAnimationDoneForRound=currentRound;
+                        document.body.style.filter='brightness(1.28)';
+                        setTimeout(function(){document.body.style.filter='';},120);
+                        diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','rolling');
+                        diceFace.classList.add('face-'+roll);
+                        if(diceWrap)diceWrap.classList.add('roll-result');
+                        diceValEl.textContent=roll;
+                        diceValEl.className='dice-value';
+                        var myChoice=myChoiceByRound[currentRound+1];
+                        if(myChoice===roll){diceFace.classList.add('win');if(diceWrap)diceWrap.classList.add('win');}
+                        else if(myChoice!==undefined){diceFace.classList.add('loss');if(diceWrap)diceWrap.classList.add('loss');}
                         diceFace.classList.add('reveal');
-                        setTimeout(function(){diceFace.classList.remove('reveal');},400);
-                        document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
-                        document.getElementById('resultLine').className='result-line win';
-                        diceValEl.className='dice-value win';
+                        setTimeout(function(){diceFace.classList.remove('reveal');},450);
                         document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
-                    }else{
-                        document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. No point.';
-                        document.getElementById('resultLine').className='result-line loss';
-                        diceFace.classList.add('loss');
-                        diceFace.classList.add('reveal');
-                        setTimeout(function(){diceFace.classList.remove('reveal');},400);
-                        lastScoredRound=currentRound;
-                        diceValEl.className='dice-value loss';
-                        document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
-                    }
-                }else if(myChoice===undefined){
-                    document.getElementById('resultLine').textContent='Roll: '+roll+'. (You didn’t pick.)';
-                    document.getElementById('resultLine').className='result-line';
-                    lastScoredRound=currentRound;
-                    diceFace.classList.remove('win','loss');
-                    diceFace.classList.add('reveal');
-                    setTimeout(function(){diceFace.classList.remove('reveal');},400);
-                    document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
-                }else if(lastScoredRound===currentRound){
-                    if(myChoice===roll)diceFace.classList.add('win');
-                    else if(myChoice!==undefined)diceFace.classList.add('loss');
+                        document.getElementById('proofDetail').innerHTML='<div>Seed: <span>'+roomSeed.toString(36).toUpperCase()+'</span></div><div>Round: <span>'+(currentRound+1)+'</span></div><div>Hash: <span>'+proofHash(currentRound+1)+'</span></div><div>Result: <span>'+roll+'</span></div>';
+                        document.getElementById('proofDetail').classList.remove('show');
+                        if(myChoice!==undefined&&lastScoredRound!==currentRound){
+                            if(myChoice===roll){
+                                score++;sendScore();lastScoredRound=currentRound;
+                                document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
+                                document.getElementById('resultLine').className='result-line win';
+                                diceValEl.className='dice-value win';
+                            }else{
+                                document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. No point.';
+                                document.getElementById('resultLine').className='result-line loss';
+                                lastScoredRound=currentRound;
+                                diceValEl.className='dice-value loss';
+                            }
+                        }else if(myChoice===undefined){
+                            document.getElementById('resultLine').textContent='Roll: '+roll+'. (You did not pick.)';
+                            document.getElementById('resultLine').className='result-line';
+                            lastScoredRound=currentRound;
+                        }
+                }else{
+                    diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','rolling');
+                    diceFace.classList.add('face-'+roll);
+                    diceValEl.textContent=roll;
+                    var myChoice=myChoiceByRound[currentRound+1];
+                    if(myChoice===roll){diceFace.classList.add('win');diceValEl.className='dice-value win';}
+                    else if(myChoice!==undefined){diceFace.classList.add('loss');diceValEl.className='dice-value loss';}
+                    else diceValEl.className='dice-value';
+                    if(diceWrap){diceWrap.classList.add('roll-result');diceWrap.classList.toggle('win',myChoice===roll);diceWrap.classList.toggle('loss',myChoice!==undefined&&myChoice!==roll);}
                 }
             }
 
+            if(dice3d.update)dice3d.update(now);
             requestAnimationFrame(tick);
         }
         tick();
 
-        // === PeerJS: signaling + voice + data (leaderboard) ===
-        var peer=null,localStream=null,isMuted=false;
+        var peer=null;
         var hostPeerId='dice-'+roomSeed.toString(36)+'-host';
         var PEER_OPTS={host:'0.peerjs.com',secure:true,port:443};
-        document.getElementById('vSpectator').classList.add('show');
-        function vStat(msg,err){var el=document.getElementById('vStatus');el.textContent=msg||'';el.className='v-status'+(err?' err':'');}
-        function vDot(c){document.getElementById('vConnDot').style.background=c;}
-        function enableBtn(id,on){var b=document.getElementById(id);b.disabled=!on;b.style.opacity=on?'1':'0.3';}
-        function getMic(){return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+        document.getElementById('p2pSpectator').classList.add('show');
+        function p2pStat(msg,err){var el=document.getElementById('p2pStatus');el.textContent=msg||'';el.className='p2p-status'+(err?' err':'');}
+        function p2pDot(c){document.getElementById('p2pConnDot').style.background=c;}
+        function enableP2PBtn(id,on){var b=document.getElementById(id);if(b){b.disabled=!on;b.style.opacity=on?'1':'0.3';}}
         function hangup(){
-            if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
             if(peer){peer.destroy();peer=null;}
             peerScore=null;dataChannel=null;updateLeaderboard();
-            document.getElementById('vRemote').srcObject=null;
-            vDot('#555');vStat('');isMuted=false;
-            enableBtn('vMute',false);enableBtn('vHangup',false);
-            enableBtn('vHost',true);enableBtn('vJoin',true);
-            document.getElementById('vMute').textContent='🔇 Mute';
-            document.getElementById('vSpectator').classList.add('show');
+            p2pDot('#555');p2pStat('');
+            enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);enableP2PBtn('p2pHangup',false);
+            document.getElementById('chatWrap').classList.remove('connected');
+            document.getElementById('p2pSpectator').classList.add('show');
+            if(typeof updateChatSendState==='function')updateChatSendState();
         }
-        document.getElementById('vHost').addEventListener('click',function(){
-            document.getElementById('vSpectator').classList.remove('show');
-            enableBtn('vHost',false);enableBtn('vJoin',false);
-            vStat('Requesting microphone…');vDot('#ffaa44');
-            getMic().then(function(stream){
-                localStream=stream;
-                peer=new Peer(hostPeerId,PEER_OPTS);
-                peer.on('open',function(){
-                    vStat('You\'re host. Share room link — guest clicks Join.');
-                    enableBtn('vMute',true);enableBtn('vHangup',true);
-                });
-                peer.on('connection',function(conn){
-                    setupPeerDataConn(conn);
-                    vDot('#44ff88');vStat('🔊 Guest connected');
-                });
-                peer.on('call',function(call){
-                    call.answer(localStream);
-                    call.on('stream',function(remoteStream){
-                        document.getElementById('vRemote').srcObject=remoteStream;
-                    });
-                });
-                peer.on('error',function(err){
-                    if(err.type==='unavailable-id')vStat('Room has a host already. Click Join.',true);
-                    else vStat('PeerJS: '+err.message,true);
-                    enableBtn('vHost',true);enableBtn('vJoin',true);
-                    document.getElementById('vSpectator').classList.add('show');
-                });
-            }).catch(function(e){vStat('Microphone error: '+e.message,true);enableBtn('vHost',true);enableBtn('vJoin',true);document.getElementById('vSpectator').classList.add('show');});
+        document.getElementById('p2pHost').addEventListener('click',function(){
+            document.getElementById('p2pSpectator').classList.remove('show');
+            enableP2PBtn('p2pHost',false);enableP2PBtn('p2pJoin',false);
+            p2pStat('Waiting…');p2pDot('#ffaa44');
+            peer=new Peer(hostPeerId,PEER_OPTS);
+            peer.on('open',function(){
+                p2pStat('You\'re host. Share room link — guest clicks Join.');
+                enableP2PBtn('p2pHangup',true);
+            });
+            peer.on('connection',function(conn){
+                setupPeerDataConn(conn);
+                p2pDot('#44ff88');p2pStat('Guest connected');
+                document.getElementById('chatWrap').classList.add('connected');
+            });
+            peer.on('error',function(err){
+                if(err.type==='unavailable-id')p2pStat('Room has a host already. Click Join.',true);
+                else p2pStat('PeerJS: '+err.message,true);
+                enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);
+                document.getElementById('p2pSpectator').classList.add('show');
+                hangup();
+            });
         });
-        document.getElementById('vJoin').addEventListener('click',function(){
-            document.getElementById('vSpectator').classList.remove('show');
-            enableBtn('vHost',false);enableBtn('vJoin',false);
-            vStat('Requesting microphone…');vDot('#ffaa44');
-            getMic().then(function(stream){
-                localStream=stream;
-                peer=new Peer(PEER_OPTS);
-                peer.on('open',function(){
-                    var conn=peer.connect(hostPeerId);
-                    setupPeerDataConn(conn);
-                    var call=peer.call(hostPeerId,stream);
-                    if(call){
-                        call.on('stream',function(remoteStream){
-                            document.getElementById('vRemote').srcObject=remoteStream;
-                        });
-                    }
-                    vDot('#44ff88');vStat('🔊 Connected to host');
-                    enableBtn('vMute',true);enableBtn('vHangup',true);
+        document.getElementById('p2pJoin').addEventListener('click',function(){
+            document.getElementById('p2pSpectator').classList.remove('show');
+            enableP2PBtn('p2pHost',false);enableP2PBtn('p2pJoin',false);
+            p2pStat('Connecting…');p2pDot('#ffaa44');
+            peer=new Peer(PEER_OPTS);
+            peer.on('open',function(){
+                var conn=peer.connect(hostPeerId);
+                setupPeerDataConn(conn);
+                conn.on('open',function(){
+                    p2pDot('#44ff88');p2pStat('Connected to host');
+                    document.getElementById('chatWrap').classList.add('connected');
                 });
-                peer.on('error',function(err){
-                    vStat('PeerJS: '+err.message,true);
-                    enableBtn('vHost',true);enableBtn('vJoin',true);
-                    document.getElementById('vSpectator').classList.add('show');
-                });
-            }).catch(function(e){vStat('Microphone error: '+e.message,true);enableBtn('vHost',true);enableBtn('vJoin',true);document.getElementById('vSpectator').classList.add('show');});
+                enableP2PBtn('p2pHangup',true);
+            });
+            peer.on('error',function(err){
+                p2pStat('PeerJS: '+err.message,true);
+                enableP2PBtn('p2pHost',true);enableP2PBtn('p2pJoin',true);
+                document.getElementById('p2pSpectator').classList.add('show');
+                hangup();
+            });
         });
-        document.getElementById('vMute').addEventListener('click',function(){
-            if(!localStream)return;
-            isMuted=!isMuted;
-            localStream.getAudioTracks().forEach(function(t){t.enabled=!isMuted;});
-            this.textContent=isMuted?'🔊 Unmute':'🔇 Mute';
+        document.getElementById('p2pHangup').addEventListener('click',hangup);
+
+        document.getElementById('chatToggle').addEventListener('click',function(){
+            var wrap=document.getElementById('chatWrap');
+            var open=chatMessagesEl.classList.toggle('collapsed');
+            chatFormEl.classList.toggle('collapsed',open);
+            this.setAttribute('aria-expanded',!open);
         });
-        document.getElementById('vHangup').addEventListener('click',hangup);
+        chatFormEl.addEventListener('submit',function(e){
+            e.preventDefault();
+            sendChatText(chatInputEl.value);
+            chatInputEl.value='';
+        });
+        document.getElementById('chatSend').disabled=!dataChannel||!dataChannel.open;
+        function updateChatSendState(){document.getElementById('chatSend').disabled=!dataChannel||!dataChannel.open;}
+        var origSetupConn=setupPeerDataConn;
+        setupPeerDataConn=function(conn){
+            origSetupConn(conn);
+            updateChatSendState();
+            conn.on('open',updateChatSendState);
+            conn.on('close',updateChatSendState);
+            conn.on('error',updateChatSendState);
+        };
     })();
     </script>
 </body>
