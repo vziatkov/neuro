@@ -10,31 +10,42 @@
     <script src="https://unpkg.com/three@0.181.0/build/three.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{background:#050508;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+        body{background:#020203;color:#e5e5e5;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden;transition:filter 0.12s ease-out}
+        body::before{content:'';position:fixed;inset:-20%;z-index:-3;background:radial-gradient(circle,#ff8c42 0%,transparent 60%);opacity:0.12;animation:bgPulse 8s ease-in-out infinite;pointer-events:none}
+        @keyframes bgPulse{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+        #bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:-2;display:block;pointer-events:none}
         .header{margin-bottom:20px;text-align:center;max-width:600px}
         .header h1{font-size:14px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.85)}
         .header .sub{font-size:10px;color:rgba(255,140,66,0.5);margin-top:4px}
-        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center;max-width:600px;width:100%}
+        .room-info{background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center;max-width:600px;width:100%;transition:transform 0.2s}
+        .room-info:hover{transform:scale(1.01)}
         .room-id{font-size:20px;font-weight:600;color:#ff8c42;letter-spacing:3px;margin:8px 0}
         .room-seed{font-size:10px;color:#555;letter-spacing:1px;margin-bottom:4px}
         .room-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
         .share-btn{background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;font-family:inherit;font-size:10px;padding:6px 16px;border-radius:5px;cursor:pointer;margin-top:8px;transition:all 0.2s}
-        .share-btn:hover{background:rgba(255,140,66,0.2)}
+        .share-btn:hover{background:rgba(255,140,66,0.2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
         .share-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
         .game-area{max-width:600px;width:100%;margin-bottom:16px}
-        .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
+        .round-display{background:#0a0a0c;border:1px solid #1a1a1a;border-radius:10px;padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden;transition:transform 0.2s}
+        .round-display:hover{transform:scale(1.01)}
         .round-num{font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase}
-        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:100px;display:flex;align-items:center;justify-content:center;gap:8px}
-        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center;gap:16px}
-        .dice-3d-wrap{width:88px;height:88px;position:relative;flex-shrink:0}
-        #dice3dCanvas{width:100%;height:100%;display:block;border-radius:10px;background:rgba(10,8,6,0.95)}
-        .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,100,40,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
+        .dice-display{font-size:48px;font-weight:700;margin:16px 0;min-height:120px;display:flex;align-items:center;justify-content:center;gap:12px}
+        .dice-face-wrap{display:inline-flex;align-items:center;justify-content:center;gap:16px;position:relative}
+        .dice-3d-wrap{width:100px;height:100px;position:relative;flex-shrink:0}
+        #dice3dCanvas{width:100%;height:100%;display:block;border-radius:12px;background:rgba(10,8,6,0.9);border:1px solid rgba(255,140,66,0.25);box-shadow:0 0 24px rgba(255,100,40,0.2)}
+        .dice-face{width:72px;height:72px;border-radius:12px;background:rgba(18,12,8,0.9);border:1px solid rgba(255,140,66,0.4);position:relative;box-shadow:0 0 20px rgba(255,140,66,0.4),0 0 40px rgba(255,140,66,0.25),inset 0 0 20px rgba(255,140,66,0.15),inset 0 1px 0 rgba(255,255,255,0.03);transition:border-color 0.25s,box-shadow 0.25s}
         .dice-face.reveal{animation:diceReveal 0.35s ease-out}
+        .dice-face.rolling{animation:none}
+        .dice-face-wrap.roll-result .dice-face{animation:diceReveal 0.4s ease-out;box-shadow:0 0 28px rgba(255,140,66,0.25)}
+        .dice-face-wrap.roll-result.win .dice-face{box-shadow:0 0 32px rgba(68,255,136,0.3)}
+        .dice-face-wrap.roll-result.loss .dice-face{box-shadow:0 0 24px rgba(255,68,68,0.2)}
         .dice-face.win{border-color:rgba(68,255,136,0.5);box-shadow:0 0 24px rgba(68,255,136,0.2)}
         .dice-face.loss{border-color:rgba(255,68,68,0.4);box-shadow:0 0 20px rgba(255,68,68,0.12)}
+        .dice-face.pending{animation:diceShake 0.6s ease-in-out infinite}
         .dice-face.pending .dice-pip{opacity:0.35;animation:dicePulse 1.2s ease-in-out infinite}
         @keyframes diceReveal{0%{transform:scale(0.92);opacity:0.7}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1);opacity:1}}
         @keyframes dicePulse{0%,100%{opacity:0.35}50%{opacity:0.6}}
+        @keyframes diceShake{0%,100%{transform:translate(0,0) rotate(0deg)}10%{transform:translate(-1px,-2px) rotate(-0.5deg)}30%{transform:translate(2px,1px) rotate(0.4deg)}50%{transform:translate(-1px,1px) rotate(0.3deg)}70%{transform:translate(1px,-1px) rotate(-0.4deg)}90%{transform:translate(-2px,0) rotate(0.2deg)}}
         .dice-pip{display:none;position:absolute;width:12px;height:12px;border-radius:50%;background:#ff9f5c;box-shadow:0 0 8px rgba(255,140,66,0.5),inset 0 1px 0 rgba(255,255,255,0.25);transform:translate(-50%,-50%)}
         .dice-face.face-1 .dice-pip.p5,.dice-face.face-2 .dice-pip.p1,.dice-face.face-2 .dice-pip.p9,.dice-face.face-3 .dice-pip.p1,.dice-face.face-3 .dice-pip.p5,.dice-face.face-3 .dice-pip.p9,.dice-face.face-4 .dice-pip.p1,.dice-face.face-4 .dice-pip.p3,.dice-face.face-4 .dice-pip.p7,.dice-face.face-4 .dice-pip.p9,.dice-face.face-5 .dice-pip.p1,.dice-face.face-5 .dice-pip.p3,.dice-face.face-5 .dice-pip.p5,.dice-face.face-5 .dice-pip.p7,.dice-face.face-5 .dice-pip.p9,.dice-face.face-6 .dice-pip.p1,.dice-face.face-6 .dice-pip.p4,.dice-face.face-6 .dice-pip.p7,.dice-face.face-6 .dice-pip.p3,.dice-face.face-6 .dice-pip.p6,.dice-face.face-6 .dice-pip.p9{display:block}
         .dice-face.pending .dice-pip.p1,.dice-face.pending .dice-pip.p3,.dice-face.pending .dice-pip.p5,.dice-face.pending .dice-pip.p7,.dice-face.pending .dice-pip.p9{display:block}
@@ -42,15 +53,28 @@
         .dice-value{color:#ff8c42;font-size:24px;margin-left:10px}
         .pick-label{font-size:10px;color:#555;margin-bottom:12px}
         .pick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
-        .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s}
-        .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42}
-        .pick-btn.chosen{background:rgba(255,140,66,0.15);border-color:#ff8c42;color:#ff8c42}
+        .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s;transform:scale(1);position:relative;overflow:visible}
+        .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42;transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
+        .pick-btn.chosen:hover{transform:scale(1.06) translateY(-2px)}
+        .pick-btn.chosen{background:rgba(255,140,66,0.2);border-color:#ff8c42;color:#ff8c42;box-shadow:0 0 16px rgba(255,140,66,0.35),0 0 0 2px rgba(255,140,66,0.25);transform:scale(1.06)}
+        .pick-btn.chosen::after{content:'';position:absolute;inset:-3px;border-radius:11px;border:1px solid rgba(255,140,66,0.4);pointer-events:none;animation:pickRing 1.2s ease-out infinite}
+        @keyframes pickRing{0%{opacity:0.8;transform:scale(1.05)}100%{opacity:0;transform:scale(1.15)}}
         .pick-btn:disabled{opacity:0.5;cursor:not-allowed}
         .result-line{font-size:11px;color:#888;margin-top:8px;min-height:18px}
         .result-line.win{color:#44ff88}
         .result-line.loss{color:#ff4444}
         .proof-line{font-size:9px;color:#333;margin-top:4px;letter-spacing:0.5px}
-        .timer-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,140,66,0.5);transition:width 0.1s linear;border-radius:0 0 10px 10px}
+        .timer-bar{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,140,66,0.5);transition:width 0.15s linear;border-radius:0 0 10px 10px}
+        .dist-chart{display:grid;grid-template-columns:20px 1fr 36px;gap:6px 12px;align-items:center;font-size:10px;color:#555;margin-top:10px}
+        .dist-chart .dist-n{color:rgba(255,140,66,0.9);font-weight:600;text-align:right}
+        .dist-chart .dist-c{color:#555;text-align:right}
+        .dist-bar{height:8px;background:#0d0d0f;border-radius:4px;overflow:hidden;border:1px solid #1a1a1a}
+        .dist-bar-inner{height:100%;background:linear-gradient(90deg,rgba(255,100,40,0.4),#ff8c42);border-radius:3px;transition:width 0.35s ease-out;width:0}
+        .proof-verify{display:inline-block;margin-top:6px;font-size:9px;padding:4px 10px;background:rgba(255,140,66,0.1);border:1px solid rgba(255,140,66,0.25);color:#ff8c42;border-radius:4px;cursor:pointer;transition:all 0.2s}
+        .proof-verify:hover{background:rgba(255,140,66,0.2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.3)}
+        .proof-detail{display:none;margin-top:8px;padding:10px;background:rgba(0,0,0,0.3);border-radius:6px;font-size:9px;color:#888;line-height:1.6}
+        .proof-detail.show{display:block}
+        .proof-detail span{color:#ff8c42}
         .score-row{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
         .score-item{font-size:12px;color:#555}
         .score-item span{color:#ff8c42;font-weight:600}
@@ -60,7 +84,8 @@
         .history-list{display:flex;flex-wrap:wrap;gap:6px}
         .history-item{width:28px;height:28px;border-radius:6px;background:rgba(15,12,10,0.9);border:1px solid rgba(255,140,66,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:rgba(255,140,66,0.9)}
         .history-item.empty{color:#333;border-color:#1a1a1a}
-        .leaderboard{max-width:600px;width:100%;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+        .leaderboard{max-width:600px;width:100%;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;transition:transform 0.2s}
+        .leaderboard:hover{transform:scale(1.01)}
         .leaderboard .lb-title{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
         .leaderboard .lb-scores{font-size:12px;color:#888}
         .leaderboard .lb-scores .you{color:#ff8c42}
@@ -75,7 +100,7 @@
         .voice-section textarea{width:100%;min-height:60px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:6px;color:#888;font-family:inherit;font-size:9px;padding:8px;resize:vertical;margin-bottom:8px}
         .voice-section .v-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
         .voice-section .v-btn{background:rgba(100,200,255,0.08);border:1px solid rgba(100,200,255,0.2);color:#6cc;font-family:inherit;font-size:9px;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all 0.2s}
-        .voice-section .v-btn:hover{background:rgba(100,200,255,0.15);color:#8ee}
+        .voice-section .v-btn:hover{background:rgba(100,200,255,0.15);color:#8ee;transform:translateY(-2px);box-shadow:0 4px 12px rgba(100,200,255,0.25)}
         .voice-section .v-btn:disabled{opacity:0.4;cursor:not-allowed}
         .voice-section .v-status{font-size:9px;color:#44ff88;margin-top:4px;min-height:14px}
         .voice-section .v-status.err{color:#ff4444}
@@ -85,6 +110,7 @@
     </style>
 </head>
 <body>
+    <canvas id="bgCanvas"></canvas>
     <div class="header">
         <h1>Dice Room</h1>
         <div class="sub">Same link = same sequence of rolls · guess 1–6 each round · first to 5 points wins</div>
@@ -119,6 +145,8 @@
             <div class="pick-btns" id="pickBtns"></div>
             <div class="result-line" id="resultLine"></div>
             <div class="proof-line" id="proofLine" aria-hidden="true"></div>
+            <button type="button" class="proof-verify" id="proofVerify" style="display:none">Verify roll</button>
+            <div class="proof-detail" id="proofDetail"></div>
             <div class="timer-bar" id="timerBar"></div>
         </div>
         <div class="score-row">
@@ -127,6 +155,14 @@
         <div class="history-row">
             <div class="history-label">Last 15 rolls</div>
             <div class="history-list" id="historyList"></div>
+            <div class="dist-chart" id="distChart">
+                <span class="dist-n">1</span><div class="dist-bar"><div class="dist-bar-inner" data-n="1"></div></div><span class="dist-c" id="distC1">0</span>
+                <span class="dist-n">2</span><div class="dist-bar"><div class="dist-bar-inner" data-n="2"></div></div><span class="dist-c" id="distC2">0</span>
+                <span class="dist-n">3</span><div class="dist-bar"><div class="dist-bar-inner" data-n="3"></div></div><span class="dist-c" id="distC3">0</span>
+                <span class="dist-n">4</span><div class="dist-bar"><div class="dist-bar-inner" data-n="4"></div></div><span class="dist-c" id="distC4">0</span>
+                <span class="dist-n">5</span><div class="dist-bar"><div class="dist-bar-inner" data-n="5"></div></div><span class="dist-c" id="distC5">0</span>
+                <span class="dist-n">6</span><div class="dist-bar"><div class="dist-bar-inner" data-n="6"></div></div><span class="dist-c" id="distC6">0</span>
+            </div>
         </div>
         <div class="leaderboard" id="leaderboard">
             <span class="lb-title">Leaderboard (P2P)</span>
@@ -152,7 +188,51 @@
 
     <script>
     (function(){
-        // Deterministic PRNG (xoshiro128**)
+        var bgCanvas=document.getElementById('bgCanvas');
+        var bgCtx=bgCanvas.getContext('2d');
+        function resizeBg(){
+            var w=window.innerWidth,h=window.innerHeight;
+            var dpr=Math.min(window.devicePixelRatio,2);
+            bgCanvas.width=Math.round(w*dpr);
+            bgCanvas.height=Math.round(h*dpr);
+            bgCanvas.style.width=w+'px';
+            bgCanvas.style.height=h+'px';
+            bgCtx.setTransform(dpr,0,0,dpr,0,0);
+        }
+        function drawBg(){
+            var w=window.innerWidth,h=window.innerHeight;
+            if(w<=0||h<=0)return;
+            var phase=(Math.sin(Date.now()*0.0002)+1)/2;
+            var bg=bgCtx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h));
+            bg.addColorStop(0,'rgba(255,140,66,'+(0.03+phase*0.05)+')');
+            bg.addColorStop(0.4,'#050304');
+            bg.addColorStop(1,'#020203');
+            bgCtx.fillStyle=bg;
+            bgCtx.fillRect(0,0,w,h);
+            bgCtx.globalCompositeOperation='lighter';
+            for(var i=0;i<20;i++){
+                var x=Math.random()*w;
+                var y=Math.random()*h;
+                bgCtx.fillStyle='rgba(255,140,66,0.06)';
+                bgCtx.beginPath();
+                bgCtx.arc(x,y,1.5,0,Math.PI*2);
+                bgCtx.fill();
+            }
+            for(var i=0;i<30;i++){
+                var x=(i*137+Date.now()*0.01)%w;
+                var y=(i*71)%h;
+                bgCtx.fillStyle='rgba(255,140,66,0.04)';
+                bgCtx.fillRect(x,y,2,2);
+            }
+            bgCtx.globalCompositeOperation='source-over';
+            requestAnimationFrame(drawBg);
+        }
+        resizeBg();
+        window.addEventListener('resize',resizeBg);
+        drawBg();
+    })();
+
+    (function(){
         function mkRng(seed){
             var s=new Uint32Array(4);
             s[0]=seed^0x9E3779B9;s[1]=seed^0x6C078965;s[2]=seed^0xBB67AE85;s[3]=seed^0x3C6EF372;
@@ -164,7 +244,6 @@
             };
         }
 
-        // Room seed from URL hash
         var roomSeed;
         if(location.hash&&location.hash.length>1){
             roomSeed=parseInt(location.hash.slice(1),36);
@@ -184,7 +263,6 @@
             });
         });
 
-        // Dice roll for round (1–6, deterministic); cache to avoid recalc every frame
         var historyRollCache={};
         function getRollForRound(roundIdx){
             if(!(roundIdx in historyRollCache))historyRollCache[roundIdx]=rollForRound(roundIdx);
@@ -201,26 +279,27 @@
             return Math.floor(rng()*6)+1;
         }
 
-        var ROUND_TIME=6000;
-        var PICK_PHASE=0.65;
+        var ROUND_TIME=8500;
+        var PICK_PHASE=0.62;
         var GOAL=5;
+        var rollAnimationDoneForRound=-1;
+        var rollAnimationStart=0;
         var today=new Date();today.setUTCHours(0,0,0,0);
         var epoch=today.getTime();
 
-        // 3D dice (Three.js)
+        // Three.js 3D dice — rotating cube with visible pips
         var dice3d={};
         (function(){
             var canvas=document.getElementById('dice3dCanvas');
             if(!canvas||!window.THREE)return;
             var scene=new THREE.Scene();
             var camera=new THREE.PerspectiveCamera(50,1,0.1,100);
-            camera.position.set(0,0,3.2);
+            camera.position.set(0,0,3.5);
             camera.lookAt(0,0,0);
             var renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:true});
-            renderer.setClearColor(0x0a0806,0.95);
-            var diceMesh,diceGroup;
-            var pipMat=new THREE.MeshBasicMaterial({color:0xff9f5c});
-            var faceMat=new THREE.MeshPhongMaterial({color:0x1a1410,shininess:20,specular:0x332211});
+            renderer.setClearColor(0x0a0806,0.92);
+            var pipMat=new THREE.MeshPhongMaterial({color:0xff9f5c,shininess:40,specular:0xffcc88});
+            var faceMat=new THREE.MeshPhongMaterial({color:0x1a1410,shininess:30,specular:0x442211});
             var pipPos={1:[[0,0]],2:[[-0.25,-0.25],[0.25,0.25]],3:[[-0.25,-0.25],[0,0],[0.25,0.25]],4:[[-0.25,-0.25],[-0.25,0.25],[0.25,-0.25],[0.25,0.25]],5:[[-0.25,-0.25],[-0.25,0.25],[0,0],[0.25,-0.25],[0.25,0.25]],6:[[-0.25,-0.25],[-0.25,0],[0.25,-0.25],[0.25,0],[-0.25,0.25],[0.25,0.25]]};
             var faceOffsets=[[0,0,0.5],[0.5,0,0],[0,0.5,0],[0,-0.5,0],[-0.5,0,0],[0,0,-0.5]];
             var faceAxes=[[1,0,0,1,0,0],[0,0,1,0,0,1],[1,0,0,0,0,1],[1,0,0,0,0,1],[0,0,1,0,0,1],[1,0,0,1,0,0]];
@@ -232,28 +311,23 @@
                 var ax=faceAxes[faceNum-1];
                 for(var i=0;i<positions.length;i++){
                     var p=positions[i];
-                    var pip=new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8),pipMat);
+                    var pip=new THREE.Mesh(new THREE.SphereGeometry(0.1,12,10),pipMat);
                     var u=p[0]*0.4,v=p[1]*0.4;
                     pip.position.set(o[0]+ax[0]*u+ax[1]*v,o[1]+ax[2]*u+ax[3]*v,o[2]+ax[4]*u+ax[5]*v);
                     g.add(pip);
                 }
                 return g;
             }
-            diceGroup=new THREE.Group();
-            var box=new THREE.Mesh(new THREE.BoxGeometry(0.98,0.98,0.98),faceMat);
+            var diceGroup=new THREE.Group();
+            var box=new THREE.Mesh(new THREE.BoxGeometry(0.96,0.96,0.96),faceMat);
             diceGroup.add(box);
-            for(var f=1;f<=6;f++){
-                var pg=addPipsToFace(f);
-                diceGroup.add(pg);
-            }
-            var light=new THREE.DirectionalLight(0xffffff,1);
-            light.position.set(2,2,3);
-            scene.add(light);
-            scene.add(new THREE.AmbientLight(0x664422,0.6));
+            for(var f=1;f<=6;f++)diceGroup.add(addPipsToFace(f));
+            var dirLight=new THREE.DirectionalLight(0xffffff,1.2);
+            dirLight.position.set(2,2,3);
+            scene.add(dirLight);
+            scene.add(new THREE.AmbientLight(0x664422,0.7));
             scene.add(diceGroup);
-            diceMesh=diceGroup;
-            var fallStart=0,fallDuration=450,fallFromY=2.5,targetRoll=1,animating=false;
-            var lastRoll=-1;
+            var fallStart=0,fallDuration=500,fallFromY=2.2,targetRoll=1,animating=false,lastRoll=-1;
             function resize(){
                 var w=canvas.clientWidth,h=canvas.clientHeight;
                 if(w<=0||h<=0)return;
@@ -262,12 +336,7 @@
                 camera.aspect=w/h;
                 camera.updateProjectionMatrix();
             }
-            function render(){
-                renderer.render(scene,camera);
-            }
-            dice3d.setRoll=function(n){
-                targetRoll=n;
-            };
+            dice3d.setRoll=function(n){targetRoll=n;};
             dice3d.startFall=function(roll){
                 targetRoll=roll;
                 fallStart=Date.now();
@@ -278,59 +347,56 @@
                 fallStart=Date.now();
                 targetRoll=0;
             };
-            dice3d.setIdle=function(){
-                animating=false;
-            };
+            dice3d.setIdle=function(){animating=false;};
             dice3d.update=function(now){
-                if(!diceMesh)return;
+                if(!diceGroup)return;
                 resize();
                 if(animating&&targetRoll>0){
                     var t=Math.min(1,(now-fallStart)/fallDuration);
-                    var ease=1-Math.pow(1-t,2.5);
+                    var ease=1-Math.pow(1-t,2.2);
                     var y=fallFromY*(1-ease);
-                    var bounce=Math.max(0,Math.sin(t*Math.PI)*0.15);
-                    diceMesh.position.y=-y+bounce;
-                    diceMesh.rotation.x+=0.08;
-                    diceMesh.rotation.z+=0.06;
+                    var bounce=Math.max(0,Math.sin(t*Math.PI)*0.12);
+                    diceGroup.position.y=-y+bounce;
+                    diceGroup.rotation.x+=0.1;
+                    diceGroup.rotation.y+=0.08;
+                    diceGroup.rotation.z+=0.06;
                     if(t>=1){
                         animating=false;
                         lastRoll=targetRoll;
                         var r=faceRotations[targetRoll-1];
-                        diceMesh.rotation.set(r[0],r[1],r[2]);
-                        diceMesh.position.y=0;
+                        diceGroup.rotation.set(r[0],r[1],r[2]);
+                        diceGroup.position.y=0;
                     }
                 }else if(animating&&targetRoll===0){
-                    var t=(now-fallStart)/2000;
-                    diceMesh.rotation.y=t*0.5;
-                    diceMesh.rotation.x=Math.sin(t*0.5)*0.08;
-                    diceMesh.rotation.z=Math.cos(t*0.3)*0.05;
+                    var dt=(now-fallStart)*0.001;
+                    diceGroup.rotation.x=Math.sin(dt*0.8)*0.2;
+                    diceGroup.rotation.y=dt*0.6;
+                    diceGroup.rotation.z=Math.cos(dt*0.5)*0.15;
+                    diceGroup.position.y=0;
                 }else if(lastRoll>0){
                     var r=faceRotations[lastRoll-1];
-                    diceMesh.rotation.set(r[0],r[1],r[2]);
-                    diceMesh.position.y=0;
+                    diceGroup.rotation.set(r[0],r[1],r[2]);
+                    diceGroup.position.y=0;
+                }else{
+                    var dt=now*0.001;
+                    diceGroup.rotation.y=dt*0.4;
+                    diceGroup.rotation.x=Math.sin(dt*0.3)*0.15;
+                    diceGroup.rotation.z=Math.cos(dt*0.2)*0.1;
                 }
-                render();
+                renderer.render(scene,camera);
             };
             window.addEventListener('resize',resize);
             resize();
         })();
 
-        var score=0;
-        var lastScoredRound=-1;
-        var myChoiceByRound={};
-        var lastPhaseWasPick=false;
-        var fallStartedForRound=-1;
-
-        var peerScore=null;
-        var dataChannel=null;
+        var score=0,lastScoredRound=-1,myChoiceByRound={},lastPhaseWasPick=false,fallStartedForRound=-1;
+        var peerScore=null,dataChannel=null;
         function updateLeaderboard(){
             document.getElementById('lbYou').textContent=score;
             document.getElementById('lbPeer').textContent=peerScore===null||peerScore===undefined?'—':peerScore;
         }
         function sendScore(){
-            if(dataChannel&&dataChannel.open){
-                try{dataChannel.send({score:score});}catch(e){}
-            }
+            if(dataChannel&&dataChannel.open){try{dataChannel.send({score:score});}catch(e){}}
         }
         function setupPeerDataConn(conn){
             dataChannel=conn;
@@ -361,13 +427,32 @@
             var btn=e.target.closest('.pick-btn');
             if(!btn||btn.disabled)return;
             var num=parseInt(btn.dataset.num,10);
-            var roundEl=document.getElementById('roundNum');
-            var roundStr=roundEl.textContent.replace('ROUND ','');
+            var roundStr=document.getElementById('roundNum').textContent.replace('ROUND ','');
             var r=parseInt(roundStr,10);
             if(isNaN(r))return;
             myChoiceByRound[r]=num;
             document.querySelectorAll('.pick-btn').forEach(function(b){b.classList.remove('chosen')});
             btn.classList.add('chosen');
+        });
+
+        var countDist=function(){
+            var now=Date.now(),elapsed=now-epoch,currentRound=Math.floor(elapsed/ROUND_TIME);
+            var c=[0,0,0,0,0,0];
+            for(var r=1;r<=Math.max(0,currentRound);r++){var v=getRollForRound(r);if(v>=1&&v<=6)c[v-1]++;}
+            return c;
+        };
+        function updateDistChart(){
+            var c=countDist();
+            var max=Math.max(1,Math.max.apply(null,c));
+            for(var i=1;i<=6;i++){
+                var inner=document.querySelector('.dist-bar-inner[data-n="'+i+'"]');
+                var span=document.getElementById('distC'+i);
+                if(inner)inner.style.width=(max?(c[i-1]/max)*100:0)+'%';
+                if(span)span.textContent=c[i-1];
+            }
+        }
+        document.getElementById('proofVerify').addEventListener('click',function(){
+            document.getElementById('proofDetail').classList.toggle('show');
         });
 
         function tick(){
@@ -381,13 +466,13 @@
             document.getElementById('timerBar').style.width=(phase*100)+'%';
             document.getElementById('scoreVal').textContent=score;
             updateLeaderboard();
+            updateDistChart();
 
             var historyItems=historyListEl.querySelectorAll('.history-item');
             for(var hi=0;hi<15;hi++){
                 var roundIndex=currentRound-15+hi;
                 if(roundIndex>=0&&roundIndex<currentRound){
-                    var r=roundIndex+1;
-                    historyItems[hi].textContent=getRollForRound(r);
+                    historyItems[hi].textContent=getRollForRound(roundIndex+1);
                     historyItems[hi].classList.remove('empty');
                 }else{
                     historyItems[hi].textContent='—';
@@ -410,6 +495,10 @@
                 document.getElementById('resultLine').textContent='';
                 document.getElementById('resultLine').className='result-line';
                 document.getElementById('proofLine').textContent='';
+                document.getElementById('proofVerify').style.display='none';
+                document.getElementById('proofDetail').classList.remove('show');
+                var dw=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
+                if(dw)dw.classList.remove('roll-result','win','loss');
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
                 var chosen=myChoiceByRound[currentRound+1];
                 document.querySelectorAll('.pick-btn').forEach(function(b){
@@ -418,7 +507,8 @@
                 if(dice3d.setPending)dice3d.setPending();
                 lastPhaseWasPick=true;
                 fallStartedForRound=-1;
-            }else{
+                rollAnimationDoneForRound=-1;
+            }else if(phase>=PICK_PHASE){
                 document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=true});
                 var roll=getRollForRound(currentRound+1);
                 if(lastPhaseWasPick&&fallStartedForRound!==currentRound&&dice3d.startFall){
@@ -427,46 +517,65 @@
                 }
                 lastPhaseWasPick=false;
                 if(dice3d.setRoll)dice3d.setRoll(roll);
+
                 var diceFace=document.getElementById('diceFace');
                 var diceValEl=document.getElementById('diceValue');
-                diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','win','loss');
-                diceFace.classList.add('face-'+roll);
-                diceValEl.textContent=roll;
-                diceValEl.className='dice-value';
-                var myChoice=myChoiceByRound[currentRound+1];
-                if(myChoice!==undefined&&lastScoredRound!==currentRound){
-                    if(myChoice===roll){
-                        score++;
-                        sendScore();
-                        lastScoredRound=currentRound;
-                        diceFace.classList.add('win');
-                        diceFace.classList.add('reveal');
-                        setTimeout(function(){diceFace.classList.remove('reveal');},400);
-                        document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
-                        document.getElementById('resultLine').className='result-line win';
-                        diceValEl.className='dice-value win';
-                        document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
+                var diceWrap=document.getElementById('diceDisplay').querySelector('.dice-face-wrap');
+
+                if(rollAnimationDoneForRound!==currentRound){
+                    if(!rollAnimationStart)rollAnimationStart=now;
+                    var animElapsed=now-rollAnimationStart;
+                    if(animElapsed<400){
+                        var faceNum=(Math.floor(animElapsed/70)%6)+1;
+                        diceFace.className=diceFace.className.replace(/\sface-\d/g,'').replace(/\srolling/g,'')+' rolling face-'+faceNum;
+                        diceFace.classList.remove('win','loss','reveal');
+                        diceValEl.textContent='?';
                     }else{
-                        document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. No point.';
-                        document.getElementById('resultLine').className='result-line loss';
-                        diceFace.classList.add('loss');
+                        rollAnimationStart=0;
+                        rollAnimationDoneForRound=currentRound;
+                        document.body.style.filter='brightness(1.28)';
+                        setTimeout(function(){document.body.style.filter='';},120);
+                        diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','rolling');
+                        diceFace.classList.add('face-'+roll);
+                        if(diceWrap)diceWrap.classList.add('roll-result');
+                        diceValEl.textContent=roll;
+                        diceValEl.className='dice-value';
+                        var myChoice=myChoiceByRound[currentRound+1];
+                        if(myChoice===roll){diceFace.classList.add('win');if(diceWrap)diceWrap.classList.add('win');}
+                        else if(myChoice!==undefined){diceFace.classList.add('loss');if(diceWrap)diceWrap.classList.add('loss');}
                         diceFace.classList.add('reveal');
-                        setTimeout(function(){diceFace.classList.remove('reveal');},400);
-                        lastScoredRound=currentRound;
-                        diceValEl.className='dice-value loss';
+                        setTimeout(function(){diceFace.classList.remove('reveal');},450);
                         document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
+                        document.getElementById('proofVerify').style.display='inline-block';
+                        document.getElementById('proofDetail').innerHTML='<div>Seed: <span>'+roomSeed.toString(36).toUpperCase()+'</span></div><div>Round: <span>'+(currentRound+1)+'</span></div><div>Hash: <span>'+proofHash(currentRound+1)+'</span></div><div>Result: <span>'+roll+'</span></div>';
+                        document.getElementById('proofDetail').classList.remove('show');
+                        if(myChoice!==undefined&&lastScoredRound!==currentRound){
+                            if(myChoice===roll){
+                                score++;sendScore();lastScoredRound=currentRound;
+                                document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. +1 point!';
+                                document.getElementById('resultLine').className='result-line win';
+                                diceValEl.className='dice-value win';
+                            }else{
+                                document.getElementById('resultLine').textContent='Roll: '+roll+'. You picked '+myChoice+'. No point.';
+                                document.getElementById('resultLine').className='result-line loss';
+                                lastScoredRound=currentRound;
+                                diceValEl.className='dice-value loss';
+                            }
+                        }else if(myChoice===undefined){
+                            document.getElementById('resultLine').textContent='Roll: '+roll+'. (You did not pick.)';
+                            document.getElementById('resultLine').className='result-line';
+                            lastScoredRound=currentRound;
+                        }
                     }
-                }else if(myChoice===undefined){
-                    document.getElementById('resultLine').textContent='Roll: '+roll+'. (You didn’t pick.)';
-                    document.getElementById('resultLine').className='result-line';
-                    lastScoredRound=currentRound;
-                    diceFace.classList.remove('win','loss');
-                    diceFace.classList.add('reveal');
-                    setTimeout(function(){diceFace.classList.remove('reveal');},400);
-                    document.getElementById('proofLine').textContent='Provably fair: hash(seed, round) = '+proofHash(currentRound+1);
-                }else if(lastScoredRound===currentRound){
-                    if(myChoice===roll)diceFace.classList.add('win');
-                    else if(myChoice!==undefined)diceFace.classList.add('loss');
+                }else{
+                    diceFace.classList.remove('face-1','face-2','face-3','face-4','face-5','face-6','pending','rolling');
+                    diceFace.classList.add('face-'+roll);
+                    diceValEl.textContent=roll;
+                    var myChoice=myChoiceByRound[currentRound+1];
+                    if(myChoice===roll){diceFace.classList.add('win');diceValEl.className='dice-value win';}
+                    else if(myChoice!==undefined){diceFace.classList.add('loss');diceValEl.className='dice-value loss';}
+                    else diceValEl.className='dice-value';
+                    if(diceWrap){diceWrap.classList.add('roll-result');diceWrap.classList.toggle('win',myChoice===roll);diceWrap.classList.toggle('loss',myChoice!==undefined&&myChoice!==roll);}
                 }
             }
 
@@ -475,7 +584,6 @@
         }
         tick();
 
-        // === PeerJS: signaling + voice + data (leaderboard) ===
         var peer=null,localStream=null,isMuted=false;
         var hostPeerId='dice-'+roomSeed.toString(36)+'-host';
         var PEER_OPTS={host:'0.peerjs.com',secure:true,port:443};
@@ -535,11 +643,9 @@
                     var conn=peer.connect(hostPeerId);
                     setupPeerDataConn(conn);
                     var call=peer.call(hostPeerId,stream);
-                    if(call){
-                        call.on('stream',function(remoteStream){
-                            document.getElementById('vRemote').srcObject=remoteStream;
-                        });
-                    }
+                    if(call)call.on('stream',function(remoteStream){
+                        document.getElementById('vRemote').srcObject=remoteStream;
+                    });
                     vDot('#44ff88');vStat('🔊 Connected to host');
                     enableBtn('vMute',true);enableBtn('vHangup',true);
                 });
