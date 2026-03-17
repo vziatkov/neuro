@@ -66,6 +66,8 @@
         .pick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
         .pick-btn{width:48px;height:48px;background:#0d0d0f;border:1px solid #1a1a1a;border-radius:8px;color:#888;font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;transition:all 0.2s;transform:scale(1);position:relative;overflow:visible}
         .pick-btn:hover{background:rgba(255,140,66,0.1);border-color:rgba(255,140,66,0.3);color:#ff8c42;transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,140,66,0.35)}
+        .pick-btn.preset{border-color:#555;color:#888;box-shadow:none}
+        .pick-btn.preset:hover{border-color:rgba(255,140,66,0.3);color:#ff8c42}
         .pick-btn.chosen:hover{transform:scale(1.06) translateY(-2px)}
         .pick-btn.chosen{background:rgba(255,140,66,0.2);border-color:#ff8c42;color:#ff8c42;box-shadow:0 0 16px rgba(255,140,66,0.35),0 0 0 2px rgba(255,140,66,0.25);transform:scale(1.06)}
         .pick-btn.chosen::after{content:'';position:absolute;inset:-3px;border-radius:11px;border:1px solid rgba(255,140,66,0.4);pointer-events:none;animation:pickRing 1.2s ease-out infinite}
@@ -551,7 +553,7 @@
             var r=parseInt(roundStr,10);
             if(isNaN(r))return;
             myChoiceByRound[r]=num;
-            document.querySelectorAll('.pick-btn').forEach(function(b){b.classList.remove('chosen')});
+            document.querySelectorAll('.pick-btn').forEach(function(b){b.classList.remove('chosen','preset');});
             btn.classList.add('chosen');
         });
 
@@ -624,17 +626,20 @@
                 var secLeft=Math.max(0,Math.ceil(timeUntilResult/1000));
                 countdownEl.textContent=String(secLeft);
                 countdownEl.className='dice-countdown show';
-                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false;b.classList.remove('chosen','preset');});
                 var chosen=myChoiceByRound[currentRound+1];
+                var defaultNum=myChoiceByRound[currentRound]!=null?myChoiceByRound[currentRound]:1;
                 document.querySelectorAll('.pick-btn').forEach(function(b){
-                    b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
+                    var n=parseInt(b.dataset.num,10);
+                    if(chosen!=null)b.classList.toggle('chosen',n===chosen);
+                    else b.classList.toggle('preset',n===defaultNum);
                 });
                 if(dice3d.setPending)dice3d.setPending();
                 lastPhaseWasPick=true;
                 fallStartedForRound=-1;
                 rollAnimationDoneForRound=-1;
             }else if(isRollingPhase){
-                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false});
+                document.querySelectorAll('.pick-btn').forEach(function(b){b.disabled=false;b.classList.remove('preset');});
                 var chosen=myChoiceByRound[currentRound+1];
                 document.querySelectorAll('.pick-btn').forEach(function(b){
                     b.classList.toggle('chosen',parseInt(b.dataset.num,10)===chosen);
