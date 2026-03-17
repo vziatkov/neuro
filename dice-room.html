@@ -313,10 +313,10 @@
             return Math.floor(rng()*6)+1;
         }
 
-        var PICK_PHASE=0.62;
         var ROLLING_PHASE_MS=3000;
         var RESULT_PHASE_MS=3000;
-        var ROUND_TIME=Math.ceil((ROLLING_PHASE_MS+RESULT_PHASE_MS)/(1-PICK_PHASE));
+        var ROUND_TIME=10000;
+        var PICK_PHASE=(ROUND_TIME-ROLLING_PHASE_MS-RESULT_PHASE_MS)/ROUND_TIME;
         var GOAL=5;
         var rollAnimationDoneForRound=-1;
         var rollAnimationStart=0;
