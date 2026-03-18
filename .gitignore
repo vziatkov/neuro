@@ -3,6 +3,10 @@ node_modules/
 
 # Build outputs
 dist/
+# Keep a single committed "diff" HTML build for the Woodland System story.
+# Git ignores any directory named "dist/", so we explicitly unignore this path.
+!public/diff/лесная-система_-сказка-о-мудрости/dist/
+!public/diff/лесная-система_-сказка-о-мудрости/dist/index.html
 dist-ssr/
 mmo-map-protected.html
 *.local
