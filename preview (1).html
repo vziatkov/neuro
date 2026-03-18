@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Pixi Demo — Rendering Approach</title>
+  <style>
+    body { margin:0; background:#050508; overflow:hidden; font-family: monospace; }
+
+    .panel {
+      position: absolute;
+      top: 20px;
+      width: 300px;
+      color: #ddd;
+      font-size: 13px;
+      line-height: 1.5;
+      opacity: 0.9;
+    }
+
+    .left { left: 20px; }
+    .right { right: 20px; }
+
+    .title {
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .block {
+      margin-bottom: 14px;
+    }
+
+    .accent {
+      color: #ff8c42;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LEFT: TASK -->
+<div class="panel left">
+  <div class="title">Task</div>
+
+  <div class="block">
+    Simulate a <span class="accent">large 2D world</span> with a high number of objects.
+  </div>
+
+  <div class="block">
+    Render only <span class="accent">visible objects</span> within the viewport.
+  </div>
+
+  <div class="block">
+    Ensure <span class="accent">smooth camera navigation</span> and responsiveness.
+  </div>
+
+  <div class="block">
+    Avoid creating all objects in Pixi scene at once.
+  </div>
+
+  <div class="block">
+    Demonstrate <span class="accent">performance thinking</span>, not visual polish.
+  </div>
+</div>
+
+<!-- RIGHT: SOLUTION -->
+<div class="panel right">
+  <div class="title">Solution</div>
+
+  <div class="block">
+    World is treated as <span class="accent">data, not display objects</span>.
+  </div>
+
+  <div class="block">
+    Only visible elements are <span class="accent">instantiated and rendered</span>.
+  </div>
+
+  <div class="block">
+    Lightweight simulation demonstrates <span class="accent">update + interaction layers</span>.
+  </div>
+
+  <div class="block">
+    Visual effects represent <span class="accent">dynamic object lifecycle</span>.
+  </div>
+
+  <div class="block">
+    Architecture is designed for <span class="accent">scaling to large datasets</span>.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+
+<script>
+(async () => {
+  const app = new PIXI.Application();
+  await app.init({ resizeTo: window, background: "#050508" });
+  document.body.appendChild(app.canvas);
+
+  const waterY = app.renderer.height * 0.7;
+
+  const water = new PIXI.Graphics();
+  app.stage.addChild(water);
+
+  const particles = [];
+  const ripples = [];
+
+  function spawnParticle() {
+    const g = new PIXI.Graphics()
+      .circle(0, 0, 2 + Math.random()*3)
+      .fill(0xffa366);
+
+    g.x = Math.random() * app.renderer.width;
+    g.y = app.renderer.height + 20;
+
+    g.vx = (Math.random() - 0.5) * 0.5;
+    g.vy = -1.5 - Math.random()*1.5;
+    g.life = 1;
+
+    app.stage.addChild(g);
+    particles.push(g);
+  }
+
+  function spawnRipple(x) {
+    const r = new PIXI.Graphics();
+    r.x = x;
+    r.y = waterY;
+    r.radius = 2;
+    r.alpha = 0.5;
+    app.stage.addChild(r);
+    ripples.push(r);
+  }
+
+  function drawWater(time) {
+    water.clear();
+    water.moveTo(0, waterY);
+
+    for (let x = 0; x <= app.renderer.width; x += 20) {
+      const y = waterY + Math.sin(x * 0.02 + time) * 3;
+      water.lineTo(x, y);
+    }
+
+    water.lineTo(app.renderer.width, app.renderer.height);
+    water.lineTo(0, app.renderer.height);
+    water.closePath();
+    water.fill(0x0a1a22, 0.9);
+  }
+
+  for (let i = 0; i < 40; i++) spawnParticle();
+
+  app.ticker.add(() => {
+    const time = performance.now() * 0.002;
+
+    drawWater(time);
+
+    if (Math.random() < 0.3) spawnParticle();
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha = p.life;
+      p.life -= 0.01;
+
+      if (p.y <= waterY && !p.hit) {
+        p.hit = true;
+        spawnRipple(p.x);
+      }
+
+      if (p.life <= 0) {
+        app.stage.removeChild(p);
+        particles.splice(i, 1);
+      }
+    }
+
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+
+      r.clear();
+      r.circle(0, 0, r.radius).stroke({ width: 1, color: 0x66ccff });
+
+      r.radius += 0.5;
+      r.alpha -= 0.01;
+
+      if (r.alpha <= 0) {
+        app.stage.removeChild(r);
+        ripples.splice(i, 1);
+      }
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
