@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PixiJS V2 — Living World Viewer</title>
+  <style>
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+<script>
+(async function () {
+  const { Application, Container, Sprite, Graphics } = PIXI;
+
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand = (a,b)=>a+Math.random()*(b-a);
+
+  // --- APP ---
+  const app = new Application();
+  await app.init({
+    resizeTo: window,
+    background: "#000000",
+    antialias: true,
+    resolution: Math.min(2, window.devicePixelRatio || 1),
+  });
+  document.body.appendChild(app.canvas);
+
+  const stage = new Container();
+  app.stage.addChild(stage);
+
+  // --- CONFIG ---
+  const WORLD_SIZE = 100000;
+  const CELL_SIZE = 256;
+  const VIEW_MARGIN = 200;
+
+  // --- CAMERA ---
+  const camera = { x: 0, y: 0, w: app.screen.width, h: app.screen.height, vx:0, vy:0 };
+
+  let isDragging = false;
+  let lastX = 0, lastY = 0;
+
+  app.canvas.addEventListener("pointerdown", (e)=>{
+    isDragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  window.addEventListener("pointerup", ()=> isDragging = false);
+
+  window.addEventListener("pointermove", (e)=>{
+    if (!isDragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    camera.vx = -dx * 0.5;
+    camera.vy = -dy * 0.5;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  // --- WORLD DATA ---
+  const world = [];
+  const grid = new Map();
+
+  function cellKey(cx, cy) {
+    return cx + "_" + cy;
+  }
+
+  function insertToGrid(obj) {
+    const cx = Math.floor(obj.x / CELL_SIZE);
+    const cy = Math.floor(obj.y / CELL_SIZE);
+    const key = cellKey(cx, cy);
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key).push(obj);
+  }
+
+  for (let i = 0; i < WORLD_SIZE; i++) {
+    const obj = {
+      id: i,
+      x: rand(-5000, 5000),
+      y: rand(-5000, 5000),
+      vx: rand(-10, 10),
+      vy: rand(-10, 10)
+    };
+    world.push(obj);
+    insertToGrid(obj);
+  }
+
+  // --- TEXTURE ---
+  function makeDotTexture() {
+    const g = new Graphics();
+    g.circle(0, 0, 3).fill(0xffffff);
+    return app.renderer.generateTexture(g);
+  }
+  const texture = makeDotTexture();
+
+  // --- POOL ---
+  const pool = [];
+  const active = new Map();
+
+  function acquire(obj) {
+    let sprite = pool.pop();
+    if (!sprite) {
+      sprite = new Sprite(texture);
+      sprite.anchor.set(0.5);
+      stage.addChild(sprite);
+    }
+    sprite.visible = true;
+    sprite.x = obj.x - camera.x;
+    sprite.y = obj.y - camera.y;
+
+    const speed = Math.hypot(obj.vx, obj.vy);
+    sprite.tint = speed > 6 ? 0x66ccff : 0xffffff;
+
+    return sprite;
+  }
+
+  function release(id) {
+    const sprite = active.get(id);
+    if (!sprite) return;
+    sprite.visible = false;
+    pool.push(sprite);
+    active.delete(id);
+  }
+
+  // --- QUERY ---
+  function queryVisible() {
+    const left = camera.x - VIEW_MARGIN;
+    const right = camera.x + camera.w + VIEW_MARGIN;
+    const top = camera.y - VIEW_MARGIN;
+    const bottom = camera.y + camera.h + VIEW_MARGIN;
+
+    const cx0 = Math.floor(left / CELL_SIZE);
+    const cx1 = Math.floor(right / CELL_SIZE);
+    const cy0 = Math.floor(top / CELL_SIZE);
+    const cy1 = Math.floor(bottom / CELL_SIZE);
+
+    const result = new Set();
+
+    for (let cx = cx0; cx <= cx1; cx++) {
+      for (let cy = cy0; cy <= cy1; cy++) {
+        const cell = grid.get(cellKey(cx, cy));
+        if (!cell) continue;
+
+        for (let i = 0; i < cell.length; i++) {
+          const obj = cell[i];
+          if (
+            obj.x >= left && obj.x <= right &&
+            obj.y >= top && obj.y <= bottom
+          ) {
+            result.add(obj.id);
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  // --- HUD ---
+  const hud = document.createElement("div");
+  hud.style.position = "fixed";
+  hud.style.left = "10px";
+  hud.style.top = "10px";
+  hud.style.color = "#0f0";
+  hud.style.font = "12px monospace";
+  document.body.appendChild(hud);
+
+  // --- LOOP ---
+  let lastT = performance.now();
+
+  app.ticker.add(() => {
+    const now = performance.now();
+    const dt = clamp((now - lastT)/1000, 0, 0.05);
+    lastT = now;
+
+    // camera inertia
+    camera.vx *= 0.9;
+    camera.vy *= 0.9;
+    camera.x += camera.vx;
+    camera.y += camera.vy;
+
+    camera.w = app.screen.width;
+    camera.h = app.screen.height;
+
+    // world update (life)
+    for (let i = 0; i < world.length; i++) {
+      const o = world[i];
+      o.x += o.vx * dt;
+      o.y += o.vy * dt;
+
+      o.vx += (Math.random() - 0.5) * 2;
+      o.vy += (Math.random() - 0.5) * 2;
+
+      o.vx *= 0.99;
+      o.vy *= 0.99;
+    }
+
+    const visible = queryVisible();
+
+    // remove
+    for (const [id] of active) {
+      if (!visible.has(id)) {
+        release(id);
+      }
+    }
+
+    // add/update
+    for (const id of visible) {
+      let sprite = active.get(id);
+      const obj = world[id];
+
+      if (!sprite) {
+        sprite = acquire(obj);
+        active.set(id, sprite);
+      } else {
+        sprite.x = obj.x - camera.x;
+        sprite.y = obj.y - camera.y;
+      }
+    }
+
+    hud.textContent =
+      "Visible: " + active.size +
+      " | Pool: " + pool.length +
+      " | Total: " + WORLD_SIZE;
+  });
+
+})();
+</script>
+</body>
+</html>

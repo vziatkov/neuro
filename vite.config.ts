@@ -28,6 +28,7 @@ export default defineConfig({
         'resume': resolve(__dirname, 'resume.html'),
         'observatory-v2': resolve(__dirname, 'observatory-v2.html'),
         'rendering-approach-card': resolve(__dirname, 'rendering-approach-card.html'),
+        'rendering-approach-card-simpler': resolve(__dirname, 'rendering-approach-card-simpler.html'),
       },
     },
   },
