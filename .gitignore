@@ -7,6 +7,8 @@ dist/
 # Git ignores any directory named "dist/", so we explicitly unignore this path.
 !public/diff/лесная-система_-сказка-о-мудрости/dist/
 !public/diff/лесная-система_-сказка-о-мудрости/dist/index.html
+!public/diff/woodland-system-tale/dist/
+!public/diff/woodland-system-tale/dist/index.html
 dist-ssr/
 mmo-map-protected.html
 *.local
