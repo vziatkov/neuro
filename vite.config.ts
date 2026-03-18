@@ -29,6 +29,10 @@ export default defineConfig({
         'observatory-v2': resolve(__dirname, 'observatory-v2.html'),
         'rendering-approach-card': resolve(__dirname, 'rendering-approach-card.html'),
         'rendering-approach-card-simpler': resolve(__dirname, 'rendering-approach-card-simpler.html'),
+        'renderingAppRead': resolve(__dirname, 'renderingAppRead.html'),
+        'forest-story': resolve(__dirname, 'forest-story.html'),
+        // Keep the original file location/filename (preview (12).html) for the story iframe entry.
+        'story-preview-12': resolve(__dirname, 'SMM/storytelling/interview/dist/contextAll/preview (12).html'),
       },
     },
   },
