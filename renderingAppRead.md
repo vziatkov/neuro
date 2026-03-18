@@ -2,104 +2,103 @@
 
 ## Overview
 
-This implementation focuses on the core rendering problem: efficiently visualizing a large 2D world in PixiJS.
+This solution focuses on the core problem: rendering a large 2D world efficiently.
 
-Instead of creating all objects as Pixi display instances, the world is represented as a lightweight data model (~100,000 objects). Rendering is driven by visibility rather than total dataset size.
+Instead of treating Pixi as a container for all objects, the system separates data and rendering.  
+The world (~100,000 objects) exists purely as data, while rendering is driven only by what is visible.
+
+---
+
+## Key Idea
+
+Rendering cost should scale with **what the user sees**, not with **total world size**.
 
 ---
 
 ## Approach
 
-### Data vs Rendering Separation
-World objects are stored as plain data (position, velocity, type).  
-Pixi display objects (sprites) are created only for visible elements.
-
-This avoids unnecessary memory usage and keeps rendering scalable.
+### Data-Oriented World
+All world objects are lightweight data entries (position, velocity).  
+No Pixi objects are created unless required for rendering.
 
 ---
 
 ### Spatial Partitioning (Grid)
-The world is divided into fixed-size cells (uniform grid).
+A fixed-size grid is used for spatial lookup:
 
-Each object is assigned to a cell:
+- Constant-time access to nearby objects
+- No need to scan the full dataset
+- Predictable performance
 
-`cellX = floor(x / cellSize)`
-`cellY = floor(y / cellSize)`
-
-Cells are stored in a map:
-
-`Map<cellKey, objects[]>`
-
-This allows fast lookup of nearby objects without scanning the entire dataset.
+Chosen over quadtree for simplicity and stability.
 
 ---
 
 ### Viewport Culling
 Each frame:
-- The visible area (camera viewport + margin) is calculated
-- Only cells intersecting that area are queried
-- Only objects inside that region are rendered
+
+- Determine visible area (+ margin)
+- Query only relevant grid cells
+- Render only objects inside the viewport
 
 Off-screen objects:
-- Are not present in the Pixi render tree
-- Do not consume rendering cost
+- Are not part of the Pixi scene
+- Do not consume rendering resources
 
 ---
 
 ### Object Pooling
-Sprites are reused instead of created/destroyed continuously.
+Sprites are reused instead of created/destroyed.
 
-Lifecycle:
-- Visible → acquire sprite from pool
-- Invisible → return sprite to pool
-
-Benefits:
-- Reduced garbage collection pressure
-- Stable performance during camera movement
+This ensures:
+- Minimal GC pressure
+- Stable frame times during camera movement
 
 ---
 
 ### Camera System
-The camera supports smooth panning with inertia.
+Supports smooth panning with inertia.
 
-This helps simulate real navigation and ensures the system remains stable under continuous updates.
+Used to simulate real interaction and test system stability under continuous updates.
 
 ---
 
 ## Tradeoffs
-- A uniform grid was chosen over a quadtree:
-  - Simpler implementation
-  - Predictable performance
-  - Fast constant-time lookups
+
+- Uniform grid instead of adaptive structures:
+  - Simpler
+  - Faster in practice for uniform distributions
 - Fixed cell size:
-  - May include slightly more objects than needed near edges
-  - Keeps logic straightforward and efficient
+  - Slight over-fetch near edges
+  - Lower complexity overall
 
 ---
 
 ## Performance Characteristics
-- Rendering cost scales with visible objects only, not total dataset size
-- No mass sprite creation → stable memory usage
-- Pooling avoids frequent allocations during movement
-- Spatial queries are limited to relevant grid cells
+
+- Rendering scales with visible objects only
+- Stable memory usage (no mass allocations)
+- Predictable update cost per frame
+- Efficient spatial queries
 
 ---
 
-## What Could Be Improved
+## Next Steps
+
 If extended further:
-- Dynamic chunk streaming (load/unload world data)
-- Level of Detail (LOD) based on distance
-- GPU instancing / batching for larger datasets
-- More advanced spatial structures for non-uniform worlds
+
+- Chunk streaming (load/unload world dynamically)
+- Level of Detail (LOD)
+- GPU instancing / batching
+- More advanced spatial indexing (for clustered data)
 
 ---
 
 ## Summary
-The goal was to demonstrate a practical and scalable rendering approach rather than visual polish.
 
-This solution shows how to:
-- Handle large datasets efficiently
-- Keep rendering predictable
-- Maintain performance through visibility-driven updates
+This implementation prioritizes clarity, performance, and scalability over visual polish.
 
-It reflects a system-oriented approach focused on clarity, tradeoffs, and scalability.
+The goal was to demonstrate a system that:
+- Handles large datasets efficiently
+- Avoids unnecessary rendering work
+- Remains simple, predictable, and extensible
