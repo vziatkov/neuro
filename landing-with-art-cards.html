@@ -689,30 +689,30 @@
                 <a class="art-card art-hollow" href="./diff/saas/dist/index.html" target="_blank" rel="noopener noreferrer">
                     <svg class="art-canvas" viewBox="0 0 1000 625" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                         <defs>
-                            <linearGradient id="g0" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stop-color="#ff8c42" stop-opacity="0.20"/>
-                                <stop offset="50%" stop-color="#44aaff" stop-opacity="0.10"/>
-                                <stop offset="100%" stop-color="#050508" stop-opacity="1"/>
+                            <linearGradient id="svBg" x1="0" y1="1" x2="1" y2="0">
+                                <stop offset="0%" stop-color="#0a0c14"/>
+                                <stop offset="45%" stop-color="#12141c"/>
+                                <stop offset="100%" stop-color="#050508"/>
                             </linearGradient>
-                            <radialGradient id="node" cx="50%" cy="50%" r="60%">
-                                <stop offset="0%" stop-color="#ffd3b6" stop-opacity="0.95"/>
-                                <stop offset="55%" stop-color="#ff8c42" stop-opacity="0.35"/>
+                            <linearGradient id="svBand" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stop-color="#ff8c42" stop-opacity="0"/>
+                                <stop offset="50%" stop-color="#ff8c42" stop-opacity="0.22"/>
                                 <stop offset="100%" stop-color="#ff8c42" stop-opacity="0"/>
-                            </radialGradient>
+                            </linearGradient>
+                            <filter id="svSoft" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="28" result="b"/>
+                                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
                         </defs>
-                        <rect x="0" y="0" width="1000" height="625" fill="url(#g0)"/>
-                        <path d="M110 385 C 240 270, 325 230, 420 260 S 590 430, 710 335 S 875 250, 930 300"
-                              fill="none" stroke="#ff8c42" stroke-opacity="0.45" stroke-width="4"/>
-                        <path d="M90 355 C 250 440, 320 395, 420 370 S 585 245, 700 270 S 845 380, 940 410"
-                              fill="none" stroke="#44aaff" stroke-opacity="0.25" stroke-width="3"/>
-                        <g opacity="0.95">
-                            <circle cx="190" cy="355" r="14" fill="url(#node)"/>
-                            <circle cx="330" cy="285" r="16" fill="url(#node)"/>
-                            <circle cx="460" cy="275" r="13" fill="url(#node)"/>
-                            <circle cx="600" cy="340" r="15" fill="url(#node)"/>
-                            <circle cx="735" cy="325" r="13" fill="url(#node)"/>
-                            <circle cx="850" cy="295" r="16" fill="url(#node)"/>
-                        </g>
+                        <rect width="1000" height="625" fill="url(#svBg)"/>
+                        <ellipse cx="500" cy="200" rx="380" ry="120" fill="#ff8c42" fill-opacity="0.06" filter="url(#svSoft)"/>
+                        <rect x="80" y="240" width="840" height="3" fill="url(#svBand)" rx="1.5"/>
+                        <rect x="120" y="320" width="760" height="2" fill="url(#svBand)" opacity="0.65" rx="1"/>
+                        <rect x="160" y="390" width="680" height="2" fill="url(#svBand)" opacity="0.4" rx="1"/>
+                        <circle cx="500" cy="242" r="6" fill="#ff8c42" fill-opacity="0.85"/>
+                        <circle cx="380" cy="321" r="4" fill="#88c4ff" fill-opacity="0.5"/>
+                        <circle cx="620" cy="321" r="4" fill="#88c4ff" fill-opacity="0.5"/>
+                        <circle cx="500" cy="391" r="4" fill="#ff8c42" fill-opacity="0.45"/>
                     </svg>
                     <span class="art-live" aria-label="SaaS page">SAAS</span>
                     <div class="art-label">
@@ -721,38 +721,21 @@
                     </div>
                 </a>
 
+                <a class="art-card art-hollow" href="./rendering-approach-card-simpler.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-approach-simpler"></canvas>
+                    <span class="art-live" aria-label="Card demo">DEMO</span>
+                    <div class="art-label">
+                        <span class="art-name">Living World — Simpler</span>
+                        <span class="art-sub">render visible objects · spatial grid + culling</span>
+                    </div>
+                </a>
+
                 <a class="art-card art-woodland-preview" href="./SMM/storytelling/interview/dist/contextAll/preview12.html" target="_blank" rel="noopener noreferrer">
-                    <svg class="art-canvas" viewBox="0 0 1000 625" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                        <defs>
-                            <linearGradient id="pvBg" x1="0" y1="1" x2="1" y2="0">
-                                <stop offset="0%" stop-color="#0a0c14"/>
-                                <stop offset="45%" stop-color="#12141c"/>
-                                <stop offset="100%" stop-color="#050508"/>
-                            </linearGradient>
-                            <linearGradient id="pvBand" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stop-color="#ff8c42" stop-opacity="0"/>
-                                <stop offset="50%" stop-color="#ff8c42" stop-opacity="0.22"/>
-                                <stop offset="100%" stop-color="#ff8c42" stop-opacity="0"/>
-                            </linearGradient>
-                            <filter id="pvSoft" x="-20%" y="-20%" width="140%" height="140%">
-                                <feGaussianBlur stdDeviation="28" result="b"/>
-                                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                            </filter>
-                        </defs>
-                        <rect width="1000" height="625" fill="url(#pvBg)"/>
-                        <ellipse cx="500" cy="200" rx="380" ry="120" fill="#ff8c42" fill-opacity="0.06" filter="url(#pvSoft)"/>
-                        <rect x="80" y="240" width="840" height="3" fill="url(#pvBand)" rx="1.5"/>
-                        <rect x="120" y="320" width="760" height="2" fill="url(#pvBand)" opacity="0.65" rx="1"/>
-                        <rect x="160" y="390" width="680" height="2" fill="url(#pvBand)" opacity="0.4" rx="1"/>
-                        <circle cx="500" cy="242" r="6" fill="#ff8c42" fill-opacity="0.85"/>
-                        <circle cx="380" cy="321" r="4" fill="#88c4ff" fill-opacity="0.5"/>
-                        <circle cx="620" cy="321" r="4" fill="#88c4ff" fill-opacity="0.5"/>
-                        <circle cx="500" cy="391" r="4" fill="#ff8c42" fill-opacity="0.45"/>
-                    </svg>
+                    <canvas class="art-canvas" id="art-woodland-preview"></canvas>
                     <span class="art-live" aria-label="Preview page">PREVIEW</span>
                     <div class="art-label">
                         <span class="art-name">The Woodland System — Preview</span>
-                        <span class="art-sub">abstract · story · simulation</span>
+                        <span class="art-sub">interactive book build</span>
                     </div>
                 </a>
 
@@ -1115,6 +1098,139 @@
       ctx.fill();
     }
     ctx.shadowBlur = 0;
+  }
+
+  function drawApproachSimplerCard(t) {
+    const s = initCanvas("art-approach-simpler");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const minDim = Math.min(w, h);
+    const count = 36;
+    const baseR = minDim * 0.19;
+    const orbitR = minDim * 0.24;
+
+    const BLUE = [136, 196, 255];
+    const ORANGE = [255, 140, 66];
+
+    const nodes = [];
+    for (let i = 0; i < count; i++) {
+      const kind = i % 3 === 0 ? "blue" : "orange";
+      const a = (i / count) * Math.PI * 2 + t * 0.22;
+      const wobble = Math.sin(i * 0.65 + t * 1.1) * minDim * 0.025;
+      const rx = orbitR + wobble + Math.sin(t * 0.7 + i) * minDim * 0.01;
+      const ry = (orbitR * 0.58) + wobble * 0.35;
+      nodes.push({
+        x: cx + Math.cos(a) * rx,
+        y: cy + Math.sin(a) * ry,
+        kind,
+        s: 2.2 + (kind === "blue" ? 0.2 : 0.1) + Math.sin(t + i) * 0.35,
+      });
+    }
+
+    const maxDist = minDim * 0.23;
+    ctx.lineWidth = 1;
+
+    // Edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+        if (d > maxDist) continue;
+
+        const u = 1 - d / maxDist; // 0..1
+        const ni = nodes[i].kind;
+        const nj = nodes[j].kind;
+
+        let col;
+        let aLine;
+        if (ni === "blue" && nj === "blue") {
+          col = BLUE;
+          aLine = 0.10 + u * 0.18;
+        } else if (ni === "orange" && nj === "orange") {
+          col = ORANGE;
+          aLine = 0.08 + u * 0.14;
+        } else {
+          // mixed endpoints -> keep it closer to orange, with lower alpha
+          col = ORANGE;
+          aLine = 0.05 + u * 0.10;
+        }
+
+        ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${aLine})`;
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.stroke();
+      }
+    }
+
+    // Nodes
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      const isBlue = n.kind === "blue";
+      const col = isBlue ? BLUE : ORANGE;
+      const alpha = isBlue ? 0.78 : 0.68;
+      const glow = isBlue ? 0.55 : 0.45;
+
+      ctx.shadowColor = `rgba(${col[0]},${col[1]},${col[2]},${glow})`;
+      ctx.shadowBlur = isBlue ? 12 : 10;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.s, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha})`;
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha * 0.65})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, Math.max(1.2, n.s * 0.55), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Curve + node thumbnail like `drawRender()` in preview12.html.
+  function drawWoodlandPreviewCard(t) {
+    const s = initCanvas("art-woodland-preview");
+    if (!s) return;
+    const { ctx, w, h } = s;
+    if (w <= 0 || h <= 0) return;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = 16;
+    const x0 = pad;
+    const y0 = h - pad;
+    const x1 = w - pad;
+    const y1 = pad;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    for (let i = 0; i <= 36; i++) {
+      const p = i / 36;
+      const x = x0 + p * (x1 - x0);
+      const y =
+        y0 -
+        (Math.pow(p, 1.6) * (y0 - y1) * 0.84) -
+        Math.sin(t * 1.5 + p * 8) * 4;
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = "rgba(255,140,66,0.8)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    for (let i = 0; i < 14; i++) {
+      const x = pad + (i / 13) * (w - pad * 2);
+      const y = h * 0.72 + Math.sin(i * 0.8 + t) * 8;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = i % 3 === 0 ? "rgba(120,190,255,0.9)" : "rgba(255,140,66,0.8)";
+      ctx.fill();
+    }
   }
 
   function drawHelix(t) {
@@ -1714,6 +1830,8 @@
   function loop(now) {
     const t = (now - start) / 1000;
     drawNeuro(t);
+    drawApproachSimplerCard(t);
+    drawWoodlandPreviewCard(t);
     drawHelix(t);
     drawBaccarat(t);
     drawStats(t);
