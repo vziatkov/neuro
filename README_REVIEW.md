@@ -164,7 +164,37 @@ npm run dev
 ```
 
 Or open the hosted entry point directly.
+---
 
+## References
+
+The following materials represent different layers of the system: narrative, interface, and rendering.
+
+[1] Entry Point — Interactive Index  
+https://vziatkov.github.io/neuro/landing-with-art-cards.html  
+
+[2] Rendering Approach — Visual Framing of Visibility Model  
+https://vziatkov.github.io/neuro/rendering-approach-card.html  
+
+[3] Large World Demo — 100k Objects, Viewport Culling Runtime  
+https://vziatkov.github.io/neuro/rendering-approach-card-simpler.html  
+
+[4] Technical Summary — Data / Query / Render Architecture  
+https://vziatkov.github.io/neuro/renderingAppRead.html  
+
+[5] SaaS Concept — Interactive Storybook Interface (Woodland System)  
+https://vziatkov.github.io/neuro/diff/saas/dist/index.html  
+
+[6] Narrative Layer (EN) — Woodland System: A Folk Tale  
+https://vziatkov.github.io/neuro/woodland/woodland-system-story-en.pdf  
+
+[7] Narrative Layer (RU) — Лесная Система: Интерактивная сказка  
+https://vziatkov.github.io/neuro/woodland/woodland-system-story-ru.pdf  
+
+[8] Interactive Surface — Presence / Constellation Experiments  
+https://vziatkov.github.io/neuro/SMM/storytelling/interview/dist/contextAll/preview12.html#story  
+
+---
 ---
 
 ## Closing Note
