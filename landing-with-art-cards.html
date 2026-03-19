@@ -357,6 +357,12 @@
         .art-forest-twin { background: #050508; }
         .art-observatory { background: radial-gradient(ellipse 80% 50% at 50% 50%, #0a0a12 0%, #050508 100%); }
         .art-woodland-preview { background: #050508; }
+        .art-woodland-done {
+            background: radial-gradient(ellipse 100% 80% at 30% 20%, rgba(30, 68, 41, 0.45) 0%, #030806 55%);
+            border-color: rgba(99, 255, 155, 0.18);
+        }
+        .art-woodland-done:hover { border-color: rgba(99, 255, 155, 0.35); }
+        .art-woodland-done .art-live { color: #63ff9b; }
 
         @media (max-width: 480px) {
             .art-grid { grid-template-columns: 1fr; }
@@ -736,6 +742,36 @@
                     <div class="art-label">
                         <span class="art-name">The Woodland System — Preview</span>
                         <span class="art-sub">interactive book build</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-woodland-done" href="./woodland/index.html" target="_blank" rel="noopener noreferrer">
+                    <svg class="art-canvas" viewBox="0 0 1000 625" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="wdDoneBg" x1="0" y1="1" x2="1" y2="0">
+                                <stop offset="0%" stop-color="#020806"/>
+                                <stop offset="100%" stop-color="#0a1810"/>
+                            </linearGradient>
+                            <pattern id="wdGrid" width="48" height="48" patternUnits="userSpaceOnUse">
+                                <path d="M48 0H0V48" fill="none" stroke="#63ff9b" stroke-opacity="0.06" stroke-width="1"/>
+                            </pattern>
+                        </defs>
+                        <rect width="1000" height="625" fill="url(#wdDoneBg)"/>
+                        <rect width="1000" height="625" fill="url(#wdGrid)"/>
+                        <circle cx="500" cy="280" r="120" fill="none" stroke="#63ff9b" stroke-opacity="0.2" stroke-width="2"/>
+                        <circle cx="500" cy="280" r="6" fill="#63ff9b" fill-opacity="0.9"/>
+                        <g fill="#63ff9b" fill-opacity="0.35">
+                            <circle cx="380" cy="200" r="3"/><circle cx="620" cy="200" r="3"/>
+                            <circle cx="340" cy="300" r="2.5"/><circle cx="660" cy="300" r="2.5"/>
+                            <circle cx="420" cy="380" r="2.5"/><circle cx="580" cy="380" r="2.5"/>
+                            <circle cx="500" cy="420" r="2"/>
+                        </g>
+                        <path d="M420 480 L460 520 L600 400" fill="none" stroke="#63ff9b" stroke-opacity="0.5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="art-live" aria-label="Shipped build">СДЕЛАНО</span>
+                    <div class="art-label">
+                        <span class="art-name">Woodland Matrix v4.3 — Сделано</span>
+                        <span class="art-sub">Single entry: demos + PDFs · v4.3 Matrix · brief viewer · README manifest</span>
                     </div>
                 </a>
 
