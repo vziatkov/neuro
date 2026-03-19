@@ -197,6 +197,29 @@ https://vziatkov.github.io/neuro/SMM/storytelling/interview/dist/contextAll/prev
 ---
 ---
 
+## System Credits
+
+This project was developed with the support of multiple AI systems, each contributing to different aspects of the work.
+
+- **OpenAI (GPT models)** — system design, architectural reasoning, and technical structuring  
+- **Anthropic (Claude)** — conceptual clarity, long-form reasoning, and refinement  
+- **Google (Gemini / AI Studio)** — interactive storytelling and content experiments  
+
+Additional tools and technologies:
+
+- **Cursor** — AI-assisted development and iteration  
+- **PixiJS** — rendering runtime and visualization layer  
+
+**Author:** Vitalii Vziatkov
+
+---
+
+## Note
+
+This work reflects a collaborative workflow between human direction and AI systems, focused on clarity of architecture and practical implementation.
+
+------
+
 ## Closing Note
 
 This project is less about "drawing objects" and more about defining the relationship between:
