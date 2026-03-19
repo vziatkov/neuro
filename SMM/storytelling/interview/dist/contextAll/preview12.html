@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Woodland System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #050508;
+      --panel: rgba(255,255,255,0.04);
+      --panel-strong: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.10);
+      --text: #e9e9ee;
+      --muted: #9a9aa4;
+      --accent: #ff8c42;
+      --accent-soft: rgba(255,140,66,0.12);
+      --glow: rgba(255,140,66,0.28);
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(255,140,66,0.10), transparent 60%),
+        radial-gradient(800px 600px at 85% 80%, rgba(100,180,255,0.08), transparent 60%),
+        radial-gradient(700px 400px at 60% 20%, rgba(170,120,255,0.06), transparent 60%);
+      z-index: -2;
+    }
+
+    #bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .container {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 80px 0 40px;
+      position: relative;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      width: 100%;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent));
+      opacity: 0.8;
+    }
+
+    h1 {
+      font-size: clamp(40px, 7vw, 72px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      font-weight: 650;
+      margin-bottom: 18px;
+    }
+
+    .hero p.lead {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 20px);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      text-decoration: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.25s ease;
+      backdrop-filter: blur(6px);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .btn.primary {
+      border-color: rgba(255,140,66,0.45);
+      color: var(--accent);
+      background: linear-gradient(180deg, rgba(255,140,66,0.12), rgba(255,140,66,0.06));
+      box-shadow: 0 0 0 1px rgba(255,140,66,0.08) inset, 0 10px 30px rgba(255,140,66,0.08);
+    }
+
+    .btn.primary:hover {
+      border-color: rgba(255,140,66,0.6);
+      box-shadow: 0 0 0 1px rgba(255,140,66,0.14) inset, 0 12px 36px rgba(255,140,66,0.12);
+    }
+
+    .hero-note {
+      font-size: 13px;
+      color: #7f7f89;
+    }
+
+    .hero-card {
+      position: relative;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+        radial-gradient(circle at top, rgba(255,140,66,0.08), transparent 60%);
+      border-radius: 22px;
+      padding: 22px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      min-height: 420px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -20% auto;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(255,140,66,0.12), transparent 70%);
+      filter: blur(20px);
+      pointer-events: none;
+    }
+
+    .mini-label {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #8e8e98;
+      margin-bottom: 14px;
+    }
+
+    .concept-visual {
+      height: 210px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .concept-visual svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .concept-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .concept-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .concept-item b {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-top: 7px;
+      background: linear-gradient(180deg, #ffb07b, var(--accent));
+      box-shadow: 0 0 16px var(--glow);
+      flex: 0 0 auto;
+    }
+
+    .section {
+      padding: 72px 0;
+      position: relative;
+    }
+
+    .section-header {
+      margin-bottom: 26px;
+    }
+
+    .section-kicker {
+      color: var(--accent);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .section h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.05;
+      font-weight: 620;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+    }
+
+    .section-intro {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.022));
+      border-radius: 18px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255,140,66,0.0), rgba(255,140,66,0.35), rgba(255,140,66,0.0));
+      opacity: 0.6;
+    }
+
+    .card.story {
+      grid-column: span 5;
+      background:
+        linear-gradient(180deg, rgba(255,140,66,0.08), rgba(255,255,255,0.02)),
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+    }
+
+    .card.abstract {
+      grid-column: span 7;
+    }
+
+    .card h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: 620;
+      letter-spacing: -0.02em;
+    }
+
+    .card p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    .link-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .text-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .text-link:hover {
+      text-decoration: underline;
+    }
+
+    .storybook {
+      margin-top: 18px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #0a0a0d;
+      min-height: 520px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .storybook iframe {
+      width: 100%;
+      height: 520px;
+      border: 0;
+      display: block;
+      background: #0a0a0d;
+    }
+
+    .anchor-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .anchor {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      border-radius: 14px;
+      padding: 14px 15px;
+    }
+
+    .anchor-title {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .anchor-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .showcase {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .showcase-card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border-radius: 18px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: 0.25s ease;
+    }
+
+    .showcase-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,140,66,0.22);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.24);
+    }
+
+    .thumb {
+      aspect-ratio: 16 / 10;
+      position: relative;
+      overflow: hidden;
+      background: #0c0c10;
+    }
+
+    .thumb canvas, .thumb svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .showcase-body {
+      padding: 16px 16px 18px;
+    }
+
+    .showcase-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .showcase-desc {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .footer {
+      padding: 40px 0 80px;
+      color: #787882;
+      font-size: 13px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin-top: 24px;
+    }
+
+    .footer-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .muted-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .muted-links a {
+      color: #9c9ca5;
+      text-decoration: none;
+    }
+
+    .muted-links a:hover {
+      color: var(--accent);
+    }
+
+    .fade {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      will-change: opacity, transform;
+    }
+
+    .fade.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+      .card.story,
+      .card.abstract {
+        grid-column: span 12;
+      }
+      .showcase {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container { width: min(1120px, calc(100% - 24px)); }
+      .hero { padding-top: 64px; }
+      .card, .hero-card { padding: 18px; }
+      .storybook iframe { height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="fade">
+          <div class="eyebrow">System · Story · Simulation</div>
+          <h1>The Woodland System</h1>
+          <p class="lead">
+            One rendering idea, presented in three forms: a formal abstract for structured review,
+            a story for intuition, and a live interactive layer for direct experience.
+          </p>
+
+            <div class="cta-row">
+            <a class="btn primary" href="../../../../../renderingAppRead.html" target="_blank" rel="noopener noreferrer">
+              Read Abstract →
+            </a>
+            <a class="btn" href="#story">
+              Explore Story
+            </a>
+            <a class="btn" href="https://vziatkov.github.io/neuro/observatory-v2.html" target="_blank" rel="noopener noreferrer">
+              Open Observatory
+            </a>
+          </div>
+
+          <div class="hero-note">
+            Same system. Three representations: abstract → story → interactive.
+          </div>
+        </div>
+
+        <aside class="hero-card fade">
+          <div class="mini-label">Concept Map</div>
+
+          <div class="concept-visual">
+            <svg viewBox="0 0 600 300" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="lineGlow" x1="0" x2="1">
+                  <stop offset="0%" stop-color="rgba(255,140,66,0)" />
+                  <stop offset="50%" stop-color="#ff8c42" />
+                  <stop offset="100%" stop-color="rgba(255,140,66,0)" />
+                </linearGradient>
+                <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#ffd3b6" />
+                  <stop offset="100%" stop-color="#ff8c42" />
+                </radialGradient>
+              </defs>
+
+              <path d="M30 180 C120 130, 150 80, 240 110 S380 220, 570 140"
+                    fill="none" stroke="url(#lineGlow)" stroke-width="2.5" opacity="0.8"/>
+              <path d="M30 150 C120 190, 170 220, 240 180 S380 80, 570 190"
+                    fill="none" stroke="rgba(120,190,255,0.28)" stroke-width="1.5" opacity="0.7"/>
+
+              <circle cx="90" cy="150" r="7" fill="url(#nodeGlow)"/>
+              <circle cx="220" cy="108" r="8" fill="url(#nodeGlow)"/>
+              <circle cx="340" cy="180" r="7" fill="url(#nodeGlow)"/>
+              <circle cx="500" cy="152" r="8" fill="url(#nodeGlow)"/>
+
+              <circle cx="150" cy="210" r="5" fill="rgba(120,190,255,0.85)"/>
+              <circle cx="290" cy="146" r="5" fill="rgba(120,190,255,0.85)"/>
+              <circle cx="430" cy="108" r="5" fill="rgba(120,190,255,0.85)"/>
+            </svg>
+          </div>
+
+          <div class="concept-list">
+            <div class="concept-item">
+              <span class="dot"></span>
+              <div><b>Rendering as projection</b><br>world data exists independently of the render tree.</div>
+            </div>
+            <div class="concept-item">
+              <span class="dot"></span>
+              <div><b>Boundary events</b><br>effects are triggered by interaction, not painted on top.</div>
+            </div>
+            <div class="concept-item">
+              <span class="dot"></span>
+              <div><b>Three entry points</b><br>formal, intuitive, and experiential.</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section fade" id="story">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Narrative Layer</span>
+          <h2>The story version</h2>
+          <p class="section-intro">
+            The same system can be explained through a short folk tale. This keeps the core idea readable
+            without reducing it to decoration or vague metaphor.
+          </p>
+        </div>
+
+        <div class="grid">
+          <article class="card story">
+            <h3>The Woodland System</h3>
+            <p>
+              A compact narrative representation of the rendering logic: observation first, system behavior second,
+              implementation third.
+            </p>
+
+            <div class="link-stack">
+              <a class="text-link" href="../../../../../forest-story.html" target="_blank" rel="noopener noreferrer">🦊 Open Story (EN)</a>
+              <a class="text-link" href="../../../../../forest-story.html" target="_blank" rel="noopener noreferrer">🌲 Open Story (RU)</a>
+            </div>
+
+            <div class="storybook">
+              <iframe
+                src="../../../../../forest-story.html"
+                title="The Woodland System story"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              ></iframe>
+            </div>
+          </article>
+
+          <article class="card abstract">
+            <h3>Technical abstract</h3>
+            <p>
+              The formal version presents the same system in a structured way: visibility-driven rendering,
+              spatial indexing, object lifecycle, and practical extension paths.
+            </p>
+
+            <div class="link-stack">
+              <a class="text-link" href="../../../../../renderingAppRead.html" target="_blank" rel="noopener noreferrer">Read Abstract →</a>
+            </div>
+
+            <div class="anchor-list">
+              <div class="anchor">
+                <div class="anchor-title">Rendering is projection</div>
+                <div class="anchor-desc">Only visible state becomes active render state.</div>
+              </div>
+              <div class="anchor">
+                <div class="anchor-title">Visibility over existence</div>
+                <div class="anchor-desc">Off-screen entities are data, not active display objects.</div>
+              </div>
+              <div class="anchor">
+                <div class="anchor-title">Lifecycle-driven objects</div>
+                <div class="anchor-desc">Acquire → update → release, instead of brute-force creation.</div>
+              </div>
+              <div class="anchor">
+                <div class="anchor-title">Interaction-driven visuals</div>
+                <div class="anchor-desc">Effects appear as a result of thresholds, contact, and transitions.</div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section fade">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-kicker">Interactive Surface</span>
+          <h2>Related live experiments</h2>
+          <p class="section-intro">
+            These demos show the same general thinking applied to interaction systems, presence, and visual state.
+          </p>
+        </div>
+
+        <div class="showcase">
+          <a class="showcase-card" href="https://vziatkov.github.io/neuro/observatory-v2.html" target="_blank" rel="noopener noreferrer">
+            <div class="thumb">
+              <canvas id="thumb-observatory"></canvas>
+            </div>
+            <div class="showcase-body">
+              <div class="showcase-title">Observatory V2</div>
+              <div class="showcase-desc">Presence, echo, bloom, and constellation-like responses in a shared field.</div>
+            </div>
+          </a>
+
+          <a class="showcase-card" href="https://vziatkov.github.io/neuro/rendering-approach-card.html" target="_blank" rel="noopener noreferrer">
+            <div class="thumb">
+              <canvas id="thumb-render"></canvas>
+            </div>
+            <div class="showcase-body">
+              <div class="showcase-title">Rendering Approach</div>
+              <div class="showcase-desc">A compact visual framing of the visibility-driven rendering idea.</div>
+            </div>
+          </a>
+
+          <a class="showcase-card" href="https://vziatkov.github.io/" target="_blank" rel="noopener noreferrer">
+            <div class="thumb">
+              <canvas id="thumb-main"></canvas>
+            </div>
+            <div class="showcase-body">
+              <div class="showcase-title">Main Landing</div>
+              <div class="showcase-desc">A broader portfolio of interactive systems, experiments, and real-time demos.</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer fade">
+      <div class="container footer-line">
+        <div>
+          Built as a minimal entry point: abstract → story → simulation.
+        </div>
+        <nav class="muted-links" aria-label="Footer links">
+          <a href="../../../../../renderingAppRead.html" target="_blank" rel="noopener noreferrer">Abstract</a>
+          <a href="../../../../../forest-story.html" target="_blank" rel="noopener noreferrer">Story</a>
+          <a href="https://vziatkov.github.io/neuro/observatory-v2.html" target="_blank" rel="noopener noreferrer">Observatory</a>
+          <a href="https://vziatkov.github.io/" target="_blank" rel="noopener noreferrer">Main Landing</a>
+        </nav>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // Background field
+    (function () {
+      const canvas = document.getElementById('bg');
+      const ctx = canvas.getContext('2d', { alpha: true });
+
+      let w = 0, h = 0, dpr = 1, raf = 0, t = 0;
+      const particles = [];
+      const COUNT_FACTOR = 1 / 2400;
+
+      function resize() {
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        w = window.innerWidth;
+        h = window.innerHeight;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const target = Math.max(220, Math.floor(w * h * COUNT_FACTOR));
+        particles.length = 0;
+        for (let i = 0; i < target; i++) {
+          particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: 0,
+            vy: 0,
+            life: Math.random() * 300 + 50
+          });
+        }
+      }
+
+      function noise(x, y) {
+        return Math.sin(x * 0.013 + t * 0.55) + Math.cos(y * 0.011 - t * 0.42);
+      }
+
+      function step() {
+        raf = requestAnimationFrame(step);
+        t += 0.004;
+
+        ctx.fillStyle = 'rgba(5,5,8,0.08)';
+        ctx.fillRect(0, 0, w, h);
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          const ax = Math.cos(noise(p.x, p.y)) * 0.16;
+          const ay = Math.sin(noise(p.y, p.x)) * 0.16;
+
+          p.vx = p.vx * 0.96 + ax;
+          p.vy = p.vy * 0.96 + ay;
+
+          const x0 = p.x;
+          const y0 = p.y;
+
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life--;
+
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(p.x, p.y);
+          ctx.strokeStyle = i % 8 === 0
+            ? 'rgba(255,140,66,0.16)'
+            : i % 5 === 0
+              ? 'rgba(120,190,255,0.12)'
+              : 'rgba(180,180,220,0.06)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          if (p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20 || p.life <= 0) {
+            p.x = Math.random() * w;
+            p.y = Math.random() * h;
+            p.vx = 0;
+            p.vy = 0;
+            p.life = Math.random() * 300 + 50;
+          }
+        }
+      }
+
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+      ctx.fillStyle = '#050508';
+      ctx.fillRect(0, 0, w, h);
+      step();
+    })();
+
+    // Reveal
+    (function () {
+      const els = document.querySelectorAll('.fade');
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('visible');
+        });
+      }, { threshold: 0.12 });
+
+      els.forEach((el) => io.observe(el));
+    })();
+
+    // Thumbnails
+    (function () {
+      function makeCanvas(id) {
+        const c = document.getElementById(id);
+        if (!c) return null;
+        const parent = c.parentElement;
+        const rect = parent.getBoundingClientRect();
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        c.width = Math.max(2, Math.floor(rect.width * dpr));
+        c.height = Math.max(2, Math.floor(rect.height * dpr));
+        const ctx = c.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { c, ctx, w: rect.width, h: rect.height };
+      }
+
+      function drawObservatory(t) {
+        const s = makeCanvas('thumb-observatory');
+        if (!s) return;
+        const { ctx, w, h } = s;
+        ctx.clearRect(0, 0, w, h);
+
+        const cx = w / 2, cy = h / 2;
+        const pts = 22;
+        const nodes = [];
+        for (let i = 0; i < pts; i++) {
+          const a = (i / pts) * Math.PI * 2 + t * 0.25;
+          const r = Math.min(w, h) * (0.18 + ((i % 5) * 0.018));
+          nodes.push({
+            x: cx + Math.cos(a) * r + Math.sin(t + i) * 8,
+            y: cy + Math.sin(a) * r * 0.65 + Math.cos(t * 0.7 + i) * 6
+          });
+        }
+
+        ctx.lineWidth = 1;
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+            if (d < 80) {
+              ctx.strokeStyle = `rgba(255,140,66,${(1 - d / 80) * 0.14})`;
+              ctx.beginPath();
+              ctx.moveTo(nodes[i].x, nodes[i].y);
+              ctx.lineTo(nodes[j].x, nodes[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 2.2 + Math.sin(t * 2 + i) * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = i % 4 === 0 ? 'rgba(120,190,255,0.95)' : 'rgba(255,140,66,0.92)';
+          ctx.fill();
+        }
+      }
+
+      function drawRender(t) {
+        const s = makeCanvas('thumb-render');
+        if (!s) return;
+        const { ctx, w, h } = s;
+        ctx.clearRect(0, 0, w, h);
+
+        const pad = 16;
+        const x0 = pad;
+        const y0 = h - pad;
+        const x1 = w - pad;
+        const y1 = pad;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        for (let i = 0; i <= 36; i++) {
+          const p = i / 36;
+          const x = x0 + p * (x1 - x0);
+          const y = y0 - (Math.pow(p, 1.6) * (y0 - y1) * 0.84) - Math.sin(t * 1.5 + p * 8) * 4;
+          ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(255,140,66,0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        for (let i = 0; i < 14; i++) {
+          const x = pad + (i / 13) * (w - pad * 2);
+          const y = h * 0.72 + Math.sin(i * 0.8 + t) * 8;
+          ctx.beginPath();
+          ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(120,190,255,0.9)' : 'rgba(255,140,66,0.8)';
+          ctx.fill();
+        }
+      }
+
+      function drawMain(t) {
+        const s = makeCanvas('thumb-main');
+        if (!s) return;
+        const { ctx, w, h } = s;
+        ctx.clearRect(0, 0, w, h);
+
+        const cols = 4, rows = 3;
+        const gap = 8;
+        const cellW = (w - gap * (cols + 1)) / cols;
+        const cellH = (h - gap * (rows + 1)) / rows;
+
+        for (let y = 0; y < rows; y++) {
+          for (let x = 0; x < cols; x++) {
+            const px = gap + x * (cellW + gap);
+            const py = gap + y * (cellH + gap);
+            const r = 10;
+
+            ctx.beginPath();
+            ctx.moveTo(px + r, py);
+            ctx.lineTo(px + cellW - r, py);
+            ctx.arcTo(px + cellW, py, px + cellW, py + r, r);
+            ctx.lineTo(px + cellW, py + cellH - r);
+            ctx.arcTo(px + cellW, py + cellH, px + cellW - r, py + cellH, r);
+            ctx.lineTo(px + r, py + cellH);
+            ctx.arcTo(px, py + cellH, px, py + cellH - r, r);
+            ctx.lineTo(px, py + r);
+            ctx.arcTo(px, py, px + r, py, r);
+            ctx.closePath();
+
+            ctx.fillStyle =
+              (x + y) % 3 === 0
+                ? 'rgba(255,140,66,0.12)'
+                : (x + y) % 3 === 1
+                  ? 'rgba(120,190,255,0.10)'
+                  : 'rgba(255,255,255,0.05)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(px + cellW * 0.5, py + cellH * 0.5, 7 + Math.sin(t * 2 + x + y) * 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = (x + y) % 2 === 0 ? 'rgba(255,140,66,0.85)' : 'rgba(120,190,255,0.78)';
+            ctx.fill();
+          }
+        }
+      }
+
+      let raf = 0;
+      let t = 0;
+      function loop() {
+        raf = requestAnimationFrame(loop);
+        t += 0.016;
+        drawObservatory(t);
+        drawRender(t);
+        drawMain(t);
+      }
+      window.addEventListener('resize', () => {
+        drawObservatory(t);
+        drawRender(t);
+        drawMain(t);
+      }, { passive: true });
+      loop();
+    })();
+  </script>
+</body>
+</html>
