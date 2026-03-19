@@ -16,7 +16,20 @@
 
 This repo also ships an **AI-agent skill** (OpenClaw / ClawHub): **Interactive Prototypes — Human + AI**. Crash engines, probability simulators, procedural worlds, visual analytics. One link, open and run.
 
-**Live demos:** [landing with art cards](https://vziatkov.github.io/neuro/landing-with-art-cards.html) · **Skill package:** `skills/joyyy-landings/`
+**Live demos:** [Woodland hub](https://vziatkov.github.io/neuro/woodland/index.html) · [landing with art cards](https://vziatkov.github.io/neuro/landing-with-art-cards.html) · **Skill package:** `skills/joyyy-landings/`
+
+---
+
+## 🌲 Woodland System — 2D World Viewer (PixiJS v8)
+
+Static experiments under **`public/woodland/`**: large typed-array fields, Pixi v8 batching, pan/zoom, and (in `try4.html`) viewport culling + glyph pooling for a full “brief as a world” build.
+
+| | |
+|--|--|
+| **Woodland — single entry** | [woodland/index.html](https://vziatkov.github.io/neuro/woodland/index.html) — demos, PDFs, links |
+| **Woodland in SaaS `dist/`** | Build `diff/saas` → `dist/woodland/` is copied next to the storybook (`npm run build` there). Header link **Matrix demos & PDFs** opens it without the neuro dev server. |
+| **Portfolio hub** | [landing-with-art-cards.html](https://vziatkov.github.io/neuro/landing-with-art-cards.html) — art cards (tile opens the Woodland hub) |
+| **Manifest / architecture** | [public/woodland/README.md](public/woodland/README.md) |
 
 ---
 

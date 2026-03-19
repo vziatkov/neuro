@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Woodland Matrix v4.3 — 100k typed-array field, 12k Pixi sprites, pan/zoom, cursor interaction. PixiJS v8." />
+  <title>Matrix v4.3 — Neural Interface · Woodland</title>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Courier New', Courier, monospace; touch-action: none; }
+    #overlay { position: fixed; inset: 0; pointer-events: none; z-index: 20; border: 20px solid rgba(99, 255, 155, 0.05); box-sizing: border-box; }
+    .label { position: absolute; background: rgba(0, 10, 5, 0.82); border: 1px solid #1e4429; color: #63ff9b; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; max-width: min(92vw, 420px); line-height: 1.35; }
+    #vignette { position: fixed; inset: 0; background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.8) 100%); pointer-events: none; z-index: 15; }
+    details.manifest { position: fixed; top: 40px; right: 40px; z-index: 25; pointer-events: auto; max-width: min(320px, 90vw); color: #63ff9b; font-size: 10px; letter-spacing: 0.06em; }
+    details.manifest summary { cursor: pointer; list-style: none; background: rgba(0, 10, 5, 0.85); border: 1px solid #1e4429; padding: 8px 12px; text-transform: uppercase; }
+    details.manifest summary::-webkit-details-marker { display: none; }
+    details.manifest[open] summary { border-bottom: none; }
+    details.manifest .body { background: rgba(0, 8, 4, 0.92); border: 1px solid #1e4429; border-top: none; padding: 10px 12px 12px; color: rgba(180, 255, 200, 0.88); letter-spacing: 0.02em; text-transform: none; line-height: 1.45; font-size: 11px; }
+    details.manifest a { color: #8effb8; }
+  </style>
+</head>
+<body>
+  <div id="vignette"></div>
+  <div id="overlay">
+    <div class="label" style="top:40px; left:40px;">STATUS: NEURAL_LINK_ESTABLISHED · v4.3</div>
+    <div id="coords" class="label" style="bottom:40px; right:40px;">X:0000 Y:0000</div>
+    <div id="fps-box" class="label" style="bottom:40px; left:40px;">FPS: —</div>
+  </div>
+
+  <details class="manifest">
+    <summary>Manifest / links</summary>
+    <div class="body">
+      <strong>Hub:</strong> <a href="./index.html">index.html</a> (all demos &amp; PDFs)<br />
+      <strong>Data:</strong> 100k slots in <code>Float32Array</code> (x, y, vx, vy).<br />
+      <strong>Render:</strong> 12k sprites (same texture) — batched by Pixi v8.<br />
+      <strong>Full brief + culling:</strong> <a href="./try4.html">try4.html</a><br />
+      <strong>Write-up:</strong> <a href="https://github.com/vziatkov/neuro/blob/main/public/woodland/README.md" target="_blank" rel="noopener">README.md</a>
+    </div>
+  </details>
+
+  <script>
+    (async () => {
+      const app = new PIXI.Application();
+      await app.init({ resizeTo: window, background: '#000', antialias: false, resolution: window.devicePixelRatio || 1, autoDensity: true });
+      document.body.appendChild(app.canvas);
+      app.canvas.style.touchAction = 'none';
+
+      const world = new PIXI.Container();
+      app.stage.addChild(world);
+
+      const dotG = new PIXI.Graphics().rect(0, 0, 2, 2).fill({ color: 0x63ff9b });
+      const tex = app.renderer.generateTexture(dotG);
+
+      const count = 100000;
+      const RENDER_N = 12000;
+      const data = new Float32Array(count * 4);
+      const sprites = [];
+      const container = new PIXI.Container();
+      world.addChild(container);
+
+      for (let i = 0; i < count; i++) {
+        data[i * 4] = Math.random() * 5000;
+        data[i * 4 + 1] = Math.random() * 5000;
+        data[i * 4 + 2] = (Math.random() - 0.5) * 2;
+        data[i * 4 + 3] = (Math.random() - 0.5) * 2;
+
+        if (i < RENDER_N) {
+          const s = new PIXI.Sprite(tex);
+          s.anchor.set(0.5);
+          container.addChild(s);
+          sprites.push(s);
+        }
+      }
+
+      const bigText = new PIXI.Text({
+        text: 'ACCESS GRANTED\nUSER: SENIOR_DEV\nPROJECT: MATRIX_CORE',
+        style: { fill: 0x63ff9b, fontSize: 60, fontWeight: '900', letterSpacing: 10, align: 'center' }
+      });
+      bigText.anchor.set(0.5);
+      bigText.position.set(2500, 2500);
+      world.addChild(bigText);
+
+      let mouse = { x: 0, y: 0 };
+      const coordBox = document.getElementById('coords');
+      const fpsBox = document.getElementById('fps-box');
+
+      app.stage.eventMode = 'static';
+      const syncHitArea = () => {
+        app.stage.hitArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
+      };
+      syncHitArea();
+      window.addEventListener('resize', syncHitArea);
+
+      app.stage.on('pointermove', (e) => {
+        mouse.x = (e.global.x - world.x) / world.scale.x;
+        mouse.y = (e.global.y - world.y) / world.scale.y;
+        coordBox.textContent = `X:${Math.round(mouse.x)} Y:${Math.round(mouse.y)}`;
+      });
+
+      let time = 0;
+      let uiFrame = 0;
+      app.ticker.add((ticker) => {
+        time += ticker.deltaTime * 0.01;
+        const dt = ticker.deltaTime;
+
+        for (let i = 0; i < sprites.length; i++) {
+          let x = data[i * 4];
+          let y = data[i * 4 + 1];
+
+          x += data[i * 4 + 2] * dt;
+          y += data[i * 4 + 3] * dt;
+
+          const dx = mouse.x - x;
+          const dy = mouse.y - y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 200 && dist > 0.001) {
+            x -= (dx / dist) * 5;
+            y -= (dy / dist) * 5;
+          }
+
+          if (x < 0) x = 5000;
+          else if (x > 5000) x = 0;
+          if (y < 0) y = 5000;
+          else if (y > 5000) y = 0;
+
+          data[i * 4] = x;
+          data[i * 4 + 1] = y;
+
+          sprites[i].x = x;
+          sprites[i].y = y;
+          sprites[i].alpha = 0.2 + Math.abs(Math.sin(time + i)) * 0.8;
+        }
+
+        if (Math.random() > 0.98) {
+          bigText.skew.x = (Math.random() - 0.5) * 0.5;
+          bigText.alpha = 0.5;
+        } else {
+          bigText.skew.x = 0;
+          bigText.alpha = 1;
+        }
+
+        uiFrame++;
+        if (uiFrame % 12 === 0) {
+          fpsBox.textContent = `FPS: ${Math.round(ticker.FPS)} · SPRITES: ${RENDER_N.toLocaleString()}`;
+        }
+      });
+
+      let drag = false;
+      let last;
+      app.canvas.addEventListener('pointerdown', (e) => {
+        drag = true;
+        last = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('pointerup', () => { drag = false; });
+      window.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        world.x += e.clientX - last.x;
+        world.y += e.clientY - last.y;
+        last = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const s = world.scale.x;
+        const nS = Math.min(3, Math.max(0.1, s * (e.deltaY > 0 ? 0.9 : 1.1)));
+        const m = { x: e.clientX, y: e.clientY };
+        const l = { x: (m.x - world.x) / s, y: (m.y - world.y) / s };
+        world.scale.set(nS);
+        world.x = m.x - l.x * nS;
+        world.y = m.y - l.y * nS;
+      }, { passive: false });
+
+      world.scale.set(0.3);
+      world.position.set(app.screen.width / 2, app.screen.height / 2);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Woodland System — single entry: PixiJS v8 demos (Matrix v4.3, brief viewer), PDFs, architecture notes." />
+  <title>Woodland System — Entry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #020806;
+      --panel: rgba(0, 14, 8, 0.92);
+      --border: rgba(99, 255, 155, 0.14);
+      --text: #c8f0d8;
+      --muted: rgba(180, 220, 195, 0.65);
+      --accent: #63ff9b;
+      --accent-dim: rgba(99, 255, 155, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, sans-serif;
+      line-height: 1.5;
+    }
+
+    body {
+      background-image:
+        radial-gradient(ellipse 120% 60% at 50% -20%, rgba(30, 68, 41, 0.35), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(99, 255, 155, 0.04), transparent 40%);
+    }
+
+    .wrap {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+
+    header {
+      margin-bottom: 36px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .lede {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 52ch;
+      margin-bottom: 18px;
+    }
+
+    .top-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      font-size: 13px;
+    }
+
+    .top-links a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(99, 255, 155, 0.25);
+    }
+
+    .top-links a:hover {
+      border-bottom-color: var(--accent);
+    }
+
+    .section-title {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin: 32px 0 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 560px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .grid .card-feature { grid-column: 1 / -1; }
+    }
+
+    .card {
+      display: block;
+      padding: 18px 18px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+
+    .card:hover {
+      border-color: rgba(99, 255, 155, 0.28);
+      box-shadow: 0 0 0 1px rgba(99, 255, 155, 0.06), 0 12px 40px rgba(0, 0, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .card-feature {
+      border-color: rgba(99, 255, 155, 0.22);
+      background: linear-gradient(145deg, rgba(15, 40, 28, 0.95) 0%, rgba(0, 12, 8, 0.95) 100%);
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(99, 255, 155, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .card .mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: rgba(143, 255, 180, 0.55);
+      margin-top: 10px;
+    }
+
+    .card-muted {
+      opacity: 0.88;
+    }
+
+    .list {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .list a {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .list a:hover {
+      border-color: rgba(99, 255, 155, 0.22);
+    }
+
+    .list a span:last-child {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    footer code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: rgba(143, 255, 180, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">Woodland / Matrix · PixiJS v8</p>
+      <h1>Single entry point</h1>
+      <p class="lede">Demos and PDFs ship inside the <strong>Woodland SaaS</strong> build: run <code style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--accent-dim);">npm run build</code> in <code style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--accent-dim);">diff/saas</code> → open <code style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--accent-dim);">dist/woodland/index.html</code> next to the storybook (no extra dev server). Or use the neuro app: <code style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--accent-dim);">npm run dev</code> → <code style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--accent-dim);">/woodland/</code>.</p>
+      <nav class="top-links" aria-label="External">
+        <a href="../index.html">← Woodland SaaS (storybook)</a>
+        <a href="https://vziatkov.github.io/neuro/landing-with-art-cards.html" target="_blank" rel="noopener noreferrer">Portfolio &amp; art cards</a>
+        <a href="https://github.com/vziatkov/neuro/blob/main/public/woodland/README.md" target="_blank" rel="noopener noreferrer">README (manifest)</a>
+      </nav>
+    </header>
+
+    <p class="section-title">Live demos</p>
+    <div class="grid">
+      <a class="card card-feature" href="try5a.html">
+        <span class="badge">Сделано · v4.3</span>
+        <h2>Matrix — Neural field</h2>
+        <p>100k slots in typed arrays, 12k batched sprites, cursor field, pan &amp; zoom-to-mouse, HUD.</p>
+        <p class="mono">try5a.html</p>
+      </a>
+
+      <a class="card" href="try4.html">
+        <h2>Brief world viewer</h2>
+        <p>Full take-home as a spatial document: spatial hash, viewport culling, glyph pooling, phases.</p>
+        <p class="mono">try4.html</p>
+      </a>
+
+      <a class="card card-muted" href="try5.html">
+        <h2>Architectural sketch</h2>
+        <p>Worker + mesh + LOD notes (draft; not a full production path).</p>
+        <p class="mono">try5.html</p>
+      </a>
+
+      <a class="card card-muted" href="preview%20(14).html">
+        <h2>Legacy preview</h2>
+        <p>Early v1-style viewer for comparison.</p>
+        <p class="mono">preview (14).html</p>
+      </a>
+    </div>
+
+    <p class="section-title">PDFs &amp; print</p>
+    <ul class="list" role="list">
+      <li>
+        <a href="woodland-system-story-en.pdf">
+          Story (EN)
+          <span>PDF</span>
+        </a>
+      </li>
+      <li>
+        <a href="woodland-system-story-ru.pdf">
+          Сказка (RU)
+          <span>PDF</span>
+        </a>
+      </li>
+      <li>
+        <a href="woodland-system-notes.pdf">
+          Woodland notes / print hints
+          <span>PDF</span>
+        </a>
+      </li>
+    </ul>
+
+    <footer>
+      <p><strong>Neuro dev:</strong> <code>/woodland/index.html</code></p>
+      <p style="margin-top:8px;"><strong>SaaS build:</strong> <code>diff/saas/dist/woodland/index.html</code> (copied on <code>npm run build</code>)</p>
+      <p style="margin-top:8px;"><strong>Hosted:</strong> <code>https://vziatkov.github.io/neuro/woodland/index.html</code></p>
+    </footer>
+  </div>
+</body>
+</html>

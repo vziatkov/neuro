@@ -9,6 +9,8 @@ The system treats the world as data and renders only a visible subset.
 ---
 # Woodland System — 2D World Viewer (PixiJS)
 
+> **Canonical write-up:** use **[`public/woodland/README.md`](public/woodland/README.md)** for the finalized manifest (v4.3 `try5a`, full `try4`, honest metrics, outreach template). This file is an older review draft kept for history.
+
 This repository is a focused exploration of rendering large-scale 2D worlds with PixiJS.
 
 The goal is not to build a full production engine, but to demonstrate clear thinking around:
@@ -21,8 +23,11 @@ The goal is not to build a full production engine, but to demonstrate clear thin
 
 ## Entry Point
 
-Start here:  
-👉 [https://vziatkov.github.io/neuro/landing-with-art-cards.html](https://vziatkov.github.io/neuro/landing-with-art-cards.html)
+**Woodland demos & PDFs (single page):**  
+👉 [https://vziatkov.github.io/neuro/woodland/index.html](https://vziatkov.github.io/neuro/woodland/index.html)
+
+Portfolio / art cards:  
+[https://vziatkov.github.io/neuro/landing-with-art-cards.html](https://vziatkov.github.io/neuro/landing-with-art-cards.html)
 
 This page acts as a visual index into the system.
 
