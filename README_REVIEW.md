@@ -1,3 +1,12 @@
+---
+
+## Visual Overview
+
+The system treats the world as data and renders only a visible subset.
+
+> The render tree is a filtered projection of the world.
+
+---
 # Woodland System — 2D World Viewer (PixiJS)
 
 This repository is a focused exploration of rendering large-scale 2D worlds with PixiJS.
