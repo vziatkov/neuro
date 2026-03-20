@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PixiJS — 2D World Viewer (Final)</title>
+  <style>
+    html, body {
+      margin:0;
+      padding:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#050508;
+      font-family: monospace;
+    }
+
+    canvas { display:block; }
+
+    .panel {
+      position:absolute;
+      top:20px;
+      width:260px;
+      color:#ddd;
+      font-size:12px;
+      line-height:1.4;
+      opacity:0.9;
+    }
+
+    .left { left:16px; }
+    .right { right:16px; }
+
+    .title { color:#fff; margin-bottom:8px; }
+    .accent { color:#ff8c42; }
+
+    .hud {
+      position:absolute;
+      bottom:12px;
+      left:12px;
+      color:#6affb8;
+      font-size:11px;
+      opacity:0.8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="panel left">
+  <div class="title">Task</div>
+  <div>Large <span class="accent">2D world</span></div>
+  <div>Render only <span class="accent">visible objects</span></div>
+  <div>Smooth <span class="accent">navigation</span></div>
+  <div>No full scene instantiation</div>
+</div>
+
+<div class="panel right">
+  <div class="title">Solution</div>
+  <div>World = <span class="accent">data layer</span></div>
+  <div>Render = <span class="accent">projection</span></div>
+  <div>Spatial grid + culling</div>
+  <div>Object pooling</div>
+</div>
+
+<div class="hud" id="hud"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+
+<script>
+(async () => {
+  const { Application, Container, Sprite, Graphics } = PIXI;
+
+  const rand = (a,b)=>a+Math.random()*(b-a);
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+  const app = new Application();
+  await app.init({
+    resizeTo: window,
+    background: "#050508",
+    antialias: true,
+    resolution: Math.min(2, window.devicePixelRatio || 1)
+  });
+  document.body.appendChild(app.canvas);
+
+  const stage = new Container();
+  app.stage.addChild(stage);
+
+  // --- CONFIG ---
+  const WORLD_SIZE = 100000;
+  const CELL_SIZE = 256;
+  const VIEW_MARGIN = 200;
+
+  // --- CAMERA ---
+  const camera = { x:0, y:0, vx:0, vy:0, w:0, h:0 };
+
+  let dragging = false;
+  let lx = 0, ly = 0;
+
+  app.canvas.addEventListener("pointerdown", e=>{
+    dragging = true;
+    lx = e.clientX;
+    ly = e.clientY;
+  });
+
+  window.addEventListener("pointerup", ()=> dragging = false);
+
+  window.addEventListener("pointermove", e=>{
+    if (!dragging) return;
+    const dx = e.clientX - lx;
+    const dy = e.clientY - ly;
+    camera.vx = -dx * 0.5;
+    camera.vy = -dy * 0.5;
+    lx = e.clientX;
+    ly = e.clientY;
+  });
+
+  // --- WORLD ---
+  const world = [];
+  const grid = new Map();
+
+  const key = (x,y)=>x+"_"+y;
+
+  function insert(o){
+    const cx = Math.floor(o.x / CELL_SIZE);
+    const cy = Math.floor(o.y / CELL_SIZE);
+    const k = key(cx,cy);
+    if (!grid.has(k)) grid.set(k, []);
+    grid.get(k).push(o);
+  }
+
+  for (let i=0;i<WORLD_SIZE;i++){
+    const o = {
+      id:i,
+      x: rand(-5000,5000),
+      y: rand(-5000,5000),
+      vx: rand(-10,10),
+      vy: rand(-10,10)
+    };
+    world.push(o);
+    insert(o);
+  }
+
+  // --- TEXTURE ---
+  const g = new Graphics();
+  g.circle(0,0,3).fill(0xffffff);
+  const tex = app.renderer.generateTexture(g);
+
+  // --- POOL ---
+  const pool = [];
+  const active = new Map();
+
+  function acquire(o){
+    let s = pool.pop();
+    if (!s){
+      s = new Sprite(tex);
+      s.anchor.set(0.5);
+      stage.addChild(s);
+    }
+    s.visible = true;
+    s.x = o.x - camera.x;
+    s.y = o.y - camera.y;
+
+    const speed = Math.hypot(o.vx,o.vy);
+    s.tint = speed > 6 ? 0x66ccff : 0xffffff;
+
+    return s;
+  }
+
+  function release(id){
+    const s = active.get(id);
+    if (!s) return;
+    s.visible = false;
+    pool.push(s);
+    active.delete(id);
+  }
+
+  function query(){
+    const l = camera.x - VIEW_MARGIN;
+    const r = camera.x + camera.w + VIEW_MARGIN;
+    const t = camera.y - VIEW_MARGIN;
+    const b = camera.y + camera.h + VIEW_MARGIN;
+
+    const cx0 = Math.floor(l / CELL_SIZE);
+    const cx1 = Math.floor(r / CELL_SIZE);
+    const cy0 = Math.floor(t / CELL_SIZE);
+    const cy1 = Math.floor(b / CELL_SIZE);
+
+    const set = new Set();
+
+    for (let cx=cx0; cx<=cx1; cx++){
+      for (let cy=cy0; cy<=cy1; cy++){
+        const cell = grid.get(key(cx,cy));
+        if (!cell) continue;
+
+        for (let i=0;i<cell.length;i++){
+          const o = cell[i];
+          if (o.x>=l && o.x<=r && o.y>=t && o.y<=b){
+            set.add(o.id);
+          }
+        }
+      }
+    }
+    return set;
+  }
+
+  const hud = document.getElementById("hud");
+
+  let last = performance.now();
+
+  app.ticker.add(()=>{
+    const now = performance.now();
+    const dt = clamp((now-last)/1000,0,0.05);
+    last = now;
+
+    camera.vx *= 0.9;
+    camera.vy *= 0.9;
+    camera.x += camera.vx;
+    camera.y += camera.vy;
+
+    camera.w = app.screen.width;
+    camera.h = app.screen.height;
+
+    // world sim (lightweight)
+    for (let i=0;i<world.length;i++){
+      const o = world[i];
+      o.x += o.vx * dt;
+      o.y += o.vy * dt;
+      o.vx += (Math.random()-0.5)*2;
+      o.vy += (Math.random()-0.5)*2;
+      o.vx *= 0.99;
+      o.vy *= 0.99;
+    }
+
+    const visible = query();
+
+    for (const [id] of active){
+      if (!visible.has(id)) release(id);
+    }
+
+    for (const id of visible){
+      const o = world[id];
+      let s = active.get(id);
+      if (!s){
+        s = acquire(o);
+        active.set(id,s);
+      } else {
+        s.x = o.x - camera.x;
+        s.y = o.y - camera.y;
+      }
+    }
+
+    const fps = (1/dt).toFixed(1);
+    const ms = (dt*1000).toFixed(1);
+
+    hud.textContent =
+      "FPS: "+fps+" ("+ms+"ms)"+
+      " | Visible: "+active.size+
+      " | Pool: "+pool.length+
+      " | Total: "+WORLD_SIZE;
+  });
+
+})();
+</script>
+
+</body>
+</html>
