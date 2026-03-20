@@ -12,6 +12,8 @@ This folder is a high-performance exploration of rendering large-scale 2D worlds
 
 **Portfolio hub:** [landing-with-art-cards.html](https://vziatkov.github.io/neuro/landing-with-art-cards.html) — the **Сделано** tile links to `woodland/index.html`.
 
+**Field Birth v1 (public short URL):** [../card-field-birth-v1.html](https://vziatkov.github.io/neuro/card-field-birth-v1.html) (stub → full demo). Note: [`NOTE_PUBLIC_FIELD_BIRTH.md`](./NOTE_PUBLIC_FIELD_BIRTH.md).
+
 ---
 
 ## Live demos (deep links)

@@ -13,6 +13,8 @@ An optional sub-app lives at `src/rawGame/` (React-based math game with its own 
 Hidden pages served by the same Vite dev server:
 - `/cognitive-trace-artifact.html` — Baccarat grid + WiFi wave visualization
 - `/cursor-2025.html` — Year in review data dashboard
+- `/card-field-birth-v1.html` — stub → `woodland/card-field-birth-v1.html` (field disturb → coalesce → READY; Pixi CDN). Design notes: `public/woodland/static/CARD_AND_DEMO_STRATEGY_EN_RU.md`, public note: `public/woodland/NOTE_PUBLIC_FIELD_BIRTH.md`
+- **`public/woodland/`** — hub `woodland/index.html`, Matrix `try5a`, brief `try4`, etc. (static HTML; copied to `dist/woodland/` on build; no Rollup entry except the stub above)
 
 ### Development commands
 

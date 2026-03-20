@@ -27,6 +27,7 @@ Static experiments under **`public/woodland/`**: large typed-array fields, Pixi 
 | | |
 |--|--|
 | **Woodland — single entry** | [woodland/index.html](https://vziatkov.github.io/neuro/woodland/index.html) — demos, PDFs, links |
+| **Field Birth v1 (card)** | [card-field-birth-v1.html](https://vziatkov.github.io/neuro/card-field-birth-v1.html) → [woodland/card-field-birth-v1.html](https://vziatkov.github.io/neuro/woodland/card-field-birth-v1.html) · [note](public/woodland/NOTE_PUBLIC_FIELD_BIRTH.md) |
 | **Woodland in SaaS `dist/`** | Build `diff/saas` → `dist/woodland/` is copied next to the storybook (`npm run build` there). Header link **Matrix demos & PDFs** opens it without the neuro dev server. |
 | **Portfolio hub** | [landing-with-art-cards.html](https://vziatkov.github.io/neuro/landing-with-art-cards.html) — art cards (tile opens the Woodland hub) |
 | **Manifest / architecture** | [public/woodland/README.md](public/woodland/README.md) |

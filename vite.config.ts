@@ -29,6 +29,8 @@ export default defineConfig({
         'observatory-v2': resolve(__dirname, 'observatory-v2.html'),
         'rendering-approach-card': resolve(__dirname, 'rendering-approach-card.html'),
         'rendering-approach-card-simpler': resolve(__dirname, 'rendering-approach-card-simpler.html'),
+        /** Short public URL → redirects to `public/woodland/card-field-birth-v1.html` (also copied to dist as-is). */
+        'card-field-birth-v1': resolve(__dirname, 'card-field-birth-v1.html'),
         'renderingAppRead': resolve(__dirname, 'renderingAppRead.html'),
         'forest-story': resolve(__dirname, 'forest-story.html'),
         // preview (12).html — legacy path; preview12.html — same page, ASCII URL (deployed to dist).
