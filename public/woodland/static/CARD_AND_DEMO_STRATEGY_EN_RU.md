@@ -291,13 +291,82 @@ state = f(seed, t, particleId)
 
 ---
 
-## Связь двух частей (кратко / short bridge)
+# Part C — Architecture: Grid + Pulsar + micro-contexts
+
+> This is what makes the system **fractal** and deep while staying **governable**: not “a pile of particles,” but a **hierarchy** — global scaffold, chaotic source, local laws.
+
+## English
+
+### 1. Global level — the grid & outer context
+
+- **Grid:** The scene **scaffold**. Each cell **Tile\(_{i,j}\)** is not just a square — it is a **container** with its own **outer context** (rule bundle).  
+- **Tile rules (examples):**  
+  - *Tile\[0,0\]:* gravity bias left; particles live longer.  
+  - *Tile\[0,1\]:* EM-style swirl; short lifetime; spiral bias.  
+- **Visual:** The grid may be drawn (thin green lines) or **invisible**, but its **physical influence** is always on.
+
+### 2. Energy source — the Pulsar (emitter)
+
+- **Role:** A chaotic, intense “storm” of **base** particles (`dust` / `tracer` class).  
+- **Behavior:** It **rains** particles onto the grid like rain on a chessboard. It does **not** know tile rules — it only injects **entropy**.  
+- **Visual:** A bright **pulsing** point or zone; splashes / sprays outward.
+
+### 3. Local level — micro-contexts (inner particles)
+
+- **Interaction:** When a base particle from the Pulsar **enters** Tile\(_{i,j}\), it **immediately** follows that tile’s rules.  
+- **Micro-ensemble:** Inside each tile, a **unique** local population emerges: born from Pulsar “rain,” governed by **local** laws.
+
+### Card workflow (narrative)
+
+1. **Rest** — Grid visible (or implied). Pulsar **off**. Tile micro-contexts **empty**.  
+2. **Activation (Pulsar start)** — Chaotic emission; particles **cross** the grid.  
+3. **Fill** — Particles land in tiles; e.g. Tile\[0,0\] → vortex; Tile\[0,1\] → line / spiral.  
+4. **Outcome (the form)** — Chaos resolves into a **pattern** dictated by grid geometry: **form from noise**. Pulsar supplies **noise**; grid supplies **shape**.
+
+**Implementation hint:** `tileId = floor(x / tileW), floor(y / tileH)` → lookup **rule vector** (forces, lifetime, spawn modifiers). Pulsar only sets initial `(x,y,v, type)`.
+
+---
+
+## Русский
+
+### 1. Глобальный уровень — сетка и внешний контекст
+
+- **Сетка:** **Каркас** сцены. Каждая ячейка **Tile\(_{i,j}\)** — не просто квадрат, а **контейнер** с уникальным **внешним контекстом** (набор правил).  
+- **Примеры правил плитки:**  
+  - *Tile\[0,0\]:* гравитация тянет влево; частицы живут дольше.  
+  - *Tile\[0,1\]:* поле закручивает в спираль; жизнь короче.  
+- **Визуал:** Сетка может быть видна (тонкие зелёные линии) или скрыта, но **влияние** на физику постоянно.
+
+### 2. Источник энергии — Пульсар (эмиттер)
+
+- **Роль:** Хаотичный интенсивный «шторм» базовых частиц (`dust` / `tracer`).  
+- **Поведение:** «Накидывает» частицы на грид, как дождь на доску. **Не знает** правил плиток — только создаёт **энтропию**.  
+- **Визуал:** Яркая **пульсирующая** точка или зона; брызги / разлёт.
+
+### 3. Локальный уровень — микро-контексты
+
+- **Взаимодействие:** Частица от Пульсара, попав в зону Tile\(_{i,j}\), **мгновенно** подчиняется правилам этой плитки.  
+- **Микро-ансамбль:** Внутри плитки вырастает **свой** набор частиц: порождён «дождём» Пульсара, живёт по **локальным** законам.
+
+### Сценарий карточки
+
+1. **Покой** — сетка видна (или подразумевается). Пульсар **выключен**. Плитки **пусты**.  
+2. **Активация** — Пульсар даёт хаотичный выброс; частицы **пересекают** грид.  
+3. **Заполнение** — Частицы попадают в плитки; разные плитки → разные паттерны (вихрь, линия, спираль).  
+4. **Результат** — Вместо хаоса — **узор**, продиктованный геометрией сетки: **форма из шума**. Пульсар = шум, сетка = форма.
+
+**Подсказка к коду:** `tileId` из `floor(x/tileW)`, `floor(y/tileH)` → таблица правил (силы, lifetime, модификаторы спавна). Пульсар задаёт только стартовые `(x,y,v,type)`.
+
+---
+
+## Связь частей (A / B / C — кратко / short bridge)
 
 | | English | Русский |
 | :--- | :--- | :--- |
 | **Card (Part A)** | Rich **presentation layer**: soup video, warped grid, particle burst, gyro — “Higgs” **metaphor**. | Богатый **визуальный слой**: суп, сетка, вспышка частицы, гиро — **метафора** поля. |
 | **Demo (Part B)** | **Narrative spine** for code: same emotional arc (noise → form → READY → dissolve) with **minimal** UI. | **Сюжетный каркас** для кода: тот же арка (шум → форма → READY → раствор), **минимум** интерфейса. |
-| **Together** | Part A can skin L1–L4; Part B defines **what must happen** in time. | Часть A задаёт **оболочку** слоёв; часть B — **что обязано произойти** во времени. |
+| **Architecture (Part C)** | **Fractal logic:** global **grid** (outer rules per tile) + **Pulsar** (entropy source) + **micro-contexts** (local ensembles). Noise meets scaffold → emergent form. | **Фрактальная логика:** глобальная **сетка** + **Пульсар** (энтропия) + **микро-контексты** плиток. Шум + каркас → форма. |
+| **Together** | A = visuals; B = time loop; C = **simulation shape** (how to code rules without spaghetti). | A = оболочка; B = время; C = **форма симуляции** (как кодить правила иерархично). |
 
 ---
 
@@ -306,8 +375,9 @@ state = f(seed, t, particleId)
 - **Gaussian \(Z_{\text{offset}}\)** — fixed reference for grid warp shaders (no random deformation).  
 - **L0–L4 + Screen / Add** — blend stack is explicit; less compositing chaos.  
 - **Minimal demo (Part B)** — noise → wave → assembly → **READY** in 3–5s; engine depth stays internal.  
-- **v1.1 adds:** color HEX lock, FPS/particle budget, **gyro must ship** for the card wow.
+- **v1.1:** color HEX lock, FPS/particle budget, **gyro must ship** for the card wow.  
+- **v1.2 (Part C):** **Grid + Pulsar + micro-contexts** — fractal hierarchy for code: global tile rules, chaotic emitter, local ensembles.
 
 ---
 
-*Version 1.1 · local Cursor context · `public/woodland/static/`*
+*Version 1.2 · local Cursor context · `public/woodland/static/`*
