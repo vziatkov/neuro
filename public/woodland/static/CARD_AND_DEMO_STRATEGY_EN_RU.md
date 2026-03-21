@@ -1,6 +1,6 @@
 # Woodland / Matrix — Design bundle (bilingual)
 
-**Cursor / local context:** unified blueprint for the **Higgs-field card** (visual + physics + stack) and the **Matrix v4.3 minimal demo** (one readable loop).  
+**Cursor / local context:** unified blueprint for the **Higgs-field card** (visual + physics + stack) and the **Matrix v4.4 minimal demo** (one readable loop; **phase-centered** particle model — Part E).  
 **Файл:** `public/woodland/static/CARD_AND_DEMO_STRATEGY_EN_RU.md`
 
 ---
@@ -406,6 +406,8 @@ state = f(seed, t, particleId)
 | **Architecture (Part C)** | **Fractal logic:** global **grid** (outer rules per tile) + **Pulsar** (entropy source) + **micro-contexts** (local ensembles). Noise meets scaffold → emergent form. | **Фрактальная логика:** глобальная **сетка** + **Пульсар** (энтропия) + **микро-контексты** плиток. Шум + каркас → форма. |
 | **Emergence (Part A §3)** | **Observer’s breath:** tile **resonance** → macro-beat; slow **scale + bloom** (~4–6 s); gyro/tap **arrhythmia**; three **time scales** (micro / meso / macro). | **Дыхание наблюдателя:** резонанс плиток → макро-пульс; медленное дыхание слоёв; три шкалы времени; наблюдатель в контуре. |
 | **Together** | A = visuals + **breath**; B = time loop; C = **simulation shape** (how to code rules without spaghetti). | A = оболочка + **дыхание**; B = время; C = **форма симуляции** (как кодить правила иерархично). |
+| **Bridge (Part D)** | **Inter-grid** future: **non-traceable** cross-grid transfer; singleton grids today; **opaque** boundary payloads — no global particle passport. | **Мост:** перенос **состояния** без тождества частиц; синглтон сейчас; порты на вырост. |
+| **Phase v4.4 (Part E)** | **Particle = phase + role**; `state = f(seed, t + phaseOffset, role)`; derived: position, velocity, alpha, size; **orchestrate phase**, not objects. | **Частица = фаза + роль**; нет «паспорта»; всё — **раскрытие из выравнивания фазы**. |
 
 ---
 
@@ -425,6 +427,131 @@ state = f(seed, t, particleId)
 
 ---
 
+# Part D — Inter-Grid Bridge (multiverse scalability — spec only)
+
+> **Format:** technical depth in **English**; vibe and metaphor in **Русский**.
+
+## English
+
+### D.1 Singleton grid (current scope)
+
+We ship **one** `Grid` / `HiggsField` instance as a **self-contained universe**: tiles, Pulsar (later), resonance, observer breath. That is the **stable baseline** — no multi-world runtime required for the card MVP.
+
+### D.2 The Bridge (future)
+
+When scaling to **multiple grids** (parallel worlds, chapters, or split simulations), **Bridges** appear: **short, specialized transition zones** between grid singletons. A Bridge is **not** a large shared buffer; it is a **narrow lens** with an explicit I/O contract.
+
+### D.3 Non-traceable transmission (core rule)
+
+Crossing Grid A → Grid B through a Bridge:
+
+| Rule | Meaning |
+| :--- | :--- |
+| **No cross-grid identity** | You **cannot** (and **should not**) assert that “particle *i* in A” is the **same** entity as “particle *j* in B”. Global particle IDs **do not** survive the crossing as stable handles. |
+| **State transfer, not passport** | What crosses is **information**: energy, momentum, phase, optional **type** tag — carried as an **opaque payload** under a **protocol**, not as a persistent object reference. |
+| **Observer sees process** | The user sees **transfer** — continuity of **field dynamics** — not a traceable “passport” of an individual token. |
+
+**Newton’s cradle analogy:** impulse propagates through the chain; the physical balls are not meaningfully “the same” token across the cradle as an **identity-carrying** entity — only the **signal** is conserved in a useful sense.
+
+### D.4 Coding contract (for Cursor — today)
+
+- Write the **singleton** grid **cleanly**: simulation state is **owned** by one runtime instance.
+- Particle indices are **local** to that instance (`localIndex` / pool slot). If you need a key, use **`(gridInstanceId, localIndex)`** only **inside** tooling — never assume that key maps across grids without an explicit Bridge remap.
+- **Reserve** boundary affordances (names only): e.g. `emitAlongEdge`, `absorbAlongEdge`, **opaque** structs for what leaves/enters — **no** hard dependency on global UUIDs for particles.
+- **Do not implement** Bridge simulation until explicitly scoped; **do** avoid architectural choices that **forbid** ports later (e.g. don’t bake “one true global particle table” for the whole multiverse).
+
+---
+
+## Русский
+
+### Межсеточный мост (The Inter-Grid Bridge) — задел в «память»
+
+1. **Синглтон-сетка (сейчас):** мы строим **один** грид как **самодостаточную вселенную** — база для частиц, пульсаров, резонансов. Это и есть стабильный мир карточки.
+
+2. **Сущность моста (потом):** когда появятся **другие** гриды, между ними возникает **Мост** — короткая, но **особая** зона перехода: не склад общих данных, а **узкая линза**.
+
+3. **Принцип неопределённости переноса:** при переходе через мост **нельзя** (и **не нужно**) отслеживать, что «частица А» из грида 1 — **та же самая** сущность, что «частица B» в гриде 2. Есть **передача энергии/состояния**, а **индивидуальность** как «паспорт» стирается. Наблюдатель видит **процесс** и **динамику поля**, а не досье на частицу. Близкая картинка — **колыбель Ньютона**: импульс передаётся, носители остаются **в своих** системах или становятся **неразличимы** в смысле тождества.
+
+4. **Задел:** код пишем как **чистый синглтон**; у частиц **нет** жёстких глобальных ID, которые **невозможно** передать через мост. Держим в голове **порты ввода-вывода** на краях грида — как **чёрный ход** для будущих соединений, без реализации моста в MVP.
+
+**Зафиксировано:** карточка — **изолированный стабильный мир**; архитектура не закрывает дверь на **мультиверс** и **миграции без истории**, с сохранением **динамики поля**.
+
+---
+
+# Part E — Matrix v4.4: Phase-Centered Particle System
+
+> **Core insight:** **Particle = phase + role** — not position, not identity, not object. **Phase is the heart**; everything else is a **projection**.
+
+## English
+
+### E.1 Deterministic core
+
+\[
+\text{state} = f(\text{seed},\; t + \text{phaseOffset},\; \text{role})
+\]
+
+| Symbol | Role |
+| :--- | :--- |
+| `seed` | World consistency (reproducible field) |
+| `t` | Global time, typically normalized \( \in [0,1] \) on the macro loop |
+| `phaseOffset` | **Individuality** without persistent ID |
+| `role` | Behavior pattern: e.g. core / dust / tracer / flare |
+
+### E.2 Minimal particle record (authoritative)
+
+Stored or stable inputs:
+
+- `phaseOffset`
+- `role`
+- `energy`
+
+**Derived each frame** (no duplicate state store):
+
+- position, velocity, alpha, size — all from **phase + role curves**
+
+→ Aligns with **Part D**: no cross-grid passport; pool slots are **implementation**, not ontology.
+
+### E.3 Local phase and lifecycle
+
+\[
+\text{localPhase} = t + \text{phaseOffset}
+\]
+
+- **Phase** drives lifecycle: birth → form → **READY** → dissolve.  
+- **Role** warps the response curve (same phase axis, different “instrumentation”).
+
+### E.4 System layers (stack)
+
+| Layer | Name | Job |
+| :--- | :--- | :--- |
+| 1 | **Pulsar** | Entropy source — **phase-distributed** excitations |
+| 2 | **Grid** | Rules — maps phase into **structure** (tiles, resonance) |
+| 3 | **Particles** | Medium — behavior from **phase + role** only |
+| 4 | **Breath** | Emergence — global resonance when phases **synchronize** |
+
+### E.5 Visual / implementation truth
+
+- We do **not** “spawn then move” in the OO sense: we **evaluate** visibility and motion from **aligned phase**.  
+- **One** primary time axis (`t`); **one** evaluation family (`f`); avoid parallel ad-hoc timelines.
+
+### E.6 Architectural rules (hard)
+
+- No hard global particle IDs (see Part D).  
+- No duplicated authoritative state (derive or die).  
+- No layered hacks that hide a second clock.
+
+### E.7 Definition of done (user-visible arc)
+
+All **phase-driven**: noise → activation → form → stability (**READY**) → dissolution.
+
+---
+
+## Русский (коротко)
+
+**Суть:** мы не «анимируем объекты» — мы **дирижируем фазой**. Визуал — это **раскрытие** при совпадении фаз, не склад спрайтов с историей. Это тот же **тёплый MVP**, что и завтрак: мало ингредиентов, одна ось времени, всё остальное — вкус и тайминг.
+
+---
+
 ## Review snapshot (why this doc works as a “project bible”)
 
 - **Gaussian \(Z_{\text{offset}}\)** — fixed reference for grid warp shaders (no random deformation).  
@@ -433,8 +560,10 @@ state = f(seed, t, particleId)
 - **v1.1:** color HEX lock, FPS/particle budget, **gyro must ship** for the card wow.  
 - **v1.2 (Part C):** **Grid + Pulsar + micro-contexts** — fractal hierarchy for code: global tile rules, chaotic emitter, local ensembles.  
 - **v1.3:** **Observer’s breath** — emergence, resonance trigger, macro rhythm (~4–6 s), three temporal scales, observer feedback (gyro / tap).  
-- **v1.4:** **Implementation order** — B → A → C (grid scaffold before Pulsar→tile).
+- **v1.4:** **Implementation order** — B → A → C (grid scaffold before Pulsar→tile).  
+- **v1.5 (Part D):** **Inter-Grid Bridge** — non-traceable transmission; singleton-first code; boundary ports for future scaling.  
+- **v1.6 (Part E):** **Matrix v4.4** — phase-centered particles; `state = f(seed, t + phaseOffset, role)`; layers Pulsar → Grid → Particles → Breath; DoD arc purely phase-driven.
 
 ---
 
-*Version 1.4 · local Cursor context · `public/woodland/static/`*
+*Version 1.6 · local Cursor context · `public/woodland/static/`*
