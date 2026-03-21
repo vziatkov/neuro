@@ -52,6 +52,25 @@ Z_{\text{offset}} = A \cdot e^{-\frac{(x-x_0)^2 + (y-y_0)^2}{2\sigma^2}}
 **Parallax (gyroscope) — must ship**  
 **Not optional** for this card: offset **L1 / L2 / L3** with different coefficients on device tilt → “aquarium” depth. This is the main **wow** on a physical card; keep in scope even if the web MVP ships flat first.
 
+### 3. The Observer’s breath (emergence)
+
+This turns a “particle system” into something **alive**: **emergent behavior** — macro-structure from micro-events.
+
+- **Trigger (resonance):** When **neighboring tiles** host the right particle mix (e.g. critical “boson” / “quark” presence), their **local rhythms begin to synchronize**. At **100% sync**, a **macro-beat** engages.  
+- **Long-term pulse:** All layers **L1–L3** (and the grid) breathe together: smooth **scale** \(1.0 \leftrightarrow \sim 1.05\) and **bloom / brightness** modulation. **Timing:** slow cycle — **~4–6 s** per inhale+exhale (roughly **0.1–0.2 Hz**). This **contrasts** with the Pulsar’s fast splatter (ms-scale).  
+- **Observer coupling:** Gyro tilt or **tap** can briefly **detune** the rhythm (arrhythmia), then **recover** — the observer is **inside** the feedback loop, not outside.  
+- **Metaphor:** The field “notices” stable matter; **READY** (Part B) can evolve from a one-shot label into a **sustained** living pulse — resonance as recognition.
+
+**Implementation hints:** drive breath from a single `macroPhase` ∈ \([0,1]\) (sine ease); multiply root container scale; one bloom uniform; sync only after `resonanceMeter >= 1` from tile state.
+
+### Three temporal scales (clocks)
+
+| Scale | Typical timing | Role |
+| :--- | :--- | :--- |
+| **Micro** | ms | Pulsar splashes, collisions |
+| **Meso** | ~1 s | Particle life inside a tile; tile rule updates |
+| **Macro** | 4–6 s | Observer’s breath; global readiness / “organism” feel |
+
 ### Animation timeline (“Ready” sequence)
 
 1. **Idle** — only L1 subtly pulses.  
@@ -109,6 +128,25 @@ Z_{\text{offset}} = A \cdot e^{-\frac{(x-x_0)^2 + (y-y_0)^2}{2\sigma^2}}
 
 **Параллакс (гироскоп) — обязателен**  
 Для этой карточки **не выкидывать**: разные коэффициенты для **L1 / L2 / L3** при наклоне — главный **wow** у физической карточки; веб-MVP может быть плоским первым шагом, но гиро остаётся в продуктовом скоупе.
+
+### 3. Дыхание наблюдателя (emergence / эмерджентность)
+
+Это не просто анимация, а **резонанс**: из хаоса микро-событий рождается **макро-структура** — система частиц становится «живым организмом».
+
+- **Условие (резонанс):** В **соседних плитках** при определённом наборе типов частиц (например, критическая масса «бозонов» / «кварков») локальные ритмы **синхронизируются**. При **100%** синхронизации включается **макро-такт**.  
+- **Долгий пульс:** Слои **L1–L3** и грид **дышат** вместе: плавный **масштаб** \(1.0 \leftrightarrow \sim 1.05\) и модуляция **bloom / яркости**. **Тайминг:** **~4–6 с** на цикл «вдох+выдох» (**~0.1–0.2 Гц**). Контраст с быстрой суетой Пульсара (миллисекунды).  
+- **Связь с наблюдателем:** Наклон гироскопа или **тап** кратко **сбивают** ритм (аритмия), затем ритм **восстанавливается** — наблюдатель **внутри** петли обратной связи.  
+- **Метафора:** Поле как бы «узнаёт» стабильную материю; **READY** (часть B) может перейти из разового текста в **постоянный** живой пульс.
+
+**К реализации:** один `macroPhase` на сцену; масштаб корня; один uniform для bloom; «дыхание» включается при `resonanceMeter >= 1` из состояния плиток.
+
+### Три временные шкалы
+
+| Шкала | Порядок | Роль |
+| :--- | :--- | :--- |
+| **Микро** | мс | Брызги Пульсара, столкновения |
+| **Мезо** | ~сек | Жизнь частицы в плитке; смена правил плитки |
+| **Макро** | 4–6 с | Дыхание наблюдателя; глобальная «готовность» |
 
 ### Таймлайн анимации («Ready»)
 
@@ -366,7 +404,8 @@ state = f(seed, t, particleId)
 | **Card (Part A)** | Rich **presentation layer**: soup video, warped grid, particle burst, gyro — “Higgs” **metaphor**. | Богатый **визуальный слой**: суп, сетка, вспышка частицы, гиро — **метафора** поля. |
 | **Demo (Part B)** | **Narrative spine** for code: same emotional arc (noise → form → READY → dissolve) with **minimal** UI. | **Сюжетный каркас** для кода: тот же арка (шум → форма → READY → раствор), **минимум** интерфейса. |
 | **Architecture (Part C)** | **Fractal logic:** global **grid** (outer rules per tile) + **Pulsar** (entropy source) + **micro-contexts** (local ensembles). Noise meets scaffold → emergent form. | **Фрактальная логика:** глобальная **сетка** + **Пульсар** (энтропия) + **микро-контексты** плиток. Шум + каркас → форма. |
-| **Together** | A = visuals; B = time loop; C = **simulation shape** (how to code rules without spaghetti). | A = оболочка; B = время; C = **форма симуляции** (как кодить правила иерархично). |
+| **Emergence (Part A §3)** | **Observer’s breath:** tile **resonance** → macro-beat; slow **scale + bloom** (~4–6 s); gyro/tap **arrhythmia**; three **time scales** (micro / meso / macro). | **Дыхание наблюдателя:** резонанс плиток → макро-пульс; медленное дыхание слоёв; три шкалы времени; наблюдатель в контуре. |
+| **Together** | A = visuals + **breath**; B = time loop; C = **simulation shape** (how to code rules without spaghetti). | A = оболочка + **дыхание**; B = время; C = **форма симуляции** (как кодить правила иерархично). |
 
 ---
 
@@ -376,8 +415,9 @@ state = f(seed, t, particleId)
 - **L0–L4 + Screen / Add** — blend stack is explicit; less compositing chaos.  
 - **Minimal demo (Part B)** — noise → wave → assembly → **READY** in 3–5s; engine depth stays internal.  
 - **v1.1:** color HEX lock, FPS/particle budget, **gyro must ship** for the card wow.  
-- **v1.2 (Part C):** **Grid + Pulsar + micro-contexts** — fractal hierarchy for code: global tile rules, chaotic emitter, local ensembles.
+- **v1.2 (Part C):** **Grid + Pulsar + micro-contexts** — fractal hierarchy for code: global tile rules, chaotic emitter, local ensembles.  
+- **v1.3:** **Observer’s breath** — emergence, resonance trigger, macro rhythm (~4–6 s), three temporal scales, observer feedback (gyro / tap).
 
 ---
 
-*Version 1.2 · local Cursor context · `public/woodland/static/`*
+*Version 1.3 · local Cursor context · `public/woodland/static/`*
