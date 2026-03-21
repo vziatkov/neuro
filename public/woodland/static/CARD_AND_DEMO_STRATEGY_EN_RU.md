@@ -409,6 +409,22 @@ state = f(seed, t, particleId)
 
 ---
 
+## Implementation order (dependency stack — for Cursor)
+
+**Principle:** hard geometry **(L2 grid)** → soft dynamics **(particles / Pulsar)** → emergent state **(breath / resonance)**. Do not invert.
+
+| Step | What | First in repo? |
+| :--- | :--- | :--- |
+| **B** | **HTML + Pixi scaffold:** `CONFIG`, tile array (bounds + `resonanceMeter`), `HiggsField` / uniforms (`uTime`, `uMacroPhase`, `uResonance`, `uSpread`), grid drawn with **Gaussian warp** (CPU mesh first is OK). | **Yes — ship this before heavy particle logic.** |
+| **A** | **GLSL vertex displacement** for the same Gaussian on a **Mesh** (move warp off CPU when stable). | After B works visually. |
+| **C** | **Pulsar → tile:** particle `tileId`, rules per tile, resonance sync across neighbors. | After grid + uniforms are fixed. |
+
+**Answer to “A vs B vs C first?”:** **B** lands in local context first (one file, one loop). **A** is a drop-in for the grid pass. **C** is the simulation layer on top.
+
+**Русский:** Порядок **жёсткая геометрия (сетка) → мягкая динамика (частицы) → эмерджентность (дыхание)**. Сначала **B** — скелет в `card-field-birth-v2.html` (тайлы, `HiggsField`, гаусс на CPU, uniforms). Потом **A** — GLSL для Mesh. Потом **C** — Пульсар и `tileId`.
+
+---
+
 ## Review snapshot (why this doc works as a “project bible”)
 
 - **Gaussian \(Z_{\text{offset}}\)** — fixed reference for grid warp shaders (no random deformation).  
@@ -416,8 +432,9 @@ state = f(seed, t, particleId)
 - **Minimal demo (Part B)** — noise → wave → assembly → **READY** in 3–5s; engine depth stays internal.  
 - **v1.1:** color HEX lock, FPS/particle budget, **gyro must ship** for the card wow.  
 - **v1.2 (Part C):** **Grid + Pulsar + micro-contexts** — fractal hierarchy for code: global tile rules, chaotic emitter, local ensembles.  
-- **v1.3:** **Observer’s breath** — emergence, resonance trigger, macro rhythm (~4–6 s), three temporal scales, observer feedback (gyro / tap).
+- **v1.3:** **Observer’s breath** — emergence, resonance trigger, macro rhythm (~4–6 s), three temporal scales, observer feedback (gyro / tap).  
+- **v1.4:** **Implementation order** — B → A → C (grid scaffold before Pulsar→tile).
 
 ---
 
-*Version 1.3 · local Cursor context · `public/woodland/static/`*
+*Version 1.4 · local Cursor context · `public/woodland/static/`*

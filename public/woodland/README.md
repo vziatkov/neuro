@@ -6,7 +6,7 @@ This folder is a high-performance exploration of rendering large-scale 2D worlds
 
 ## Entry point
 
-**Open everything from one page:** [`index.html`](./index.html) — live demos (`try5a`, [`card-field-birth-v1`](./card-field-birth-v1.html), `try4`, `try5`, legacy preview), PDFs, links to this README and the portfolio.
+**Open everything from one page:** [`index.html`](./index.html) — live demos (`try5a`, [`card-field-birth-v1`](./card-field-birth-v1.html), [`card-field-birth-v2`](./card-field-birth-v2.html), `try4`, `try5`, legacy preview), PDFs, links to this README and the portfolio.
 
 **Bundled with Woodland SaaS:** `npm run build` in `diff/saas` emits **`dist/woodland/`** (copy of this folder). Deploy `dist/` and open `woodland/index.html` beside the storybook — no neuro dev server.
 
@@ -22,6 +22,7 @@ This folder is a high-performance exploration of rendering large-scale 2D worlds
 |--------|------|------|
 | **v4.3 — Neural field** | [`try5a.html`](./try5a.html) | 100k logical points in `Float32Array`, **12k** animated sprites (fireflies), cursor “gravity”, pan / zoom-to-mouse, matrix HUD |
 | **Field birth v1 (card)** | [`card-field-birth-v1.html`](./card-field-birth-v1.html) | Disturb field → coalesce core → **READY** → dissolve; phased loop, additive batch; design: [`static/CARD_AND_DEMO_STRATEGY_EN_RU.md`](./static/CARD_AND_DEMO_STRATEGY_EN_RU.md) |
+| **Field birth v2 (L2)** | [`card-field-birth-v2.html`](./card-field-birth-v2.html) | **Grid foundation:** tiles, `HiggsField`, Gaussian warp (CPU), uniforms (`uTime`, `uMacroPhase`, `uResonance`, `uSpread`); GLSL stub in file; impl order **B→A→C** in doc |
 | **Full brief viewer** | [`try4.html`](./try4.html) | Take-home brief as a spatial document: spatial hash, viewport culling, glyph pooling, phased narrative |
 | **Sketch** | [`try5.html`](./try5.html) | Worker / mesh / LOD notes (draft) |
 | **Legacy** | [`preview (14).html`](./preview%20(14).html) | Early comparison build |
