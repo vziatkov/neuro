@@ -157,6 +157,14 @@
         }
         .back{display:inline-block;margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s}
         .back:hover{color:rgba(255,95,31,0.8)}
+        .presence-pill{display:none;font-size:8px;color:rgba(255,210,150,0.95);letter-spacing:1.5px;text-transform:uppercase;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,200,120,0.4);background:rgba(255,140,66,0.1);margin-top:10px;box-shadow:0 0 18px rgba(255,140,66,0.15)}
+        .presence-pill.show{display:inline-block}
+        .presence-bar{font-size:9px;color:#555;text-align:center;margin-top:10px;max-width:560px;line-height:1.5}
+        .presence-bar a{color:rgba(255,140,66,0.85);text-decoration:none;border-bottom:1px solid rgba(255,140,66,0.25)}
+        .presence-bar a:hover{color:#ffb366}
+        body.dice-paid .chat-msg.self{box-shadow:0 0 0 1px rgba(255,200,120,0.4),0 0 22px rgba(255,140,66,0.22)}
+        body.dice-paid .chat-messages-side .chat-msg.self{box-shadow:0 0 0 1px rgba(255,200,120,0.35),0 0 18px rgba(255,140,66,0.18)}
+        body.dice-paid #dice3dCanvas{border-color:rgba(255,200,120,0.5);box-shadow:0 0 28px rgba(255,140,66,0.25),inset 0 0 12px rgba(255,140,66,0.06)}
     </style>
 </head>
 <body>
@@ -164,6 +172,8 @@
     <div class="header">
         <h1>Dice Room</h1>
         <div class="sub">Same link = same sequence of rolls · guess 1–6 each round · first to 5 points wins</div>
+        <div class="presence-pill" id="presencePill">Presence</div>
+        <div class="presence-bar" id="presenceBar" hidden><a id="presenceStripe" href="#" target="_blank" rel="noopener noreferrer">Unlock presence</a> — glow on your dice &amp; chat. Set Stripe success URL to this page with <code style="color:#666">?paid=1</code> + room hash.</div>
     </div>
 
     <div class="page-wrap">
@@ -296,6 +306,19 @@
     })();
 
     (function(){
+        var STRIPE_PRESENCE_LINK='https://buy.stripe.com/test_REPLACE';
+        try{
+            var paidParams=new URLSearchParams(location.search);
+            var pv=paidParams.get('paid');
+            if(pv==='1'||pv==='true'||pv==='yes'){
+                localStorage.setItem('diceRoomPresence','1');
+                paidParams.delete('paid');
+                var qs=paidParams.toString();
+                history.replaceState({},'',location.pathname+(qs?'?'+qs:'')+location.hash);
+            }
+        }catch(e){}
+        var presenceOn=localStorage.getItem('diceRoomPresence')==='1';
+
         function mkRng(seed){
             var s=new Uint32Array(4);
             s[0]=seed^0x9E3779B9;s[1]=seed^0x6C078965;s[2]=seed^0xBB67AE85;s[3]=seed^0x3C6EF372;
@@ -317,6 +340,24 @@
         }
         document.getElementById('roomId').textContent=roomSeed.toString(36).toUpperCase();
         document.getElementById('roomSeedDisplay').textContent='Seed: '+roomSeed.toString(36).toUpperCase();
+
+        (function initPresenceUi(){
+            var pill=document.getElementById('presencePill');
+            var bar=document.getElementById('presenceBar');
+            var a=document.getElementById('presenceStripe');
+            if(a){
+                a.href=STRIPE_PRESENCE_LINK;
+                if(!presenceOn)a.title='In Stripe: set success URL to '+location.origin+location.pathname+'?paid=1'+location.hash;
+            }
+            if(presenceOn){
+                document.body.classList.add('dice-paid');
+                if(pill)pill.classList.add('show');
+                if(bar)bar.hidden=true;
+            }else{
+                if(pill)pill.classList.remove('show');
+                if(bar)bar.hidden=false;
+            }
+        })();
 
         document.getElementById('shareBtn').addEventListener('click',function(){
             var url=location.href;
