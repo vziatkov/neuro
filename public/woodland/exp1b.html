@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>NEURO — FIELD v2.0 (Structure)</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; background: #010102; overflow: hidden; font-family: 'JetBrains Mono', monospace; cursor: crosshair; }
+        #ui { position: fixed; top: 20px; left: 20px; color: rgba(255,140,66,0.6); font-size: 10px; pointer-events: none; z-index: 10; line-height: 1.5; }
+        #center-msg { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            color: #fff; font-size: 14px; opacity: 0; transition: all 1.5s ease; 
+            letter-spacing: 10px; pointer-events: none; text-align: center;
+        }
+        #center-msg.active { opacity: 0.8; letter-spacing: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    ID: NEURO_OBSERVATORY_V2<br>
+    STATUS: <span id="status">SCANNING_VACUUM</span><br>
+    NODES_DETECTED: <span id="node-count">0</span>
+</div>
+
+<div id="center-msg">SELF-OBSERVATION INITIATED</div>
+
+<script src="https://unpkg.com/pixi.js@8.x/dist/pixi.min.js"></script>
+
+<script>
+(async () => {
+    const app = new PIXI.Application();
+    await app.init({ 
+        resizeTo: window, 
+        backgroundColor: 0x010102, 
+        antialias: true,
+        resolution: window.devicePixelRatio || 1
+    });
+    document.body.appendChild(app.canvas);
+
+    const mainLayer = new PIXI.Container();
+    app.stage.addChild(mainLayer);
+
+    const lineGraphics = new PIXI.Graphics();
+    const nodeGraphics = new PIXI.Graphics();
+    mainLayer.addChild(lineGraphics);
+    mainLayer.addChild(nodeGraphics);
+
+    let points = [];
+    let nodes = [];
+    const maxPoints = 60;
+    let isActivated = false;
+
+    window.addEventListener('pointermove', (e) => {
+        const newPoint = { x: e.clientX, y: e.clientY, alpha: 1 };
+        
+        // Логика создания узлов (Nodes)
+        // Если новая точка проходит близко к старым "хвостам" — рождается узел структуры
+        points.forEach(p => {
+            const dx = p.x - e.clientX;
+            const dy = p.y - e.clientY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist < 30 && Math.random() < 0.08) { // Вероятность кристаллизации
+                nodes.push({ 
+                    x: p.x + (Math.random()-0.5)*10, 
+                    y: p.y + (Math.random()-0.5)*10, 
+                    life: 1,
+                    size: Math.random() * 2 + 1
+                });
+            }
+        });
+
+        points.push(newPoint);
+        if (points.length > maxPoints) points.shift();
+        
+        document.getElementById('node-count').innerText = nodes.length;
+    });
+
+    app.ticker.add(() => {
+        lineGraphics.clear();
+        nodeGraphics.clear();
+
+        // 1. Рисуем траектории (текущее движение)
+        if (points.length > 1) {
+            for (let i = 1; i < points.length; i++) {
+                const p = points[i];
+                p.alpha *= 0.95; // Хвост затухает быстро
+                lineGraphics.moveTo(points[i-1].x, points[i-1].y);
+                lineGraphics.lineTo(p.x, p.y);
+                lineGraphics.stroke({ width: 1, color: 0xffffff, alpha: p.alpha * 0.3 });
+            }
+        }
+
+        // 2. Рисуем Узлы (Память системы)
+        nodes.forEach((n, index) => {
+            n.life *= 0.997; // Узлы живут ОЧЕНЬ долго
+            
+            // Вспышка при рождении
+            const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.2;
+            
+            nodeGraphics.circle(n.x, n.y, n.size * pulse);
+            nodeGraphics.fill({ color: 0xff8c42, alpha: n.life * 0.8 });
+            
+            // Добавляем легкое свечение вокруг узла
+            if (n.life > 0.8) {
+                nodeGraphics.circle(n.x, n.y, n.size * 4).fill({ color: 0xff8c42, alpha: n.life * 0.1 });
+            }
+        });
+
+        // Очистка мертвых узлов
+        nodes = nodes.filter(n => n.life > 0.01);
+
+        // 3. ПРОВЕРКА СОСТОЯНИЯ (Смысловой переход)
+        if (nodes.length > 40 && !isActivated) {
+            isActivated = true;
+            document.getElementById('center-msg').classList.add('active');
+            document.getElementById('status').innerText = 'PATTERN_RECOGNIZED';
+            document.getElementById('status').style.color = '#ffffff';
+            
+            // Эффект "зума" при активации
+            mainLayer.scale.set(1.05);
+            setTimeout(() => mainLayer.scale.set(1), 500);
+        }
+    });
+
+    window.addEventListener('resize', () => app.renderer.resize(innerWidth, innerHeight));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Field birth v1 — disturb quantum field, coalesce object, READY loop. PixiJS v8." />
+  <title>Field Birth v1 — Disturb · Coalesce · Object</title>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'IBM Plex Mono', 'Courier New', monospace; touch-action: none; color: #63ff9b; }
+    #hud { position: fixed; left: 14px; top: 14px; z-index: 20; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; background: rgba(0, 12, 6, 0.85); border: 1px solid #1e4429; padding: 10px 12px; max-width: min(420px, 92vw); line-height: 1.5; pointer-events: none; }
+    #hud kbd { background: rgba(99, 255, 155, 0.12); padding: 1px 5px; border-radius: 3px; }
+    a.doc { color: #8effb8; pointer-events: auto; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div id="phase-line">PHASE: —</div>
+    <div id="hint" style="margin-top:6px;opacity:0.75;font-size:9px;letter-spacing:0.06em;">Click / <kbd>Space</kbd> — disturb field · auto cycle</div>
+    <div style="margin-top:8px;font-size:9px;opacity:0.55;"><a class="doc" href="./static/CARD_AND_DEMO_STRATEGY_EN_RU.md">Design doc</a> · <a class="doc" href="./index.html">Hub</a></div>
+  </div>
+
+  <script>
+    /**
+     * card-field-birth-v1
+     * First slice: typed-array field + pointer disturbance + coalesced "object" (bright core).
+     * See static/CARD_AND_DEMO_STRATEGY_EN_RU.md (Part B loop + Part A layers later).
+     */
+    (async () => {
+      const N = 6500;
+      const STRIDE = 5; // x, y, vx, vy, heat (disturbance memory)
+
+      const PHASE = { IDLE: 0, DISTURB: 1, COALESCE: 2, READY: 3, DISSOLVE: 4 };
+      const DUR = { DISTURB: 45, COALESCE: 120, READY: 90, DISSOLVE: 100 };
+
+      let phase = PHASE.IDLE;
+      let phaseTick = 0;
+      let autoAdvance = true;
+
+      const app = new PIXI.Application();
+      await app.init({
+        resizeTo: window,
+        background: '#000000',
+        antialias: false,
+        resolution: Math.min(window.devicePixelRatio || 1, 2),
+        autoDensity: true
+      });
+      document.body.appendChild(app.canvas);
+      app.canvas.style.touchAction = 'none';
+
+      const root = new PIXI.Container();
+      app.stage.addChild(root);
+
+      const dotG = new PIXI.Graphics().circle(0, 0, 1.2).fill({ color: 0x63ff9b });
+      const tex = app.renderer.generateTexture(dotG);
+
+      const data = new Float32Array(N * STRIDE);
+      const sprites = [];
+
+      const container = new PIXI.Container();
+      root.addChild(container);
+
+      function spawnField() {
+        const w = app.screen.width;
+        const h = app.screen.height;
+        const pad = 40;
+        for (let i = 0; i < N; i++) {
+          const o = i * STRIDE;
+          data[o] = pad + Math.random() * (w - 2 * pad);
+          data[o + 1] = pad + Math.random() * (h - 2 * pad);
+          data[o + 2] = (Math.random() - 0.5) * 0.35;
+          data[o + 3] = (Math.random() - 0.5) * 0.35;
+          data[o + 4] = 0;
+        }
+      }
+
+      for (let i = 0; i < N; i++) {
+        const s = new PIXI.Sprite(tex);
+        s.anchor.set(0.5);
+        s.blendMode = 'add';
+        container.addChild(s);
+        sprites.push(s);
+      }
+
+      spawnField();
+
+      const readyText = new PIXI.Text({
+        text: 'READY',
+        style: {
+          fill: 0x63ff9b,
+          fontSize: 42,
+          fontWeight: '700',
+          letterSpacing: 8,
+          fontFamily: 'IBM Plex Mono, Courier New, monospace'
+        }
+      });
+      readyText.anchor.set(0.5);
+      readyText.alpha = 0;
+      root.addChild(readyText);
+
+      let pointer = { x: app.screen.width * 0.5, y: app.screen.height * 0.5, down: false };
+      const cx = () => app.screen.width * 0.5;
+      const cy = () => app.screen.height * 0.5;
+
+      const phaseLine = document.getElementById('phase-line');
+      const phaseNames = ['IDLE', 'DISTURB', 'COALESCE', 'READY', 'DISSOLVE'];
+
+      app.stage.eventMode = 'static';
+      const hit = () => new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
+      app.stage.hitArea = hit();
+      window.addEventListener('resize', () => { app.stage.hitArea = hit(); spawnField(); });
+
+      app.stage.on('pointermove', (e) => {
+        pointer.x = e.global.x;
+        pointer.y = e.global.y;
+      });
+      app.stage.on('pointerdown', () => { pointer.down = true; triggerDisturb(); });
+      app.stage.on('pointerup', () => { pointer.down = false; });
+
+      function triggerDisturb() {
+        if (phase === PHASE.IDLE || phase === PHASE.READY) {
+          phase = PHASE.DISTURB;
+          phaseTick = 0;
+          const w = app.screen.width;
+          const h = app.screen.height;
+          for (let i = 0; i < N; i++) {
+            const o = i * STRIDE;
+            const dx = data[o] - pointer.x;
+            const dy = data[o + 1] - pointer.y;
+            const d = Math.sqrt(dx * dx + dy * dy) + 1;
+            const push = 120 / d;
+            data[o + 2] += (dx / d) * push * 0.08;
+            data[o + 3] += (dy / d) * push * 0.08;
+            data[o + 4] = Math.min(1, data[o + 4] + 0.35);
+          }
+        }
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') { e.preventDefault(); triggerDisturb(); }
+      });
+
+      let uiFrame = 0;
+      app.ticker.add((ticker) => {
+        const dt = Math.min(ticker.deltaTime, 4);
+        const w = app.screen.width;
+        const h = app.screen.height;
+        const tcx = cx();
+        const tcy = cy();
+
+        readyText.position.set(tcx, tcy - 0.12 * h);
+
+        if (autoAdvance) {
+          phaseTick += 1;
+          if (phase === PHASE.IDLE && phaseTick > 75) {
+            phase = PHASE.DISTURB;
+            phaseTick = 0;
+            pointer.x = w * (0.3 + Math.random() * 0.4);
+            pointer.y = h * (0.3 + Math.random() * 0.4);
+            triggerDisturb();
+          } else if (phase === PHASE.DISTURB && phaseTick > DUR.DISTURB) {
+            phase = PHASE.COALESCE;
+            phaseTick = 0;
+          } else if (phase === PHASE.COALESCE && phaseTick > DUR.COALESCE) {
+            phase = PHASE.READY;
+            phaseTick = 0;
+          } else if (phase === PHASE.READY && phaseTick > DUR.READY) {
+            phase = PHASE.DISSOLVE;
+            phaseTick = 0;
+          } else if (phase === PHASE.DISSOLVE && phaseTick > DUR.DISSOLVE) {
+            phase = PHASE.IDLE;
+            phaseTick = 0;
+            spawnField();
+          }
+        }
+
+        const sigma = 95;
+        const sigma2 = 2 * sigma * sigma;
+
+        for (let i = 0; i < N; i++) {
+          const o = i * STRIDE;
+          let x = data[o];
+          let y = data[o + 1];
+          let vx = data[o + 2];
+          let vy = data[o + 3];
+          let heat = data[o + 4];
+
+          heat *= 0.97;
+          data[o + 4] = heat;
+
+          if (phase === PHASE.COALESCE || phase === PHASE.READY) {
+            const dx = tcx - x;
+            const dy = tcy - y;
+            const pull = phase === PHASE.READY ? 0.022 : 0.038;
+            vx += dx * pull * dt;
+            vy += dy * pull * dt;
+          }
+
+          if (phase === PHASE.DISSOLVE) {
+            vx += (Math.random() - 0.5) * 0.14 * dt;
+            vy += (Math.random() - 0.5) * 0.14 * dt;
+            const dx = x - tcx;
+            const dy = y - tcy;
+            const d2 = dx * dx + dy * dy;
+            const push = Math.exp(-d2 / (2 * 55 * 55)) * 0.45 * dt;
+            vx += (dx / (Math.sqrt(d2) + 0.01)) * push;
+            vy += (dy / (Math.sqrt(d2) + 0.01)) * push;
+          }
+
+          vx += (Math.random() - 0.5) * 0.02 * dt;
+          vy += (Math.random() - 0.5) * 0.02 * dt;
+          vx *= 0.985;
+          vy *= 0.985;
+
+          x += vx * dt;
+          y += vy * dt;
+
+          if (x < 20) { x = 20; vx *= -0.4; }
+          if (x > w - 20) { x = w - 20; vx *= -0.4; }
+          if (y < 20) { y = 20; vy *= -0.4; }
+          if (y > h - 20) { y = h - 20; vy *= -0.4; }
+
+          data[o] = x;
+          data[o + 1] = y;
+          data[o + 2] = vx;
+          data[o + 3] = vy;
+
+          const s = sprites[i];
+          s.x = x;
+          s.y = y;
+
+          const dx = x - tcx;
+          const dy = y - tcy;
+          const d2 = dx * dx + dy * dy;
+          const core = Math.exp(-d2 / sigma2);
+          const base = 0.08 + heat * 0.55;
+          const boost = (phase === PHASE.COALESCE || phase === PHASE.READY) ? core * 0.95 : core * 0.2;
+          s.alpha = Math.min(0.95, base + boost);
+          const sc = 1 + core * (phase === PHASE.READY ? 1.8 : 1.1) + heat * 0.4;
+          s.scale.set(sc);
+        }
+
+        if (phase === PHASE.READY) {
+          readyText.alpha = Math.min(1, readyText.alpha + 0.04);
+        } else {
+          readyText.alpha = Math.max(0, readyText.alpha - 0.06);
+        }
+
+        uiFrame++;
+        if (uiFrame % 10 === 0) {
+          phaseLine.textContent = `PHASE: ${phaseNames[phase]} · t ${phaseTick}`;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

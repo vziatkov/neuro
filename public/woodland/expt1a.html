@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEURO — FIELD v2</title>
+
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#020203;
+  font-family:'JetBrains Mono', monospace;
+  overflow:hidden;
+  cursor:crosshair;
+  color:#aaa;
+}
+
+#ui{
+  position:fixed;
+  top:20px;
+  left:20px;
+  font-size:11px;
+  opacity:.7;
+  letter-spacing:1px;
+}
+
+#status{ color:#50fa7b }
+
+#center{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  font-size:14px;
+  letter-spacing:6px;
+  opacity:0;
+  transition:opacity 1.2s ease;
+}
+
+#center.active{ opacity:.8 }
+
+</style>
+</head>
+<body>
+
+<div id="ui">
+NEURO FIELD V2<br>
+<span id="status">● ACTIVE</span><br><br>
+NODES: <span id="nodeCount">0</span>
+</div>
+
+<div id="center">SELF-OBSERVATION INITIATED</div>
+
+<script src="https://unpkg.com/pixi.js@8.x/dist/pixi.min.js"></script>
+
+<script>
+(async()=>{
+
+const app = new PIXI.Application();
+await app.init({
+  resizeTo: window,
+  backgroundColor: 0x020203,
+  antialias: true,
+  resolution: Math.min(2, window.devicePixelRatio || 1)
+});
+document.body.appendChild(app.canvas);
+
+// layers
+const g = new PIXI.Graphics();
+app.stage.addChild(g);
+
+// data
+let points = [];
+let nodes = [];
+
+const maxPoints = 120;
+let activated = false;
+
+// bg noise
+for(let i=0;i<150;i++){
+  const dot = new PIXI.Graphics().circle(0,0,1).fill(0xffffff);
+  dot.x = Math.random()*innerWidth;
+  dot.y = Math.random()*innerHeight;
+  dot.alpha = Math.random()*0.15;
+  app.stage.addChild(dot);
+}
+
+// interaction
+window.addEventListener("pointermove",(e)=>{
+  const newPoint = {x:e.clientX,y:e.clientY,life:1};
+  points.push(newPoint);
+
+  if(points.length>maxPoints) points.shift();
+
+  // --- NODE CREATION (ключ!)
+  for(let p of points){
+    const dx = p.x - newPoint.x;
+    const dy = p.y - newPoint.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist < 25 && Math.random() < 0.03){
+      nodes.push({x:p.x,y:p.y,life:1});
+    }
+  }
+});
+
+// render
+app.ticker.add(()=>{
+
+  g.clear();
+
+  // --- TRAILS
+  for(let i=1;i<points.length;i++){
+    const p1 = points[i-1];
+    const p2 = points[i];
+
+    p1.life *= 0.97;
+
+    g.moveTo(p1.x,p1.y);
+    g.lineTo(p2.x,p2.y);
+
+    g.stroke({
+      width:1.5,
+      color:0xff8c42,
+      alpha:p1.life * 0.6
+    });
+  }
+
+  // --- NODES
+  for(let n of nodes){
+    n.life *= 0.995;
+
+    g.circle(n.x,n.y,3).fill({
+      color:0xff8c42,
+      alpha:n.life
+    });
+  }
+
+  // --- CONNECTIONS BETWEEN NODES (магия)
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+
+      const a = nodes[i];
+      const b = nodes[j];
+
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < 120){
+
+        const alpha = (1 - dist/120) * 0.2;
+
+        g.moveTo(a.x,a.y);
+        g.lineTo(b.x,b.y);
+
+        g.stroke({
+          width:1,
+          color:0xffffff,
+          alpha:alpha
+        });
+      }
+    }
+  }
+
+  // cleanup
+  points = points.filter(p=>p.life>0.02);
+  nodes = nodes.filter(n=>n.life>0.02);
+
+  // UI
+  document.getElementById("nodeCount").innerText = nodes.length;
+
+  // --- ACTIVATION (НЕ по времени, а по смыслу!)
+  if(nodes.length > 25 && !activated){
+    activated = true;
+
+    document.getElementById("center").classList.add("active");
+
+    const status = document.getElementById("status");
+    status.innerText = "● OBSERVING ITSELF";
+    status.style.color = "#ff8c42";
+
+    // subtle zoom
+    app.stage.scale.set(0.96);
+    app.stage.position.set(innerWidth*0.02, innerHeight*0.02);
+  }
+
+});
+
+})();
+</script>
+
+</body>
+</html>
