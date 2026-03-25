@@ -441,7 +441,13 @@ export default function App() {
             <p className="text-xs uppercase tracking-widest opacity-60">Interactive Storybook</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-sm font-medium">
+        <div className="flex items-center gap-4 text-sm font-medium flex-wrap justify-end">
+          <a
+            href={`${import.meta.env.BASE_URL}casino-oboz/index.html`}
+            className="text-[#5A5A40] hover:text-[#3d3d2e] underline-offset-2 hover:underline opacity-80 hover:opacity-100 transition-opacity"
+          >
+            Casino / Oboz
+          </a>
           <a
             href={`${import.meta.env.BASE_URL}woodland/index.html`}
             className="text-[#5A5A40] hover:text-[#3d3d2e] underline-offset-2 hover:underline opacity-80 hover:opacity-100 transition-opacity"
