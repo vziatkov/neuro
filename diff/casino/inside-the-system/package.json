@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "copy-to-neuro-public": "mkdir -p ../../../public/diff/casino/inside-the-system && rm -rf ../../../public/diff/casino/inside-the-system/dist && cp -r dist ../../../public/diff/casino/inside-the-system/",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"

@@ -23,5 +23,5 @@ View your app in AI Studio: https://ai.studio/apps/6c42769b-0968-4b66-8e2b-8bcf2
 
 `npm run build` copies **[`../../public/woodland`](../../public/woodland)** into **`dist/woodland/`** (hub, `try5a`, `try4`, PDFs). Deploy the whole **`dist/`** folder: open **`woodland/index.html`** next to the single-file storybook — **no separate localhost** for the Matrix pages.
 
-- From the storybook UI: header link **“Matrix demos & PDFs”** → `./woodland/index.html`.
+- From the storybook UI: **Casino / Oboz** → `./casino-oboz/index.html` (lobby: Dice + narrative + storybook); **Matrix demos & PDFs** → `./woodland/index.html`.
 - Source of truth for HTML/PDFs stays in the repo root `public/woodland/` (single copy, no drift).

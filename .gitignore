@@ -6,6 +6,8 @@ dist/
 # Committed static build for diff/saas (Vite dist); dist/ is ignored globally.
 !public/diff/saas/dist/
 !public/diff/saas/dist/index.html
+!public/diff/casino/inside-the-system/dist/
+!public/diff/casino/inside-the-system/dist/**
 dist-ssr/
 mmo-map-protected.html
 *.local
