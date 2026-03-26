@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matrix Brief Viewer v1.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #030504;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    #hint {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 10;
+      color: rgba(180, 255, 200, 0.9);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(100, 255, 155, 0.15);
+      border-radius: 999px;
+      padding: 8px 12px;
+      backdrop-filter: blur(6px);
+      user-select: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="hint">Matrix Brief Viewer v1.0 · drag to pan · wheel to zoom</div>
+
+  <script>
+    (async () => {
+      const app = new PIXI.Application();
+      await app.init({
+        resizeTo: window,
+        background: "#030504",
+        antialias: true
+      });
+      document.body.appendChild(app.canvas);
+
+      const TEXT = `The goal of this exercise is to evaluate how you approach rendering, performance
+optimization, and architecture decisions in PixiJS. We are less interested in polish and
+more interested in clear thinking, practical tradeoffs, and senior-level implementation
+choices.
+Please review the task brief below.
+We do not expect a production-complete streaming engine.
+Instead, we want to see a focused, working solution to the core rendering problem, plus a
+short explanation of how you would extend it further.
+Please include:
+• source code
+• a short README with setup instructions
+• a brief explanation of your architectural decisions and tradeoffs
+• notes on what you would improve if given more time if anything is ambiguous, feel
+free to make reasonable assumptions and document them.
+2D World Viewer
+Build a small PixiJS application that demonstrates how you would render and navigate a 2D
+world efficiently. This task is intentionally focused on the core problem. We are not asking
+for a full production-grade asset streaming engine.
+Imagine a large RTS-style world containing a very high number of world objects.
+Your task is to implement a viewer where:
+1. the world is much larger than the viewport
+2. the camera can pan smoothly in any direction
+3. the app simulates a large global dataset
+4. only visible objects are projected into the active Pixi scene
+Core Requirements Implement a PixiJS demo that includes:
+1. Large world simulation
+• Simulate a world containing at least 100,000 objects in total
+• These objects may be tiles, markers, units, decorations, or similar lightweight world
+items
+2. Camera and navigation
+• Implement a 2D camera that supports smooth panning
+• Infinite panning behavior is welcome, but not required
+• The viewer should feel responsive while moving through the world
+3. Manual visibility control
+• Only objects intersecting the viewport, plus a small configurable margin, should be
+added to the active Pixi render tree
+• Off-screen objects should be excluded from rendering and ideally not exist as active
+display objects
+• The solution should not rely on simply creating all sprites and toggling visible
+4. Spatial query strategy
+• Use a reasonable spatial lookup strategy to determine what is visible
+• This can be a spatial hash grid, chunked grid, quadtree, or another justified
+approach
+• The choice should match the data model and be explained briefly
+5. Render pooling
+• Reuse Pixi display objects where practical instead of constantly creating and
+destroying them during panning
+• Show that you are thinking about object lifecycle and GC pressure
+Deliverables:
+A working demo
+• runnable locally
+• clear instructions in README
+Short technical notes
+• your approach to visibility/culling
+• why you chose your spatial structure
+• how you handled render object reuse
+• what the main bottlenecks are
+• what you would build next if this needed to support streamed map tiles and strict
+GPU-memory limits
+Please submit your solution in a GitHub repository and send us the repository URL, along
+with any access instructions if the repository is private, so our team can clone it and review
+the implementation locally.`;
+
+      const sourceChars = TEXT.split('').filter(c => c !== '\n');
+      const randomPool = sourceChars.filter(c => c !== ' ');
+      const lines = TEXT.split('\n');
+
+      const fontSize = 15;
+      const charW = 9.2;
+      const lineH = 20;
+      const cols = Math.max(...lines.map(l => l.length));
+      const rows = lines.length;
+
+      const content = new PIXI.Container();
+      app.stage.addChild(content);
+
+      const bgLayer = new PIXI.Container();
+      const textLayer = new PIXI.Container();
+      content.addChild(bgLayer);
+      content.addChild(textLayer);
+
+      const worldPadding = 80;
+      const worldW = cols * charW + worldPadding * 2;
+      const worldH = rows * lineH + worldPadding * 2;
+
+      const panel = new PIXI.Graphics()
+        .roundRect(0, 0, worldW, worldH, 24)
+        .fill({ color: 0x071009, alpha: 0.9 })
+        .stroke({ color: 0x1e4429, width: 1, alpha: 0.9 });
+      bgLayer.addChild(panel);
+
+      const glow = new PIXI.Graphics()
+        .roundRect(-2, -2, worldW + 4, worldH + 4, 26)
+        .stroke({ color: 0x63ff9b, width: 2, alpha: 0.08 });
+      bgLayer.addChild(glow);
+
+      const keywordDefs = [
+        { label: '100,000 objects', terms: ['100,000 objects', '100,000'] },
+        { label: 'camera', terms: ['camera can pan smoothly', 'camera and navigation', 'camera'] },
+        { label: 'visible only', terms: ['only visible objects', 'visible objects'] },
+        { label: 'spatial query', terms: ['spatial query strategy', 'spatial hash grid', 'chunked grid', 'quadtree'] },
+        { label: 'render pooling', terms: ['render pooling', 'Reuse Pixi display objects', 'GC pressure'] }
+      ];
+
+      const highlights = [];
+      const keywordColors = [
+        0x7dffb1,
+        0xb0ff77,
+        0x83ffd8,
+        0xe0ff80,
+        0x66ff99
+      ];
+
+      function findRangesInLine(lineText, terms) {
+        const ranges = [];
+        for (const term of terms) {
+          const idx = lineText.toLowerCase().indexOf(term.toLowerCase());
+          if (idx >= 0) {
+            ranges.push({ start: idx, end: idx + term.length - 1 });
+          }
+        }
+        return ranges;
+      }
+
+      const symbols = [];
+
+      for (let row = 0; row < rows; row++) {
+        const line = lines[row];
+        const lineHighlightRanges = [];
+        keywordDefs.forEach((def, index) => {
+          const ranges = findRangesInLine(line, def.terms);
+          ranges.forEach(r => lineHighlightRanges.push({ ...r, label: def.label, color: keywordColors[index % keywordColors.length] }));
+        });
+
+        for (let col = 0; col < line.length; col++) {
+          const char = line[col];
+          const x = worldPadding + col * charW;
+          const y = worldPadding + row * lineH;
+
+          const textObj = new PIXI.Text({
+            text: randomPool[Math.floor(Math.random() * randomPool.length)] || char,
+            style: {
+              fontFamily: 'monospace',
+              fontSize,
+              fill: 0x63ff9b
+            }
+          });
+
+          textObj.x = x;
+          textObj.y = Math.random() * app.renderer.height;
+          textObj.alpha = 0.78;
+
+          textLayer.addChild(textObj);
+
+          const inRange = lineHighlightRanges.find(r => col >= r.start && col <= r.end);
+          if (inRange && char.trim()) {
+            const marker = new PIXI.Graphics()
+              .roundRect(x - 1, y + fontSize - 1, Math.max(6, charW), 4, 2)
+              .fill({ color: inRange.color, alpha: 0 });
+            marker.y += 2;
+            bgLayer.addChild(marker);
+
+            highlights.push({
+              gfx: marker,
+              label: inRange.label,
+              row,
+              col,
+              baseX: x,
+              baseY: y,
+              color: inRange.color
+            });
+          }
+
+          symbols.push({
+            sprite: textObj,
+            finalChar: char,
+            targetX: x,
+            targetY: y,
+            col,
+            row,
+            speed: 1.8 + Math.random() * 2.4,
+            drift: (Math.random() - 0.5) * 0.35,
+            delay: Math.random() * 0.8,
+            phaseJitter: Math.random() * Math.PI * 2,
+            resolved: false,
+            highlight: !!inRange
+          });
+        }
+      }
+
+      const annotations = new PIXI.Container();
+      bgLayer.addChild(annotations);
+
+      const annotationLabel = new PIXI.Text({
+        text: '',
+        style: {
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontSize: 14,
+          fill: 0xd8ffe6,
+          fontWeight: '600'
+        }
+      });
+      annotationLabel.alpha = 0;
+      annotations.addChild(annotationLabel);
+
+      const annotationLine = new PIXI.Graphics();
+      annotations.addChild(annotationLine);
+
+      const statsText = new PIXI.Text({
+        text: `3151 chars  ·  511 words  ·  full brief only`,
+        style: {
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontSize: 12,
+          fill: 0x9fd8af
+        }
+      });
+      statsText.x = worldPadding;
+      statsText.y = worldH - 34;
+      bgLayer.addChild(statsText);
+
+      const titleText = new PIXI.Text({
+        text: 'PixiJS task brief — matrix resolve',
+        style: {
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontSize: 14,
+          fill: 0x9fd8af,
+          fontWeight: '600'
+        }
+      });
+      titleText.x = worldPadding;
+      titleText.y = 28;
+      bgLayer.addChild(titleText);
+
+      content.x = Math.max(24, (app.renderer.width - worldW) * 0.5);
+      content.y = Math.max(24, (app.renderer.height - worldH) * 0.5);
+
+      let phase = 'rain';
+      let phaseTime = 0;
+      let cycleCount = 0;
+      const maxCycles = 2;
+      let activeKeywordIndex = -1;
+
+      function randomChar() {
+        return randomPool[Math.floor(Math.random() * randomPool.length)] || ' ';
+      }
+
+      function setActiveKeyword(index) {
+        activeKeywordIndex = index;
+      }
+
+      function updateKeywordOverlay(t) {
+        const pulseSpeed = 2.4;
+        for (let i = 0; i < highlights.length; i++) {
+          const h = highlights[i];
+          const keywordIndex = keywordDefs.findIndex(k => k.label === h.label);
+          const isActive = keywordIndex === activeKeywordIndex;
+          const pulse = 0.22 + 0.18 * Math.sin(t * pulseSpeed + h.col * 0.18 + h.row * 0.3);
+          h.gfx.alpha = isActive ? 0.28 + pulse : 0.06;
+        }
+
+        if (activeKeywordIndex >= 0) {
+          const def = keywordDefs[activeKeywordIndex];
+          const activeMarks = highlights.filter(h => h.label === def.label);
+          if (activeMarks.length) {
+            const first = activeMarks[0];
+            const last = activeMarks[activeMarks.length - 1];
+            annotationLabel.text = def.label;
+            annotationLabel.x = worldW - worldPadding - annotationLabel.width;
+            annotationLabel.y = 28;
+            annotationLabel.alpha = 0.95;
+
+            annotationLine.clear();
+            annotationLine.moveTo(annotationLabel.x - 14, annotationLabel.y + 10);
+            annotationLine.lineTo(last.baseX + 8, first.baseY + 10);
+            annotationLine.stroke({ color: keywordColors[activeKeywordIndex % keywordColors.length], width: 1.5, alpha: 0.9 });
+          }
+        } else {
+          annotationLabel.alpha = 0;
+          annotationLine.clear();
+        }
+      }
+
+      function resetRain() {
+        symbols.forEach(s => {
+          s.sprite.x = s.targetX;
+          s.sprite.y = Math.random() * app.renderer.height - 120;
+          s.sprite.text = randomChar();
+          s.sprite.alpha = 0.75;
+          s.resolved = false;
+        });
+      }
+
+      app.ticker.add((ticker) => {
+        const dt = ticker.deltaTime / 60;
+        phaseTime += dt;
+        const absoluteT = performance.now() * 0.001;
+
+        if (phase === 'rain') {
+          setActiveKeyword(-1);
+
+          for (const s of symbols) {
+            s.sprite.y += s.speed * 90 * dt;
+            s.sprite.x += s.drift * 10 * dt;
+
+            if (Math.random() < 0.22) {
+              s.sprite.text = randomChar();
+            }
+
+            if (Math.random() < 0.028) {
+              s.sprite.text = s.finalChar === ' ' ? ' ' : s.finalChar;
+            }
+
+            if (s.sprite.y > app.renderer.height + 24) {
+              s.sprite.y = -20 - Math.random() * 160;
+              s.sprite.text = randomChar();
+            }
+          }
+
+          if (phaseTime > 3.2) {
+            phase = 'resolve';
+            phaseTime = 0;
+          }
+        }
+
+        else if (phase === 'resolve') {
+          setActiveKeyword(-1);
+
+          for (const s of symbols) {
+            if (s.finalChar === ' ') {
+              s.sprite.text = ' ';
+            } else if (Math.random() < 0.08) {
+              s.sprite.text = randomChar();
+            }
+
+            s.sprite.x += (s.targetX - s.sprite.x) * 0.12;
+            s.sprite.y += (s.targetY - s.sprite.y) * 0.12;
+
+            if (Math.abs(s.sprite.x - s.targetX) < 0.4 && Math.abs(s.sprite.y - s.targetY) < 0.4) {
+              s.sprite.x = s.targetX;
+              s.sprite.y = s.targetY;
+              s.sprite.text = s.finalChar;
+              s.resolved = true;
+            }
+          }
+
+          if (phaseTime > 2.0) {
+            phase = 'explain';
+            phaseTime = 0;
+          }
+        }
+
+        else if (phase === 'explain') {
+          const sectionDuration = 1.4;
+          const idx = Math.floor(phaseTime / sectionDuration);
+
+          if (idx < keywordDefs.length) {
+            setActiveKeyword(idx);
+          } else {
+            setActiveKeyword(-1);
+          }
+
+          for (const s of symbols) {
+            s.sprite.text = s.finalChar;
+            if (s.finalChar.trim()) {
+              s.sprite.alpha = 0.82 + 0.18 * Math.sin(absoluteT * 1.5 + s.col * 0.08 + s.row * 0.04);
+            } else {
+              s.sprite.alpha = 1;
+            }
+          }
+
+          if (phaseTime > sectionDuration * keywordDefs.length + 1.2) {
+            cycleCount++;
+            if (cycleCount < maxCycles) {
+              resetRain();
+              phase = 'rain';
+              phaseTime = 0;
+            } else {
+              phase = 'final';
+              phaseTime = 0;
+              setActiveKeyword(-1);
+            }
+          }
+        }
+
+        else if (phase === 'final') {
+          setActiveKeyword(-1);
+          for (const s of symbols) {
+            s.sprite.text = s.finalChar;
+            s.sprite.x = s.targetX;
+            s.sprite.y = s.targetY;
+            s.sprite.alpha = 1;
+          }
+        }
+
+        updateKeywordOverlay(absoluteT);
+      });
+
+      // camera pan + zoom
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      app.canvas.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+
+      window.addEventListener('pointerup', () => {
+        dragging = false;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        content.x += dx;
+        content.y += dy;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+
+      window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const oldScale = content.scale.x;
+        const scaleFactor = e.deltaY > 0 ? 0.92 : 1.08;
+        const newScale = Math.min(2.5, Math.max(0.45, oldScale * scaleFactor));
+
+        const rect = app.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const localX = (mouseX - content.x) / oldScale;
+        const localY = (mouseY - content.y) / oldScale;
+
+        content.scale.set(newScale);
+        content.x = mouseX - localX * newScale;
+        content.y = mouseY - localY * newScale;
+      }, { passive: false });
+
+      // subtle ambient background
+      const ambient = new PIXI.Container();
+      app.stage.addChildAt(ambient, 0);
+
+      const rainColumns = [];
+      const colCount = Math.floor(app.renderer.width / 22);
+
+      for (let i = 0; i < colCount; i++) {
+        const t = new PIXI.Text({
+          text: randomPool.slice(i, i + 24).join('\n'),
+          style: {
+            fontFamily: 'monospace',
+            fontSize: 12,
+            fill: 0x2ea85e
+          }
+        });
+        t.x = i * 22;
+        t.y = Math.random() * app.renderer.height;
+        t.alpha = 0.16 + Math.random() * 0.12;
+        ambient.addChild(t);
+        rainColumns.push({
+          sprite: t,
+          speed: 25 + Math.random() * 35
+        });
+      }
+
+      app.ticker.add((ticker) => {
+        const dt = ticker.deltaTime / 60;
+        for (const c of rainColumns) {
+          c.sprite.y += c.speed * dt;
+          if (Math.random() < 0.03) {
+            let text = '';
+            for (let i = 0; i < 18; i++) {
+              text += randomChar() + '\n';
+            }
+            c.sprite.text = text;
+          }
+          if (c.sprite.y > app.renderer.height + 200) {
+            c.sprite.y = -200;
+          }
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        app.renderer.resize(window.innerWidth, window.innerHeight);
+      });
+    })();
+  </script>
+</body>
+</html>

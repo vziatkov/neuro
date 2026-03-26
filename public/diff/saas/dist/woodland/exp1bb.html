@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>NEURO — FIELD v3.0 (Autonomous)</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; background: #010102; overflow: hidden; font-family: 'JetBrains Mono', monospace; cursor: crosshair; color: #555; }
+        #ui { position: fixed; top: 25px; left: 25px; font-size: 10px; pointer-events: none; z-index: 10; text-transform: uppercase; letter-spacing: 2px; }
+        #status-row { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: #444; transition: background 0.5s; }
+        .dot.active { background: #ff8c42; box-shadow: 0 0 10px #ff8c42; }
+        #center-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 14px; opacity: 0; transition: all 1.5s ease; letter-spacing: 8px; pointer-events: none; text-align: center; }
+        #center-msg.active { opacity: 0.7; letter-spacing: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    NEURO / OBSERVATORY / V3.0<br>
+    <div id="status-row">
+        <div id="d1" class="dot"></div>
+        <div id="d2" class="dot"></div>
+        <div id="d3" class="dot"></div>
+        <span id="status-text">SCANNING_VACUUM</span>
+    </div>
+    <br>STRUCTURE_INTEGRITY: <span id="node-count">0</span>%
+</div>
+
+<div id="center-msg">THE FIELD BEGINS TO INTERPRET ITSELF</div>
+
+<script src="https://unpkg.com/pixi.js@8.x/dist/pixi.min.js"></script>
+
+<script>
+(async () => {
+    const app = new PIXI.Application();
+    await app.init({ resizeTo: window, backgroundColor: 0x010102, antialias: true, resolution: window.devicePixelRatio || 1 });
+    document.body.appendChild(app.canvas);
+
+    const g = new PIXI.Graphics();
+    app.stage.addChild(g);
+
+    let points = [];
+    let nodes = [];
+    let agents = [];
+    let activated = false;
+
+    // 1. Инициализация Агентов (Автономная жизнь)
+    for(let i=0; i<5; i++) {
+        agents.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: (Math.random() - 0.5) * 0.8
+        });
+    }
+
+    window.addEventListener('pointermove', (e) => {
+        const mouse = { x: e.clientX, y: e.clientY };
+        
+        // Создание обычных узлов
+        points.forEach(p => {
+            const d = Math.sqrt((p.x-mouse.x)**2 + (p.y-mouse.y)**2);
+            if(d < 25 && Math.random() < 0.04) {
+                nodes.push({ x: p.x, y: p.y, life: 1, isSuper: false });
+            }
+        });
+
+        // Взаимодействие с Агентами -> Super Nodes
+        agents.forEach(a => {
+            const d = Math.sqrt((a.x-mouse.x)**2 + (a.y-mouse.y)**2);
+            if(d < 45 && Math.random() < 0.1) {
+                nodes.push({ x: a.x, y: a.y, life: 1.5, isSuper: true }); // Живут дольше
+            }
+        });
+
+        points.push({ ...mouse, life: 1 });
+        if(points.length > 80) points.shift();
+    });
+
+    app.ticker.add(() => {
+        g.clear();
+
+        // Двигаем агентов
+        agents.forEach(a => {
+            a.x += a.vx; a.y += a.vy;
+            if(a.x < 0 || a.x > window.innerWidth) a.vx *= -1;
+            if(a.y < 0 || a.y > window.innerHeight) a.vy *= -1;
+            // Рисуем тело агента
+            g.circle(a.x, a.y, 1.5).fill({ color: 0xffffff, alpha: 0.2 });
+        });
+
+        // Рисуем хвост
+        for(let i=1; i<points.length; i++) {
+            points[i].life *= 0.96;
+            g.moveTo(points[i-1].x, points[i-1].y)
+             .lineTo(points[i].x, points[i].y)
+             .stroke({ width: 1, color: 0xff8c42, alpha: points[i].life * 0.3 });
+        }
+
+        // Связи между Узлами (Твоя магия)
+        let connections = 0;
+        for(let i=0; i<nodes.length; i++) {
+            for(let j=i+1; j<nodes.length; j++) {
+                const a = nodes[i]; const b = nodes[j];
+                const d = Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
+                if(d < 130) {
+                    connections++;
+                    const alpha = (1 - d/130) * 0.2;
+                    g.moveTo(a.x, a.y).lineTo(b.x, b.y)
+                     .stroke({ width: 0.5, color: 0xffffff, alpha: alpha * a.life });
+                }
+            }
+        }
+
+        // Рисуем Узлы
+        nodes.forEach(n => {
+            n.life *= 0.994;
+            const size = n.isSuper ? 3 : 1.5;
+            const color = n.isSuper ? 0xffffff : 0xff8c42;
+            g.circle(n.x, n.y, size).fill({ color: color, alpha: n.life });
+            if(n.isSuper) g.circle(n.x, n.y, size*3).fill({ color: 0xffffff, alpha: n.life * 0.1 });
+        });
+
+        nodes = nodes.filter(n => n.life > 0.01);
+        points = points.filter(p => p.life > 0.01);
+
+        // UI & Stages
+        const score = nodes.length + (connections / 2);
+        document.getElementById('node-count').innerText = Math.min(100, Math.floor(score));
+
+        if(score > 10) { 
+            document.getElementById('d1').classList.add('active'); 
+            document.getElementById('status-text').innerText = "TRACE_DETECTED";
+        }
+        if(score > 40) { 
+            document.getElementById('d2').classList.add('active'); 
+            document.getElementById('status-text').innerText = "STRUCTURE_FORMING";
+        }
+        if(score > 80 && !activated) {
+            activated = true;
+            document.getElementById('d3').classList.add('active');
+            document.getElementById('status-text').innerText = "PATTERN_RECOGNIZED";
+            document.getElementById('center-msg').classList.add('active');
+            app.stage.scale.set(1.02);
+        }
+    });
+
+    window.addEventListener('resize', () => app.renderer.resize(innerWidth, innerHeight));
+})();
+</script>
+</body>
+</html>

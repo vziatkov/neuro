@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>NEURO — FIELD v3.1 (Golden Build)</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; background: #010102; overflow: hidden; font-family: 'JetBrains Mono', monospace; cursor: crosshair; color: #666; }
+        #ui { position: fixed; top: 30px; left: 30px; font-size: 10px; pointer-events: none; z-index: 10; text-transform: uppercase; letter-spacing: 2px; line-height: 1.6; }
+        #status-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+        .dot { width: 4px; height: 4px; border-radius: 50%; background: #222; transition: all 0.6s ease; }
+        .dot.active { background: #ff8c42; box-shadow: 0 0 12px #ff8c42; transform: scale(1.5); }
+        #center-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 13px; opacity: 0; transition: all 2s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 12px; pointer-events: none; text-align: center; font-weight: 300; }
+        #center-msg.active { opacity: 0.6; letter-spacing: 6px; }
+        .label { opacity: 0.5; font-size: 9px; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <span class="label">KERNEL_CORE:</span> NEURO/OBS/3.1<br>
+    <div id="status-row">
+        <div id="d1" class="dot"></div>
+        <div id="d2" class="dot"></div>
+        <div id="d3" class="dot"></div>
+        <span id="status-text">SCANNING_VACUUM</span>
+    </div>
+    <span class="label">PATTERN_STABILITY:</span> <span id="node-count">0</span>%
+</div>
+
+<div id="center-msg">THE FIELD BEGINS TO INTERPRET ITSELF</div>
+
+<script src="https://unpkg.com/pixi.js@8.x/dist/pixi.min.js"></script>
+
+<script>
+(async () => {
+    const app = new PIXI.Application();
+    await app.init({ resizeTo: window, backgroundColor: 0x010102, antialias: true, resolution: window.devicePixelRatio || 1 });
+    document.body.appendChild(app.canvas);
+
+    const g = new PIXI.Graphics();
+    app.stage.addChild(g);
+
+    let points = [];
+    let nodes = [];
+    let agents = [];
+    let mouse = { x: -1000, y: -1000 };
+    let activated = false;
+
+    for(let i=0; i<6; i++) {
+        agents.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.7,
+            vy: (Math.random() - 0.5) * 0.7
+        });
+    }
+
+    window.addEventListener('pointermove', (e) => {
+        mouse.x = e.clientX; mouse.y = e.clientY;
+        points.forEach(p => {
+            const d = Math.sqrt((p.x-mouse.x)**2 + (p.y-mouse.y)**2);
+            if(d < 20 && Math.random() < 0.05) nodes.push({ x: p.x, y: p.y, life: 1, isSuper: false });
+        });
+        agents.forEach(a => {
+            const d = Math.sqrt((a.x-mouse.x)**2 + (a.y-mouse.y)**2);
+            if(d < 40 && Math.random() < 0.12) nodes.push({ x: a.x, y: a.y, life: 1.8, isSuper: true });
+        });
+        points.push({ ...mouse, life: 1 });
+        if(points.length > 70) points.shift();
+    });
+
+    app.ticker.add(() => {
+        g.clear();
+
+        // Агенты + Гравитация (Микро-фикс 1)
+        agents.forEach(a => {
+            const dx = mouse.x - a.x;
+            const dy = mouse.y - a.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if(dist < 150) { // Радиус притяжения
+                a.vx += dx * 0.0006;
+                a.vy += dy * 0.0006;
+                // Трение, чтобы они не разгонялись до бесконечности
+                a.vx *= 0.98; a.vy *= 0.98;
+            }
+
+            a.x += a.vx; a.y += a.vy;
+            if(a.x < 0 || a.x > window.innerWidth) a.vx *= -1;
+            if(a.y < 0 || a.y > window.innerHeight) a.vy *= -1;
+            g.circle(a.x, a.y, 1.2).fill({ color: 0xffffff, alpha: 0.15 });
+        });
+
+        // Траектории
+        for(let i=1; i<points.length; i++) {
+            points[i].life *= 0.97;
+            g.moveTo(points[i-1].x, points[i-1].y).lineTo(points[i].x, points[i].y)
+             .stroke({ width: 1, color: 0xff8c42, alpha: points[i].life * 0.25 });
+        }
+
+        // Сеть между узлами
+        let connCount = 0;
+        for(let i=0; i<nodes.length; i++) {
+            for(let j=i+1; j<nodes.length; j++) {
+                const a = nodes[i]; const b = nodes[j];
+                const d = Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
+                if(d < 125) {
+                    connCount++;
+                    const alpha = (1 - d/125) * 0.25;
+                    g.moveTo(a.x, a.y).lineTo(b.x, b.y)
+                     .stroke({ width: 0.5, color: 0xffffff, alpha: alpha * a.life });
+                }
+            }
+        }
+
+        nodes.forEach(n => {
+            n.life *= 0.995;
+            const color = n.isSuper ? 0xffffff : 0xff8c42;
+            g.circle(n.x, n.y, n.isSuper ? 2.5 : 1.2).fill({ color: color, alpha: n.life });
+            if(n.isSuper) g.circle(n.x, n.y, 6).fill({ color: 0xffffff, alpha: n.life * 0.08 });
+        });
+
+        nodes = nodes.filter(n => n.life > 0.01);
+        points = points.filter(p => p.life > 0.01);
+
+        // UI Логика (Микро-фикс 2)
+        const score = nodes.length + (connCount / 1.5);
+        document.getElementById('node-count').innerText = Math.min(100, Math.floor(score));
+
+        if(score > 15) { 
+            document.getElementById('d1').classList.add('active'); 
+            document.getElementById('status-text').innerText = "TRACE_DETECTED";
+        }
+        if(score > 45) { 
+            document.getElementById('d2').classList.add('active'); 
+            document.getElementById('status-text').innerText = "STRUCTURE_FORMING";
+        }
+        if(score > 90 && !activated) {
+            activated = true;
+            document.getElementById('d3').classList.add('active');
+            document.getElementById('status-text').innerText = "PATTERN_RECOGNIZED";
+            document.getElementById('center-msg').classList.add('active');
+            app.stage.scale.set(1.015);
+        }
+    });
+
+    window.addEventListener('resize', () => app.renderer.resize(innerWidth, innerHeight));
+})();
+</script>
+</body>
+</html>

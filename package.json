@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:casino-narrative": "cd diff/casino/inside-the-system && npm install && npm run build && npm run copy-to-neuro-public"
+    "build:casino-narrative": "cd diff/casino/inside-the-system && npm install && npm run build && npm run copy-to-neuro-public",
+    "build:saas-public": "cd diff/saas && npm install && npm run build && npm run copy-to-neuro-public"
   },
   "keywords": [
     "threejs",

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matrix Brief Viewer v1.3.7 — organic ambient rhythm</title>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #030504;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    #hint {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 10;
+      color: rgba(180, 255, 200, 0.9);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(100, 255, 155, 0.15);
+      border-radius: 999px;
+      padding: 8px 12px;
+      backdrop-filter: blur(6px);
+      user-select: none;
+      pointer-events: none;
+      max-width: min(520px, 92vw);
+      line-height: 1.35;
+    }
+
+    #readme {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 10;
+      max-width: min(380px, 94vw);
+      font-size: 12px;
+      line-height: 1.45;
+      color: rgba(200, 235, 210, 0.92);
+      background: rgba(0, 12, 6, 0.55);
+      border: 1px solid rgba(100, 255, 155, 0.12);
+      border-radius: 12px;
+      padding: 0;
+      backdrop-filter: blur(8px);
+    }
+
+    #readme summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 10px 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    #readme summary::-webkit-details-marker {
+      display: none;
+    }
+
+    #readme[open] summary {
+      border-bottom: 1px solid rgba(100, 255, 155, 0.1);
+    }
+
+    #readme .body {
+      padding: 10px 14px 14px;
+      color: rgba(175, 220, 190, 0.95);
+    }
+
+    #readme code {
+      font-size: 11px;
+      color: #9fe8b8;
+    }
+
+    /* Pixi resizeTo: match layout box to viewport so clientWidth/BoundingRect align with pan/zoom math */
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      vertical-align: top;
+    }
+  </style>
+</head>
+<body>
+  <div id="hint">
+    v1.3.7 · ambient: skewed delays · skip ticks · depth alpha · breath spaces
+  </div>
+
+  <details id="readme">
+    <summary>README &amp; technical notes</summary>
+    <div class="body">
+      <p><strong>Setup.</strong> <code>npm run dev</code> → hub <code>/woodland/index.html</code> or this file <code>/woodland/try4.html</code></p>
+      <p><strong>Architecture.</strong> Spatial hash + viewport culling, <code>PIXI.BitmapText</code> pool, ~100k
+        CPU-only particles, pan/zoom camera on <code>content</code>.</p>
+      <p><strong>v1.3.7.</strong> Ambient: per-line sprites for 0.92 depth fade; spawn delay
+        <code>50 + random²·400</code>; random skip ticks; occasional space “breath”. Grow/slide as v1.3.6.</p>
+    </div>
+  </details>
+
+  <script>
+    (async () => {
+      /**
+       * Startup bottleneck: main-thread hit is (1) synchronous BitmapFont.from atlas rasterization,
+       * (2) first cull pass attaching ~O(visible) BitmapText via addChild. Doing all attaches in one
+       * frame causes a long task → perceived freeze. Mitigation: limit new attaches per frame but
+       * sort candidates by distance to viewport center so the matrix looks full where the user looks.
+       */
+      /** Presentation: line from label to text — reads as “camera FX”; off for stable 1.0 */
+      const SHOW_KEYWORD_BEAM = false;
+
+      const app = new PIXI.Application();
+      await app.init({
+        resizeTo: window,
+        background: "#030504",
+        antialias: false,
+        resolution: Math.min(2, window.devicePixelRatio || 1)
+      });
+      document.body.appendChild(app.canvas);
+
+      await document.fonts.ready;
+
+      const TEXT = `The goal of this exercise is to evaluate how you approach rendering, performance
+optimization, and architecture decisions in PixiJS. We are less interested in polish and
+more interested in clear thinking, practical tradeoffs, and senior-level implementation
+choices.
+Please review the task brief below.
+We do not expect a production-complete streaming engine.
+Instead, we want to see a focused, working solution to the core rendering problem, plus a
+short explanation of how you would extend it further.
+Please include:
+• source code
+• a short README with setup instructions
+• a brief explanation of your architectural decisions and tradeoffs
+• notes on what you would improve if given more time if anything is ambiguous, feel
+free to make reasonable assumptions and document them.
+2D World Viewer
+Build a small PixiJS application that demonstrates how you would render and navigate a 2D
+world efficiently. This task is intentionally focused on the core problem. We are not asking
+for a full production-grade asset streaming engine.
+Imagine a large RTS-style world containing a very high number of world objects.
+Your task is to implement a viewer where:
+1. the world is much larger than the viewport
+2. the camera can pan smoothly in any direction
+3. the app simulates a large global dataset
+4. only visible objects are projected into the active Pixi scene
+Core Requirements Implement a PixiJS demo that includes:
+1. Large world simulation
+• Simulate a world containing at least 100,000 objects in total
+• These objects may be tiles, markers, units, decorations, or similar lightweight world
+items
+2. Camera and navigation
+• Implement a 2D camera that supports smooth panning
+• Infinite panning behavior is welcome, but not required
+• The viewer should feel responsive while moving through the world
+3. Manual visibility control
+• Only objects intersecting the viewport, plus a small configurable margin, should be
+added to the active Pixi render tree
+• Off-screen objects should be excluded from rendering and ideally not exist as active
+display objects
+• The solution should not rely on simply creating all sprites and toggling visible
+4. Spatial query strategy
+• Use a reasonable spatial lookup strategy to determine what is visible
+• This can be a spatial hash grid, chunked grid, quadtree, or another justified
+approach
+• The choice should match the data model and be explained briefly
+5. Render pooling
+• Reuse Pixi display objects where practical instead of constantly creating and
+destroying them during panning
+• Show that you are thinking about object lifecycle and GC pressure
+Deliverables:
+A working demo
+• runnable locally
+• clear instructions in README
+Short technical notes
+• your approach to visibility/culling
+• why you chose your spatial structure
+• how you handled render object reuse
+• what the main bottlenecks are
+• what you would build next if this needed to support streamed map tiles and strict
+GPU-memory limits
+Please submit your solution in a GitHub repository and send us the repository URL, along
+with any access instructions if the repository is private, so our team can clone it and review
+the implementation locally.`;
+
+      const sourceChars = TEXT.split('').filter(c => c !== '\n');
+      const randomPool = sourceChars.filter(c => c !== ' ');
+      const lines = TEXT.split('\n');
+
+      const charset = [...new Set(TEXT.replace(/\n/g, ''))].join('');
+      const GLYPH_FONT = 'BriefMonoAtlas';
+      const AMBIENT_FONT = 'BriefAmbientAtlas';
+      let glyphsAreBitmap = false;
+      let ambientIsBitmap = false;
+      if (PIXI.BitmapFont && typeof PIXI.BitmapFont.from === 'function') {
+        try {
+          PIXI.BitmapFont.from(
+            GLYPH_FONT,
+            {
+              fontFamily: 'monospace',
+              fontSize: Math.ceil(15 * 1.35),
+              fill: 0x63ff9b,
+            },
+            {
+              chars: charset.length ? charset : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:!?'\"()[]{}•",
+            }
+          );
+          glyphsAreBitmap = true;
+          const ambientCharset = [...new Set(randomPool.join(''))].join('');
+          if (ambientCharset.length) {
+            try {
+              PIXI.BitmapFont.from(
+                AMBIENT_FONT,
+                {
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                  fill: 0x2ea85e,
+                },
+                { chars: ambientCharset }
+              );
+              ambientIsBitmap = true;
+            } catch {
+              ambientIsBitmap = false;
+            }
+          }
+        } catch {
+          glyphsAreBitmap = false;
+          ambientIsBitmap = false;
+        }
+      }
+
+      const fontSize = 15;
+      const charW = 9.2;
+      const lineH = 20;
+      const cols = Math.max(...lines.map(l => l.length));
+      const rows = lines.length;
+
+      const textStyleGlyph = {
+        fontFamily: 'monospace',
+        fontSize,
+        fill: 0x63ff9b,
+      };
+
+      function randomChar() {
+        return randomPool[Math.floor(Math.random() * randomPool.length)] || ' ';
+      }
+
+      const content = new PIXI.Container();
+      app.stage.addChild(content);
+
+      const bgLayer = new PIXI.Container();
+      const textLayer = new PIXI.Container();
+      content.addChild(bgLayer);
+      content.addChild(textLayer);
+
+      const worldPadding = 80;
+      const worldW = cols * charW + worldPadding * 2;
+      const worldH = rows * lineH + worldPadding * 2;
+
+      const panel = new PIXI.Graphics()
+        .roundRect(0, 0, worldW, worldH, 24)
+        .fill({ color: 0x071009, alpha: 0.9 })
+        .stroke({ color: 0x1e4429, width: 1, alpha: 0.9 });
+      bgLayer.addChild(panel);
+
+      const glow = new PIXI.Graphics()
+        .roundRect(-2, -2, worldW + 4, worldH + 4, 26)
+        .stroke({ color: 0x63ff9b, width: 2, alpha: 0.06 });
+      bgLayer.addChild(glow);
+
+      const keywordDefs = [
+        { label: '100,000 objects', terms: ['100,000 objects', '100,000'] },
+        { label: 'camera', terms: ['camera can pan smoothly', 'camera and navigation', 'camera'] },
+        { label: 'visible only', terms: ['only visible objects', 'visible objects'] },
+        { label: 'spatial query', terms: ['spatial query strategy', 'spatial hash grid', 'chunked grid', 'quadtree'] },
+        { label: 'render pooling', terms: ['render pooling', 'Reuse Pixi display objects', 'GC pressure'] }
+      ];
+
+      const highlights = [];
+      const keywordColors = [
+        0x7dffb1,
+        0xb0ff77,
+        0x83ffd8,
+        0xe0ff80,
+        0x66ff99
+      ];
+
+      function findRangesInLine(lineText, terms) {
+        const ranges = [];
+        for (const term of terms) {
+          const idx = lineText.toLowerCase().indexOf(term.toLowerCase());
+          if (idx >= 0) {
+            ranges.push({ start: idx, end: idx + term.length - 1 });
+          }
+        }
+        return ranges;
+      }
+
+      const symbols = [];
+
+      for (let row = 0; row < rows; row++) {
+        const line = lines[row];
+        const lineHighlightRanges = [];
+        keywordDefs.forEach((def, index) => {
+          const ranges = findRangesInLine(line, def.terms);
+          ranges.forEach(r => lineHighlightRanges.push({ ...r, label: def.label, color: keywordColors[index % keywordColors.length] }));
+        });
+
+        for (let col = 0; col < line.length; col++) {
+          const char = line[col];
+          const x = worldPadding + col * charW;
+          const y = worldPadding + row * lineH;
+
+          const inRange = lineHighlightRanges.find(r => col >= r.start && col <= r.end);
+          if (inRange && char.trim()) {
+            const marker = new PIXI.Graphics()
+              .roundRect(x - 1, y + fontSize - 1, Math.max(6, charW), 4, 2)
+              .fill({ color: inRange.color, alpha: 0 });
+            marker.y += 2;
+            bgLayer.addChild(marker);
+
+            highlights.push({
+              gfx: marker,
+              label: inRange.label,
+              row,
+              col,
+              baseX: x,
+              baseY: y,
+              color: inRange.color
+            });
+          }
+
+          symbols.push({
+            sprite: null,
+            x,
+            y: -50 - Math.random() * 360,
+            finalChar: char,
+            targetX: x,
+            targetY: y,
+            col,
+            row,
+            speed: 2.2 + Math.random() * 2.2,
+            drift: (Math.random() - 0.5) * 0.2,
+            resolved: false,
+            highlight: !!inRange
+          });
+        }
+      }
+
+      const glyphTotal = symbols.length;
+      const SIM_TARGET = 100_000;
+      const simN = Math.max(0, SIM_TARGET - glyphTotal);
+      const simX = new Float32Array(simN);
+      const simY = new Float32Array(simN);
+      const simVX = new Float32Array(simN);
+      const simVY = new Float32Array(simN);
+      const simSpanX = worldW * 2.8;
+      const simSpanY = worldH * 2.8;
+      for (let i = 0; i < simN; i++) {
+        simX[i] = Math.random() * simSpanX - worldW * 0.35;
+        simY[i] = Math.random() * simSpanY - worldH * 0.35;
+        simVX[i] = (Math.random() - 0.5) * 22;
+        simVY[i] = (Math.random() - 0.5) * 22;
+      }
+
+      const CELL = 52;
+      const CULL_MARGIN = 64;
+      const textPool = [];
+
+      function borrowGlyphText() {
+        let t = textPool.pop();
+        if (!t) {
+          if (glyphsAreBitmap) {
+            t = new PIXI.BitmapText({
+              text: ' ',
+              style: {
+                fontFamily: GLYPH_FONT,
+                fontSize,
+                fill: 0x63ff9b,
+              },
+            });
+          } else {
+            t = new PIXI.Text({ text: ' ', style: textStyleGlyph });
+          }
+        }
+        return t;
+      }
+
+      function releaseGlyphText(t) {
+        if (t.parent === textLayer) {
+          textLayer.removeChild(t);
+        }
+        textPool.push(t);
+      }
+
+      /** Layout viewport in CSS px — getBoundingClientRect matches visible box; keeps center math aligned with input/wheel */
+      function viewSize() {
+        const c = app.canvas;
+        const r = c.getBoundingClientRect();
+        let w = r.width > 1 ? r.width : c.clientWidth;
+        let h = r.height > 1 ? r.height : c.clientHeight;
+        if (!w) w = Math.round(app.renderer.width / app.renderer.resolution);
+        if (!h) h = Math.round(app.renderer.height / app.renderer.resolution);
+        if (!w) w = window.innerWidth || 800;
+        if (!h) h = window.innerHeight || 600;
+        return { w, h };
+      }
+
+      function viewRectContent() {
+        const sc = content.scale.x;
+        const inv = 1 / sc;
+        const m = CULL_MARGIN;
+        const { w: vw, h: vh } = viewSize();
+        return {
+          left: (-content.x) * inv - m,
+          top: (-content.y) * inv - m,
+          right: (vw - content.x) * inv + m,
+          bottom: (vh - content.y) * inv + m
+        };
+      }
+
+      function aabbHitsRect(s, r) {
+        return s.x + charW >= r.left && s.x <= r.right && s.y + lineH >= r.top && s.y <= r.bottom;
+      }
+
+      const gridBuckets = new Map();
+
+      function cullAndSyncSprites(maxNewSprites) {
+        const r = viewRectContent();
+        gridBuckets.clear();
+
+        for (let i = 0; i < symbols.length; i++) {
+          const s = symbols[i];
+          const ix = Math.floor(s.x / CELL);
+          const iy = Math.floor(s.y / CELL);
+          const key = ix + ',' + iy;
+          let bucket = gridBuckets.get(key);
+          if (!bucket) {
+            bucket = [];
+            gridBuckets.set(key, bucket);
+          }
+          bucket.push(i);
+        }
+
+        const cL = Math.floor(r.left / CELL);
+        const cR = Math.floor(r.right / CELL);
+        const cT = Math.floor(r.top / CELL);
+        const cB = Math.floor(r.bottom / CELL);
+
+        const want = new Uint8Array(symbols.length);
+        for (let cx = cL; cx <= cR; cx++) {
+          for (let cy = cT; cy <= cB; cy++) {
+            const b = gridBuckets.get(cx + ',' + cy);
+            if (!b) continue;
+            for (let k = 0; k < b.length; k++) {
+              const idx = b[k];
+              if (aabbHitsRect(symbols[idx], r)) {
+                want[idx] = 1;
+              }
+            }
+          }
+        }
+
+        for (let i = 0; i < symbols.length; i++) {
+          if (!want[i] && symbols[i].sprite) {
+            releaseGlyphText(symbols[i].sprite);
+            symbols[i].sprite = null;
+          }
+        }
+
+        const needSpawn = [];
+        for (let i = 0; i < symbols.length; i++) {
+          if (want[i] && !symbols[i].sprite) {
+            needSpawn.push(i);
+          }
+        }
+
+        const sc = content.scale.x;
+        const { w: vw, h: vh } = viewSize();
+        const localCX = (vw * 0.5 - content.x) / sc;
+        const localCY = (vh * 0.5 - content.y) / sc;
+
+        if (needSpawn.length > maxNewSprites) {
+          needSpawn.sort((ia, ib) => {
+            const a = symbols[ia];
+            const b = symbols[ib];
+            const ax = a.x + charW * 0.5 - localCX;
+            const ay = a.y + lineH * 0.5 - localCY;
+            const bx = b.x + charW * 0.5 - localCX;
+            const by = b.y + lineH * 0.5 - localCY;
+            return ax * ax + ay * ay - (bx * bx + by * by);
+          });
+        }
+
+        let spawned = 0;
+        for (let k = 0; k < needSpawn.length; k++) {
+          if (spawned >= maxNewSprites) {
+            break;
+          }
+          const i = needSpawn[k];
+          const s = symbols[i];
+          s.sprite = borrowGlyphText();
+          textLayer.addChild(s.sprite);
+          spawned++;
+        }
+
+        let activeSprites = 0;
+        for (let i = 0; i < symbols.length; i++) {
+          if (want[i] && symbols[i].sprite) {
+            activeSprites++;
+          }
+        }
+        return activeSprites;
+      }
+
+      function applySpritePose(s) {
+        if (!s.sprite) return;
+        s.sprite.x = Math.round(s.x);
+        s.sprite.y = Math.round(s.y);
+      }
+
+      const annotations = new PIXI.Container();
+      bgLayer.addChild(annotations);
+
+      const annotationLabel = new PIXI.Text({
+        text: '',
+        style: {
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontSize: 14,
+          fill: 0xd8ffe6,
+          fontWeight: '600'
+        }
+      });
+      annotationLabel.alpha = 0;
+      annotations.addChild(annotationLabel);
+
+      const annotationLine = new PIXI.Graphics();
+      annotations.addChild(annotationLine);
+
+      const statsText = new PIXI.Text({
+        text: '',
+        style: {
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontSize: 12,
+          fill: 0x9fd8af
+        }
+      });
+      statsText.x = worldPadding;
+      statsText.y = worldH - 34;
+      bgLayer.addChild(statsText);
+
+      const titleText = new PIXI.Text({
+        text: 'PixiJS task brief — matrix resolve (v1.3.7)',
+        style: {
+          fontFamily: 'Inter, Arial, sans-serif',
+          fontSize: 14,
+          fill: 0x9fd8af,
+          fontWeight: '600'
+        }
+      });
+      titleText.x = worldPadding;
+      titleText.y = 28;
+      bgLayer.addChild(titleText);
+
+      function centerContent() {
+        const { w, h } = viewSize();
+        if (w < 4 || h < 4) {
+          return;
+        }
+        content.position.set(Math.round((w - worldW) * 0.5), Math.round((h - worldH) * 0.5));
+        content.scale.set(1, 1);
+      }
+      centerContent();
+      requestAnimationFrame(() => {
+        centerContent();
+        requestAnimationFrame(centerContent);
+      });
+      app.ticker.addOnce(() => centerContent());
+
+      const ambient = new PIXI.Container();
+      app.stage.addChildAt(ambient, 0);
+
+      const rainColumns = [];
+      const colCount = Math.max(10, Math.min(48, Math.floor(viewSize().w / 48)));
+      const ambientBootMs = performance.now();
+      const AMBIENT_LINE_H = 14;
+      const AMBIENT_DEPTH = 0.92;
+
+      function makeAmbientGlyph(ch) {
+        if (ambientIsBitmap) {
+          return new PIXI.BitmapText({
+            text: ch,
+            style: {
+              fontFamily: AMBIENT_FONT,
+              fontSize: 12,
+              fill: 0x2ea85e,
+            },
+          });
+        }
+        return new PIXI.Text({
+          text: ch,
+          style: {
+            fontFamily: 'monospace',
+            fontSize: 12,
+            fill: 0x2ea85e,
+          },
+        });
+      }
+
+      function relayoutAmbientDepth(c) {
+        const b = c.baseAlpha;
+        for (let j = 0; j < c.lineSprites.length; j++) {
+          c.lineSprites[j].y = j * AMBIENT_LINE_H;
+          c.lineSprites[j].alpha = b * Math.pow(AMBIENT_DEPTH, j);
+        }
+      }
+
+      function nextAmbientSpawnDelayMs() {
+        return 50 + Math.pow(Math.random(), 2) * 400;
+      }
+
+      await new Promise((resolve) => {
+        let i = 0;
+        const step = () => {
+          const sliceStart = performance.now();
+          while (i < colCount && performance.now() - sliceStart < 1.8) {
+            const roll = Math.random();
+            const startOffsetMs =
+              roll < 0.14
+                ? 1000 * Math.random() * Math.random()
+                : 4000 * Math.max(Math.random(), Math.random());
+            const tailLinesMax = 5 + Math.floor(Math.random() * 16);
+            const seed = randomChar();
+            const baseAlpha = 0.06 + Math.random() * 0.12;
+            const g0 = makeAmbientGlyph(seed);
+            g0.y = 0;
+            g0.alpha = baseAlpha;
+            const root = new PIXI.Container();
+            root.x = i * 48 + (Math.random() - 0.5) * 24;
+            root.y = (Math.random() * 2 - 1) * viewSize().h;
+            root.addChild(g0);
+            ambient.addChild(root);
+            rainColumns.push({
+              root,
+              lineSprites: [g0],
+              baseAlpha,
+              colIx: i,
+              speedBase: (0.45 + Math.random() * 1.65) * 32,
+              startOffsetMs,
+              tailLinesMax,
+              columnLines: [seed],
+              slowLane: Math.random() < 0.4,
+              slowPhase: Math.floor(Math.random() * 5),
+              nextTextSwapMs: ambientBootMs + startOffsetMs + nextAmbientSpawnDelayMs(),
+            });
+            i++;
+          }
+          if (i < colCount) {
+            requestAnimationFrame(step);
+          } else {
+            resolve();
+          }
+        };
+        step();
+      });
+
+      let phase = 'rain';
+      let phaseTime = 0;
+      let cycleCount = 0;
+      const maxCycles = 1;
+      let activeKeywordIndex = -1;
+      let frameId = 0;
+
+      const DURATION_RAIN = 0.42;
+      const DURATION_RESOLVE = 0.62;
+      const SECTION_EXPLAIN = 0.48;
+      const TAIL_EXPLAIN = 0.35;
+
+      function setActiveKeyword(index) {
+        activeKeywordIndex = index;
+      }
+
+      function updateKeywordOverlay(t) {
+        for (let i = 0; i < highlights.length; i++) {
+          const h = highlights[i];
+          const keywordIndex = keywordDefs.findIndex(k => k.label === h.label);
+          const isActive = keywordIndex === activeKeywordIndex;
+          if (SHOW_KEYWORD_BEAM) {
+            const pulseSpeed = 2.4;
+            const pulse = 0.22 + 0.18 * Math.sin(t * pulseSpeed + h.col * 0.18 + h.row * 0.3);
+            h.gfx.alpha = isActive ? 0.28 + pulse : 0.06;
+          } else {
+            h.gfx.alpha = isActive ? 0.2 : 0.08;
+          }
+        }
+
+        if (SHOW_KEYWORD_BEAM && activeKeywordIndex >= 0) {
+          const def = keywordDefs[activeKeywordIndex];
+          const activeMarks = highlights.filter(h => h.label === def.label);
+          if (activeMarks.length) {
+            const first = activeMarks[0];
+            const last = activeMarks[activeMarks.length - 1];
+            annotationLabel.text = def.label;
+            annotationLabel.x = worldW - worldPadding - annotationLabel.width;
+            annotationLabel.y = 28;
+            annotationLabel.alpha = 0.95;
+
+            annotationLine.clear();
+            annotationLine.moveTo(annotationLabel.x - 14, annotationLabel.y + 10);
+            annotationLine.lineTo(last.baseX + 8, first.baseY + 10);
+            annotationLine.stroke({ color: keywordColors[activeKeywordIndex % keywordColors.length], width: 1.5, alpha: 0.9 });
+          }
+        } else {
+          annotationLabel.alpha = 0;
+          annotationLine.clear();
+        }
+      }
+
+      function resetRain() {
+        symbols.forEach(s => {
+          s.x = s.targetX;
+          s.y = -35 - Math.random() * 280;
+          s.resolved = false;
+          if (s.sprite) {
+            s.sprite.text = randomChar();
+            s.sprite.alpha = 0.78;
+          }
+        });
+      }
+
+      app.ticker.add((ticker) => {
+        frameId++;
+        const dt = Math.min(ticker.deltaTime / 60, 0.05);
+        phaseTime += dt;
+        const absoluteT = performance.now() * 0.001;
+
+        const SIM_STRIDE = 4;
+        if (simN > 0 && frameId > 1) {
+          const chunk = frameId % SIM_STRIDE;
+          const sdt = dt * SIM_STRIDE;
+          const q0 = Math.floor((chunk * simN) / SIM_STRIDE);
+          const q1 = Math.floor(((chunk + 1) * simN) / SIM_STRIDE);
+          for (let i = q0; i < q1; i++) {
+            simX[i] += simVX[i] * sdt;
+            simY[i] += simVY[i] * sdt;
+            if (simX[i] < -worldW * 0.5) simX[i] += simSpanX;
+            else if (simX[i] > worldW * 2.2) simX[i] -= simSpanX;
+            if (simY[i] < -worldH * 0.5) simY[i] += simSpanY;
+            else if (simY[i] > worldH * 2.2) simY[i] -= simSpanY;
+          }
+        }
+
+        if (phase === 'rain') {
+          setActiveKeyword(-1);
+
+          for (const s of symbols) {
+            s.y += s.speed * 90 * dt;
+            s.x += s.drift * 10 * dt;
+
+            if (s.y > worldH + 120) {
+              s.y = -25 - Math.random() * 180;
+            }
+          }
+
+          if (phaseTime > DURATION_RAIN) {
+            phase = 'resolve';
+            phaseTime = 0;
+          }
+        }
+
+        else if (phase === 'resolve') {
+          setActiveKeyword(-1);
+
+          for (const s of symbols) {
+            s.x += (s.targetX - s.x) * 0.18;
+            s.y += (s.targetY - s.y) * 0.18;
+
+            if (Math.abs(s.x - s.targetX) < 0.45 && Math.abs(s.y - s.targetY) < 0.45) {
+              s.x = s.targetX;
+              s.y = s.targetY;
+              s.resolved = true;
+            }
+          }
+
+          if (phaseTime > DURATION_RESOLVE) {
+            phase = 'explain';
+            phaseTime = 0;
+          }
+        }
+
+        else if (phase === 'explain') {
+          const idx = Math.floor(phaseTime / SECTION_EXPLAIN);
+
+          if (idx < keywordDefs.length) {
+            setActiveKeyword(idx);
+          } else {
+            setActiveKeyword(-1);
+          }
+
+          if (phaseTime > SECTION_EXPLAIN * keywordDefs.length + TAIL_EXPLAIN) {
+            cycleCount++;
+            if (cycleCount < maxCycles) {
+              resetRain();
+              phase = 'rain';
+              phaseTime = 0;
+            } else {
+              phase = 'final';
+              phaseTime = 0;
+              setActiveKeyword(-1);
+            }
+          }
+        }
+
+        else if (phase === 'final') {
+          setActiveKeyword(-1);
+          for (const s of symbols) {
+            s.x = s.targetX;
+            s.y = s.targetY;
+          }
+        }
+
+        /* Short stagger: high center-first budget so viewport never looks “empty”; uncapped by frame 4 */
+        const maxSpawn =
+          frameId <= 1 ? 1100 : frameId <= 2 ? 2200 : frameId <= 3 ? 4000 : 99999;
+        const activeSprites = cullAndSyncSprites(maxSpawn);
+        for (const s of symbols) {
+          applySpritePose(s);
+        }
+
+        const isWarmup = frameId <= 10;
+        const rainFlicker = isWarmup ? 0.032 : 0.055;
+        const rainPeek = isWarmup ? 0.008 : 0.012;
+
+        if (phase === 'rain') {
+          for (const s of symbols) {
+            if (!s.sprite) continue;
+            if (Math.random() < rainFlicker) {
+              s.sprite.text = randomChar();
+            }
+            if (Math.random() < rainPeek) {
+              s.sprite.text = s.finalChar === ' ' ? ' ' : s.finalChar;
+            }
+            s.sprite.alpha = 0.78;
+          }
+        } else if (phase === 'resolve') {
+          for (const s of symbols) {
+            if (!s.sprite) continue;
+            if (s.finalChar === ' ') {
+              s.sprite.text = ' ';
+            } else if (Math.abs(s.x - s.targetX) < 0.5 && Math.abs(s.y - s.targetY) < 0.5) {
+              s.sprite.text = s.finalChar;
+            } else if (Math.random() < 0.045) {
+              s.sprite.text = randomChar();
+            }
+          }
+        } else if (phase === 'explain') {
+          for (const s of symbols) {
+            if (!s.sprite) continue;
+            s.sprite.text = s.finalChar;
+            if (s.finalChar.trim()) {
+              s.sprite.alpha = SHOW_KEYWORD_BEAM
+                ? 0.82 + 0.18 * Math.sin(absoluteT * 1.5 + s.col * 0.08 + s.row * 0.04)
+                : 0.9;
+            } else {
+              s.sprite.alpha = 1;
+            }
+          }
+        } else if (phase === 'final') {
+          for (const s of symbols) {
+            if (!s.sprite) continue;
+            s.sprite.text = s.finalChar;
+            s.sprite.alpha = 1;
+          }
+        }
+
+        if (frameId === 1 || (frameId & 15) === 0) {
+          const mode = glyphsAreBitmap ? 'BitmapText' : 'Text';
+          statsText.text =
+            `${glyphTotal.toLocaleString()} glyphs · ${simN.toLocaleString()} CPU field · ${SIM_TARGET.toLocaleString()} total · ` +
+            `${activeSprites.toLocaleString()} live ${mode} · pool ${textPool.length}`;
+        }
+
+        updateKeywordOverlay(absoluteT);
+
+        const nowMs = performance.now();
+        const vh = viewSize().h;
+        const earlyAmbientWindow = nowMs - ambientBootMs < 2000;
+        for (const c of rainColumns) {
+          if (nowMs < ambientBootMs + c.startOffsetMs) {
+            continue;
+          }
+          if (earlyAmbientWindow && c.slowLane && (frameId + c.slowPhase) % 5 < 2) {
+            continue;
+          }
+          const wobble =
+            Math.sin(absoluteT * 2.3 + c.colIx * 0.61) * 4.2 +
+            Math.sin(absoluteT * 0.37 + c.colIx * 1.07) * 1.8;
+          const spd = Math.max(9, Math.min(100, c.speedBase + wobble));
+          c.root.y += spd * dt;
+          if (c.root.y > vh + 200) {
+            c.root.y = -vh - 80 - Math.random() * 160;
+          }
+          if (nowMs >= c.nextTextSwapMs) {
+            c.nextTextSwapMs = nowMs + nextAmbientSpawnDelayMs();
+            if (Math.random() < 0.15) {
+              continue;
+            }
+            let nextCh = Math.random() < 0.09 ? ' ' : randomChar();
+            const atCap = c.columnLines.length >= c.tailLinesMax;
+            c.columnLines.unshift(nextCh);
+            if (atCap) {
+              c.columnLines.pop();
+              const dead = c.lineSprites.pop();
+              if (dead) {
+                c.root.removeChild(dead);
+                dead.destroy({ texture: false });
+              }
+            }
+            const spr = makeAmbientGlyph(nextCh);
+            c.root.addChildAt(spr, 0);
+            c.lineSprites.unshift(spr);
+            relayoutAmbientDepth(c);
+          }
+        }
+      });
+
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      app.canvas.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+
+      window.addEventListener('pointerup', () => {
+        dragging = false;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        content.x += dx;
+        content.y += dy;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+
+      window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const oldScale = content.scale.x;
+        const scaleFactor = e.deltaY > 0 ? 0.92 : 1.08;
+        const newScale = Math.min(2.5, Math.max(0.45, oldScale * scaleFactor));
+
+        const rect = app.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const localX = (mouseX - content.x) / oldScale;
+        const localY = (mouseY - content.y) / oldScale;
+
+        content.scale.set(newScale);
+        content.x = mouseX - localX * newScale;
+        content.y = mouseY - localY * newScale;
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        app.renderer.resize(window.innerWidth, window.innerHeight);
+      });
+    })();
+  </script>
+</body>
+</html>

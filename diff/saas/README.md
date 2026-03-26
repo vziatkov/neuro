@@ -25,3 +25,5 @@ View your app in AI Studio: https://ai.studio/apps/6c42769b-0968-4b66-8e2b-8bcf2
 
 - From the storybook UI: **Casino / Oboz** → `./casino-oboz/index.html` (lobby: Dice + narrative + SaaS); **Matrix demos & PDFs** → `./woodland/index.html`.
 - Source of truth for HTML/PDFs stays in the repo root `public/woodland/` (single copy, no drift).
+
+**GitHub Pages (neuro repo):** after `npm run build`, run **`npm run copy-to-neuro-public`** — copies the full `dist/` (including `casino-oboz/` and `woodland/`) to **`../../public/diff/saas/dist/`** so Pages serves `…/diff/saas/dist/casino-oboz/index.html`.
