@@ -132,9 +132,9 @@ export default function App() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] uppercase">
-                      <span className="opacity-50">Sync Rate</span>
-                      <span>{isTyping ? 'CALCULATING...' : 'STABLE'}</span>
+                    <div className="flex justify-between gap-2 text-[10px] uppercase min-w-0">
+                      <span className="opacity-50 shrink-0">Sync Rate</span>
+                      <span className="text-right break-words leading-tight">{isTyping ? 'WRITING' : 'STABLE'}</span>
                     </div>
                     <div className="h-1 bg-white/5">
                       <motion.div 
