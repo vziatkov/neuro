@@ -354,6 +354,7 @@
         .art-dice { background: #050508; }
         .art-casino-hub { background: radial-gradient(ellipse 90% 70% at 50% 35%, rgba(255, 90, 40, 0.08) 0%, #050508 55%); }
         .art-casino-narrative { background: #050508; }
+        .art-casino-oboz { background: radial-gradient(ellipse 90% 70% at 50% 35%, rgba(255, 90, 40, 0.08) 0%, #050508 55%); }
         .art-mmo { background: #050508; }
         .art-probability { background: #050508; }
         .art-forest-twin { background: #050508; }
@@ -709,6 +710,15 @@
                     <div class="art-label">
                         <span class="art-name">The Observatory — Presence shapes the field</span>
                         <span class="art-sub">Echo · Bloom · Constellations · Listener · Observer Effect · P2P</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-casino-oboz" href="./diff/saas/dist/casino-oboz/index.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-casino-oboz"></canvas>
+                    <span class="art-live" aria-label="SaaS hub">HUB</span>
+                    <div class="art-label">
+                        <span class="art-name">Casino / Oboz</span>
+                        <span class="art-sub">Dice Room hub · Stripe-ready presence layer</span>
                     </div>
                 </a>
 
@@ -1840,6 +1850,47 @@
     }
   }
 
+  function drawCasinoOboz(t) {
+    var s = initCanvas("art-casino-oboz");
+    if (!s) return;
+    var ctx = s.ctx, w = s.w, h = s.h;
+    ctx.clearRect(0, 0, w, h);
+    var cx = w / 2, cy = h / 2;
+    var bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(w, h) * 0.55);
+    bg.addColorStop(0, "rgba(255, 100, 50, 0.07)");
+    bg.addColorStop(0.55, "rgba(20, 10, 6, 0.15)");
+    bg.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+    var pulse = 0.55 + 0.45 * Math.sin(t * 1.1);
+    ctx.strokeStyle = "rgba(255, 200, 130, " + (0.12 + pulse * 0.22) + ")";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.26, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255, 140, 66, " + (0.08 + pulse * 0.12) + ")";
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.34, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowColor = "rgba(255, 160, 80, 0.7)";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "#ff9f5c";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    for (var i = 0; i < 3; i++) {
+      var a = t * 0.6 + i * 2.1;
+      var r = 0.18 * Math.min(w, h) + (i % 2) * 6;
+      var px = cx + Math.cos(a) * r * 0.6;
+      var py = cy + Math.sin(a) * r * 0.45;
+      ctx.fillStyle = "rgba(255, 140, 66, " + (0.08 + i * 0.04) + ")";
+      ctx.beginPath();
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function drawMmo(t) {
     var s = initCanvas("art-mmo"); if (!s) return;
     var ctx = s.ctx, w = s.w, h = s.h;
@@ -1979,6 +2030,7 @@
     drawDice(t);
     drawCasinoHub(t);
     drawCasinoNarrative(t);
+    drawCasinoOboz(t);
     drawMmo(t);
     drawProbability(t);
     drawForestTwin(t);
