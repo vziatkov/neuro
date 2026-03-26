@@ -6,6 +6,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';
 import {viteStaticCopy} from 'vite-plugin-static-copy';
 
 const woodlandSrc = normalizePath(path.resolve(__dirname, '../../public/woodland'));
+const casinoObozHubSrc = normalizePath(path.resolve(__dirname, '../../public/casino-oboz'));
 const diceRoomSrc = normalizePath(path.resolve(__dirname, '../../dice-room.html'));
 
 export default defineConfig(({mode}) => {
@@ -21,6 +22,10 @@ export default defineConfig(({mode}) => {
           {
             src: `${woodlandSrc}/**/*`,
             dest: 'woodland',
+          },
+          {
+            src: `${casinoObozHubSrc}/**/*`,
+            dest: 'casino-oboz',
           },
           {
             src: diceRoomSrc,

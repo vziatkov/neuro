@@ -352,6 +352,8 @@
         .art-crash-v3 { background: #0a0a0c; }
         .art-crash-v4 { background: #0a0a0c; }
         .art-dice { background: #050508; }
+        .art-casino-hub { background: radial-gradient(ellipse 90% 70% at 50% 35%, rgba(255, 90, 40, 0.08) 0%, #050508 55%); }
+        .art-casino-narrative { background: #050508; }
         .art-casino-oboz { background: radial-gradient(ellipse 90% 70% at 50% 35%, rgba(255, 90, 40, 0.08) 0%, #050508 55%); }
         .art-mmo { background: #050508; }
         .art-probability { background: #050508; }
@@ -653,7 +655,25 @@
                     <span class="art-live" aria-label="Live demo">LIVE</span>
                     <div class="art-label">
                         <span class="art-name">Dice Room</span>
-                        <span class="art-sub">Guess 1–6 · shared RNG · P2P voice + leaderboard</span>
+                        <span class="art-sub">Guess 1–6 · shared RNG · P2P chat + leaderboard · presence layer</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-casino-hub" href="./casino-oboz/index.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-casino-hub"></canvas>
+                    <span class="art-live" aria-label="Hub">HUB</span>
+                    <div class="art-label">
+                        <span class="art-name">Casino / Oboz — Lobby</span>
+                        <span class="art-sub">Dice · narrative · SaaS links in one place</span>
+                    </div>
+                </a>
+
+                <a class="art-card art-casino-narrative" href="./diff/casino/inside-the-system/dist/index.html" target="_blank" rel="noopener noreferrer">
+                    <canvas class="art-canvas" id="art-casino-narrative"></canvas>
+                    <span class="art-live" aria-label="Live demo">LIVE</span>
+                    <div class="art-label">
+                        <span class="art-name">Inside the System</span>
+                        <span class="art-sub">Terminal narrative · choices · system voice</span>
                     </div>
                 </a>
 
@@ -1753,6 +1773,83 @@
     });
   }
 
+  function drawCasinoHub(t) {
+    var s = initCanvas("art-casino-hub");
+    if (!s) return;
+    var ctx = s.ctx, w = s.w, h = s.h;
+    ctx.clearRect(0, 0, w, h);
+    var cx = w / 2, cy = h / 2;
+    var bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(w, h) * 0.55);
+    bg.addColorStop(0, "rgba(255, 100, 50, 0.07)");
+    bg.addColorStop(0.55, "rgba(20, 10, 6, 0.15)");
+    bg.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+    var pulse = 0.55 + 0.45 * Math.sin(t * 1.1);
+    ctx.strokeStyle = "rgba(255, 200, 130, " + (0.12 + pulse * 0.22) + ")";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.26, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255, 140, 66, " + (0.08 + pulse * 0.12) + ")";
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.34, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowColor = "rgba(255, 160, 80, 0.7)";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "#ff9f5c";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    for (var i = 0; i < 3; i++) {
+      var a = t * 0.6 + i * 2.1;
+      var r = 0.18 * Math.min(w, h) + (i % 2) * 6;
+      var px = cx + Math.cos(a) * r * 0.6;
+      var py = cy + Math.sin(a) * r * 0.45;
+      ctx.fillStyle = "rgba(255, 140, 66, " + (0.08 + i * 0.04) + ")";
+      ctx.beginPath();
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawCasinoNarrative(t) {
+    var s = initCanvas("art-casino-narrative");
+    if (!s) return;
+    var ctx = s.ctx, w = s.w, h = s.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(20, 12, 8, 0.95)";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(242, 125, 38, 0.15)";
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx < w; gx += 18) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, h);
+      ctx.stroke();
+    }
+    for (var gy = 0; gy < h; gy += 12) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(w, gy);
+      ctx.stroke();
+    }
+    var pad = 14;
+    ctx.fillStyle = "rgba(242, 125, 38, 0.85)";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText(">", pad, pad + 10);
+    ctx.fillStyle = "rgba(228, 227, 224, 0.55)";
+    var line = "You are inside the system.";
+    var blink = Math.floor(t * 2) % 2;
+    var shown = Math.min(line.length, Math.floor(t * 8) % (line.length + 8));
+    ctx.fillText(line.slice(0, shown), pad + 12, pad + 10);
+    if (blink) {
+      ctx.fillStyle = "rgba(242, 125, 38, 0.9)";
+      ctx.fillRect(pad + 12 + ctx.measureText(line.slice(0, shown)).width, pad + 2, 6, 11);
+    }
+  }
+
   function drawCasinoOboz(t) {
     var s = initCanvas("art-casino-oboz");
     if (!s) return;
@@ -1931,6 +2028,8 @@
     drawCrash(t, 'art-crash-v3', 'v3');
     drawCrash(t, 'art-crash-v4', 'v4');
     drawDice(t);
+    drawCasinoHub(t);
+    drawCasinoNarrative(t);
     drawCasinoOboz(t);
     drawMmo(t);
     drawProbability(t);
