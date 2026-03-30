@@ -125,6 +125,29 @@
     }
     .unlock-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     .unlock-toast.hide { opacity: 0; transform: translate(-50%, -50%) scale(0.98); transition: opacity 0.7s ease 1.1s, transform 0.7s ease 1.1s; }
+    .pay-drama {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.38);
+      line-height: 1.7;
+      margin-bottom: 14px;
+      font-style: italic;
+      letter-spacing: 0.03em;
+    }
+    body.unlock-flash::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      pointer-events: none;
+      background: radial-gradient(ellipse 90% 70% at 50% 42%, rgba(255, 140, 66, 0.38), rgba(68, 255, 136, 0.1) 48%, transparent 68%);
+      opacity: 0;
+      animation: unlockFlash 0.42s ease-out forwards;
+    }
+    @keyframes unlockFlash {
+      0% { opacity: 0; }
+      40% { opacity: 1; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -145,7 +168,8 @@
     <div class="card" id="cardPay">
       <h2>Support the room</h2>
       <p>Visibility in the system — not a rigged outcome.</p>
-      <a class="primary cta-pay" id="stripePay" href="https://buy.stripe.com/5kQbJ3eg64mfh2W1WX5ZC00" target="_blank" rel="noopener noreferrer">Be seen in the system — €3</a>
+      <p class="pay-drama">You are already inside.<br />But no one sees you.</p>
+      <a class="primary cta-pay" id="stripePay" href="https://buy.stripe.com/5kQbJ3eg64mfh2W1WX5ZC00" target="_blank" rel="noopener noreferrer">Be seen inside the system — €3</a>
       <p class="note">Stripe success URL: <code>https://vziatkov.github.io/neuro/casino-oboz/index.html?paid=1</code> (+ optional <code>#room</code>).</p>
     </div>
 
@@ -193,7 +217,8 @@
     if (paid) {
       document.body.classList.add("lobby-paid");
       if (unlockedFromUrl) {
-        document.body.classList.add("just-unlocked");
+        document.body.classList.add("just-unlocked", "unlock-flash");
+        setTimeout(function () { document.body.classList.remove("unlock-flash"); }, 480);
         var gates = document.querySelectorAll(".gate-locked");
         gates.forEach(function (el, i) {
           el.style.animationDelay = (0.05 + i * 0.14) + "s";
