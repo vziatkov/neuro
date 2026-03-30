@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Field Birth v2 — L2 grid foundation: tiles, Gaussian warp, macro breath, uniforms. PixiJS v8." />
+  <title>Field Birth v2 — L2 Grid · HiggsField</title>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'IBM Plex Mono', 'Courier New', monospace; touch-action: none; color: #63ff9b; }
+    #hud { position: fixed; left: 12px; top: 12px; z-index: 30; font-size: 9px; letter-spacing: 0.06em; line-height: 1.45; background: rgba(0, 10, 5, 0.88); border: 1px solid #1e4429; padding: 10px 12px; max-width: min(440px, 94vw); pointer-events: none; }
+    #hud code { color: #8effb8; }
+    details.manifest { position: fixed; top: 12px; right: 12px; z-index: 30; pointer-events: auto; max-width: min(300px, 90vw); font-size: 10px; color: #63ff9b; }
+    details.manifest summary { cursor: pointer; list-style: none; background: rgba(0, 10, 5, 0.85); border: 1px solid #1e4429; padding: 8px 10px; text-transform: uppercase; }
+    details.manifest summary::-webkit-details-marker { display: none; }
+    details.manifest .body { background: rgba(0, 8, 4, 0.92); border: 1px solid #1e4429; border-top: none; padding: 8px 10px 10px; color: rgba(180, 255, 200, 0.88); font-size: 10px; line-height: 1.4; text-transform: none; }
+    details.manifest a { color: #8effb8; }
+  </style>
+</head>
+<body>
+  <div id="hud"></div>
+  <details class="manifest">
+    <summary>L2 · docs</summary>
+    <div class="body">
+      <strong>Step B</strong> (this file): grid + tiles + <code>HiggsField</code> + Gaussian warp (CPU).<br />
+      <strong>Next A:</strong> GLSL vertex shader (see bottom comment in &lt;script&gt;).<br />
+      <strong>Next C:</strong> Pulsar → <code>tileId</code> + neighbor resonance.<br />
+      <a href="./static/CARD_AND_DEMO_STRATEGY_EN_RU.md">CARD_AND_DEMO_STRATEGY_EN_RU.md</a>
+    </div>
+  </details>
+
+  <script>
+    /**
+     * Field Birth v2 — L2 foundation (Grid + physics root)
+     * Dependency order: B (this) → A (GLSL Mesh) → C (Pulsar → tile)
+     */
+    (async () => {
+      const CONFIG = {
+        gridTiles: [12, 18],
+        subdivPerTile: 4,
+        macroPeriodMs: 5000,
+        /** Primary accent — matches CARD doc */
+        lineColor: 0x63ff9b,
+        lineAlpha: 0.35,
+        /** Gaussian bump at deformation center */
+        warpA: 42,
+        warpSigma: 220,
+        baseColorHex: '#63ff9b'
+      };
+
+      /** uTime (s), uMacroPhase (rad), uResonance [0..1], uSpread (scale factor for breath) */
+      const uniforms = {
+        uTime: 0,
+        uMacroPhase: 0,
+        uResonance: 0,
+        uSpread: 1
+      };
+
+      /**
+       * Gaussian Z-style offset in 2D (vertical displacement in screen px)
+       * Z_offset = A * exp(-((x-x0)^2 + (y-y0)^2) / (2*sigma^2))
+       */
+      function gaussianOffset(x, y, cx, cy, A, sigma) {
+        const dx = x - cx;
+        const dy = y - cy;
+        return A * Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma));
+      }
+
+      class Tile {
+        constructor(ix, iy, minX, minY, maxX, maxY) {
+          this.ix = ix;
+          this.iy = iy;
+          this.minX = minX;
+          this.minY = minY;
+          this.maxX = maxX;
+          this.maxY = maxY;
+          /** 0..1 — placeholder until neighbor sync (Part C) */
+          this.resonanceMeter = 0;
+        }
+      }
+
+      function buildTiles(screenW, screenH) {
+        const [tw, th] = CONFIG.gridTiles;
+        const tileW = screenW / tw;
+        const tileH = screenH / th;
+        const tiles = [];
+        for (let j = 0; j < th; j++) {
+          for (let i = 0; i < tw; i++) {
+            tiles.push(new Tile(i, j, i * tileW, j * tileH, (i + 1) * tileW, (j + 1) * tileH));
+          }
+        }
+        return { tiles, tileW, tileH };
+      }
+
+      function worldToTileId(x, y, tileW, tileH, tw, th) {
+        const ix = Math.min(tw - 1, Math.max(0, Math.floor(x / tileW)));
+        const iy = Math.min(th - 1, Math.max(0, Math.floor(y / tileH)));
+        return iy * tw + ix;
+      }
+
+      class HiggsField {
+        constructor() {
+          this.resonanceMeter = 0;
+          this.macroPhase = 0;
+          this.arrhythmia = 0;
+          this._lastPointer = { x: 0, y: 0 };
+          this._pointerVel = 0;
+        }
+
+        /**
+         * @param dtMs frame delta
+         * @param gyro { x, y } normalized ~ -1..1 (or 0 if unavailable)
+         */
+        update(dtMs, gyro) {
+          const dt = dtMs / 1000;
+          uniforms.uTime += dt;
+
+          const period = CONFIG.macroPeriodMs / 1000;
+          this.macroPhase += (dt / period) * Math.PI * 2;
+          this.macroPhase += this.arrhythmia * dt * 0.8;
+          this.arrhythmia *= 0.92;
+
+          const g = Math.abs(gyro.x) + Math.abs(gyro.y);
+          this.arrhythmia += g * 0.04;
+          this.macroPhase += Math.sin(g * 3) * 0.002;
+
+          const breath = Math.sin(this.macroPhase);
+          uniforms.uSpread = 1 + breath * 0.05;
+          uniforms.uMacroPhase = this.macroPhase;
+
+          this.resonanceMeter += this._pointerVel * 0.0012;
+          this.resonanceMeter *= 0.997;
+          this.resonanceMeter = Math.min(1, Math.max(0, this.resonanceMeter));
+          uniforms.uResonance = this.resonanceMeter;
+
+          this._pointerVel *= 0.94;
+        }
+
+        trackPointer(x, y, dtMs) {
+          const dx = x - this._lastPointer.x;
+          const dy = y - this._lastPointer.y;
+          this._pointerVel = Math.hypot(dx, dy) / Math.max(1, dtMs);
+          this._lastPointer = { x, y };
+        }
+      }
+
+      const app = new PIXI.Application();
+      await app.init({
+        resizeTo: window,
+        background: '#000000',
+        antialias: true,
+        resolution: Math.min(window.devicePixelRatio || 1, 2),
+        autoDensity: true
+      });
+      document.body.appendChild(app.canvas);
+      app.canvas.style.touchAction = 'none';
+
+      const root = new PIXI.Container();
+      app.stage.addChild(root);
+
+      const field = new HiggsField();
+      let tileLayout = buildTiles(app.screen.width, app.screen.height);
+      let tiles = tileLayout.tiles;
+
+      const gridG = new PIXI.Graphics();
+      root.addChild(gridG);
+
+      /** Deformation center (screen space, inside root) */
+      let deformCx = app.screen.width * 0.5;
+      let deformCy = app.screen.height * 0.5;
+
+      function drawGrid() {
+        const w = app.screen.width;
+        const h = app.screen.height;
+        const [tw, th] = CONFIG.gridTiles;
+        const sub = CONFIG.subdivPerTile;
+        const vx = tw * sub + 1;
+        const vy = th * sub + 1;
+        const cellW = w / (tw * sub);
+        const cellH = h / (th * sub);
+
+        gridG.clear();
+        const col = CONFIG.lineColor;
+        const A = CONFIG.warpA * uniforms.uResonance;
+        const sigma = CONFIG.warpSigma;
+
+        function vertX(i, j) {
+          const bx = i * cellW;
+          const by = j * cellH;
+          const g = gaussianOffset(bx, by, deformCx, deformCy, A, sigma);
+          return { x: bx, y: by + g };
+        }
+
+        for (let j = 0; j < vy; j++) {
+          const p0 = vertX(0, j);
+          gridG.moveTo(p0.x, p0.y);
+          for (let i = 1; i < vx; i++) {
+            const p = vertX(i, j);
+            gridG.lineTo(p.x, p.y);
+          }
+          gridG.stroke({ width: 1, color: col, alpha: CONFIG.lineAlpha });
+        }
+        for (let i = 0; i < vx; i++) {
+          const p0 = vertX(i, 0);
+          gridG.moveTo(p0.x, p0.y);
+          for (let j = 1; j < vy; j++) {
+            const p = vertX(i, j);
+            gridG.lineTo(p.x, p.y);
+          }
+          gridG.stroke({ width: 1, color: col, alpha: CONFIG.lineAlpha * 0.85 });
+        }
+      }
+
+      let gyro = { x: 0, y: 0 };
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (e) => {
+          gyro = {
+            x: ((e.gamma || 0) / 45),
+            y: ((e.beta || 0) / 45)
+          };
+        }, true);
+      }
+
+      app.stage.eventMode = 'static';
+      app.stage.hitArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
+      app.stage.on('pointermove', (e) => {
+        deformCx = e.global.x;
+        deformCy = e.global.y;
+        field.trackPointer(e.global.x, e.global.y, app.ticker.deltaMS);
+        const tid = worldToTileId(
+          e.global.x,
+          e.global.y,
+          tileLayout.tileW,
+          tileLayout.tileH,
+          CONFIG.gridTiles[0],
+          CONFIG.gridTiles[1]
+        );
+        if (tiles[tid]) tiles[tid].resonanceMeter = Math.min(1, tiles[tid].resonanceMeter + 0.02);
+      });
+
+      const hud = document.getElementById('hud');
+      let frame = 0;
+
+      app.ticker.add((ticker) => {
+        const dtMs = ticker.deltaMS;
+        field.update(dtMs, gyro);
+
+        root.scale.set(uniforms.uSpread);
+        root.pivot.set(app.screen.width / 2, app.screen.height / 2);
+        root.position.set(app.screen.width / 2, app.screen.height / 2);
+
+        drawGrid();
+
+        for (let i = 0; i < tiles.length; i++) {
+          tiles[i].resonanceMeter *= 0.9995;
+        }
+
+        frame++;
+        if (frame % 8 === 0) {
+          hud.innerHTML = [
+            '<strong>L2 · HiggsField</strong>',
+            `<code>uTime</code> ${uniforms.uTime.toFixed(2)} · <code>uMacroPhase</code> ${uniforms.uMacroPhase.toFixed(2)} rad`,
+            `<code>uResonance</code> ${uniforms.uResonance.toFixed(3)} · <code>uSpread</code> ${uniforms.uSpread.toFixed(4)}`,
+            `tiles ${tiles.length} · deform (${Math.round(deformCx)}, ${Math.round(deformCy)}) · gyro (${gyro.x.toFixed(2)}, ${gyro.y.toFixed(2)})`
+          ].join('<br/>');
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        app.stage.hitArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
+        tileLayout = buildTiles(app.screen.width, app.screen.height);
+        tiles = tileLayout.tiles;
+        root.pivot.set(app.screen.width / 2, app.screen.height / 2);
+        root.position.set(app.screen.width / 2, app.screen.height / 2);
+      });
+
+      /*
+       * === Next step A: GLSL grid (Pixi Mesh) — drop-in vertex idea ===
+       *
+       * uniform float uMacroPhase;
+       * uniform float uResonance;
+       * uniform vec2 uDeformCenter; // pixel or UV
+       * uniform float uA;
+       * uniform float uSigma;
+       * attribute vec2 aPosition;
+       *
+       * void main() {
+       *   vec2 p = aPosition;
+       *   vec2 d = p - uDeformCenter;
+       *   float g = uA * uResonance * exp(-dot(d,d) / (2.0 * uSigma * uSigma));
+       *   p.y += g;
+       *   gl_Position = vec4((projectionMatrix * worldMatrix * vec3(p, 1.0)).xy, 0.0, 1.0);
+       * }
+       *
+       * Wire the same `uniforms` object into Shader resources / uniform buffer.
+       */
+    })();
+  </script>
+</body>
+</html>

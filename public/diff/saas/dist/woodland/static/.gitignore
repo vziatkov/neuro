@@ -1,0 +1,4 @@
+# Local refs / generated media — keep repo lean (GitHub 100MB limit)
+*.mp4
+*.mov
+ChatGPT*.png
