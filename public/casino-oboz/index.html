@@ -27,7 +27,21 @@
     .wrap { max-width: 560px; margin: 0 auto; }
     .crumb { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 140, 66, 0.45); margin-bottom: 12px; }
     h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.92); margin-bottom: 8px; }
-    .lede { font-size: 12px; color: rgba(255, 255, 255, 0.45); margin-bottom: 28px; }
+    .lede { font-size: 12px; color: rgba(255, 255, 255, 0.45); margin-bottom: 20px; }
+    .presence-pill {
+      display: none;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 210, 150, 0.95);
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 200, 120, 0.4);
+      background: rgba(255, 140, 66, 0.1);
+      margin-bottom: 20px;
+      box-shadow: 0 0 18px rgba(255, 140, 66, 0.12);
+    }
+    body.lobby-paid .presence-pill { display: inline-block; }
     .card {
       border: 1px solid rgba(255, 140, 66, 0.22);
       border-radius: 10px;
@@ -50,38 +64,106 @@
       transition: background 0.2s, box-shadow 0.2s;
     }
     a.primary:hover { background: rgba(255, 140, 66, 0.22); box-shadow: 0 0 20px rgba(255, 140, 66, 0.2); }
+    a.cta-pay {
+      background: rgba(255, 140, 66, 0.22);
+      border-color: rgba(255, 180, 120, 0.55);
+      font-weight: 600;
+    }
     a.back { font-size: 10px; color: rgba(255, 255, 255, 0.28); text-decoration: none; margin-top: 24px; display: inline-block; }
     a.back:hover { color: rgba(255, 140, 66, 0.75); }
     .note { font-size: 9px; color: #444; margin-top: 12px; line-height: 1.6; }
     code { color: rgba(255, 140, 66, 0.55); font-size: 10px; }
+    .gate-locked {
+      opacity: 0.38;
+      filter: grayscale(0.35);
+      pointer-events: none;
+      position: relative;
+    }
+    .gate-locked::after {
+      content: "Unlock below";
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255, 140, 66, 0.55);
+    }
+    body.lobby-paid .gate-locked {
+      opacity: 1;
+      filter: none;
+      pointer-events: auto;
+    }
+    body.lobby-paid .gate-locked::after { content: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="crumb">Neuro</div>
     <h1>Casino / Oboz</h1>
-    <p class="lede">Shared seed · narrative layer · optional presence after pay.</p>
+    <p class="lede">Same seed, shared reality — support the room and unlock the full deck.</p>
+    <div class="presence-pill" id="presencePill">In the room</div>
 
-    <div class="card">
+    <div class="card" id="cardPreview">
+      <h2>Preview</h2>
+      <p>One node, many faces: dice, narrative, woodland. This lobby is the airlock — peek inside, then choose how you enter.</p>
+      <p class="note">MVP: client-only unlock — not bank-grade security; it’s a conversion &amp; presence test.</p>
+    </div>
+
+    <div class="card" id="cardPay">
+      <h2>Support the room</h2>
+      <p>Show you’re in the room — visibility, not a rigged outcome.</p>
+      <a class="primary cta-pay" id="stripePay" href="https://buy.stripe.com/5kQbJ3eg64mfh2W1WX5ZC00" target="_blank" rel="noopener noreferrer">Show you’re in the room — €3</a>
+      <p class="note">Stripe success URL: <code>https://vziatkov.github.io/neuro/casino-oboz/index.html?paid=1</code> (+ optional <code>#room</code>).</p>
+    </div>
+
+    <div class="card gate-locked" id="gateDice">
       <h2>Dice Room</h2>
-      <p>Same link → same rolls. Unlock presence via return URL with <code>?paid=1</code> (keep room <code>#hash</code>).</p>
+      <p>Same link → same rolls. P2P chat &amp; leaderboard. Optional presence glow after pay (see Dice).</p>
       <a class="primary" href="/neuro/dice-room.html">Open Dice Room</a>
     </div>
 
-    <div class="card">
+    <div class="card gate-locked" id="gateNarrative">
       <h2>Inside the System</h2>
       <p>Terminal narrative — choices, typing rhythm, system voice.</p>
       <a class="primary" href="/neuro/diff/casino/inside-the-system/dist/index.html">Open narrative</a>
     </div>
 
-    <div class="card">
+    <div class="card gate-locked" id="gateSaaS">
       <h2>Woodland SaaS</h2>
-      <p>Interactive storybook build (Matrix demos + PDFs in dist).</p>
+      <p>Interactive storybook (Matrix demos + PDFs).</p>
       <a class="primary" href="/neuro/diff/saas/dist/index.html">Open storybook</a>
-      <p class="note">Paths use <code>/neuro/…</code> so this hub works from root or from <code>diff/saas/dist/casino-oboz/</code>.</p>
     </div>
 
     <a class="back" href="/neuro/index.html">← Neuro core</a>
   </div>
+  <script>
+  (function () {
+    var LS = "casino_oboz_paid";
+    var STRIPE = "https://buy.stripe.com/5kQbJ3eg64mfh2W1WX5ZC00";
+    try {
+      var q = new URLSearchParams(window.location.search);
+      var pv = q.get("paid");
+      if (pv === "1" || pv === "true" || pv === "yes") {
+        localStorage.setItem(LS, "1");
+        q.delete("paid");
+        var qs = q.toString();
+        history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+      }
+    } catch (e) {}
+    var paid = localStorage.getItem(LS) === "1";
+    if (paid) {
+      document.body.classList.add("lobby-paid");
+      var payCard = document.getElementById("cardPay");
+      if (payCard) {
+        var done = document.createElement("p");
+        done.className = "note";
+        done.style.color = "rgba(68,255,136,0.75)";
+        done.textContent = "You’re visible in the system — full deck unlocked.";
+        payCard.appendChild(done);
+      }
+    }
+  })();
+  </script>
 </body>
 </html>
