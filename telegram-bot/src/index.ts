@@ -50,14 +50,15 @@ function rememberUser(ctx: Context): void {
   );
 }
 
+/** Use `url` so the button works before BotFather domain allowlist for Web Apps is set. */
 function openCasinoKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().webApp("Open Casino", WEBAPP_URL);
+  return new InlineKeyboard().url("Open Casino", WEBAPP_URL);
 }
 
 function openCasinoRoomKeyboard(tournamentId: string): InlineKeyboard {
   const roomUrl = `${WEBAPP_URL}?room=${encodeURIComponent(tournamentId)}`;
   return new InlineKeyboard()
-    .webApp("Open Casino", roomUrl)
+    .url("Open Casino", roomUrl)
     .text("Join Tournament", `join_tournament:${tournamentId}`);
 }
 
