@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "bot:dev": "tsx scripts/bot-local.ts",
     "build": "vite build",
     "copy-to-neuro-public": "mkdir -p ../../../public/diff/casino/inside-the-system && rm -rf ../../../public/diff/casino/inside-the-system/dist && cp -r dist ../../../public/diff/casino/inside-the-system/",
     "preview": "vite preview",
@@ -13,7 +14,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
-    "@tailwindcss/vite": "^4.1.14",
+    "@tailwindcss/vite": "^4.2.2",
     "@vitejs/plugin-react": "^5.0.4",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
@@ -24,6 +25,7 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.5.0",
+    "telegraf": "^4.16.3",
     "vite": "^6.2.0"
   },
   "devDependencies": {
