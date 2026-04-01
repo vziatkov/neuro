@@ -1,13 +1,15 @@
-# Telegram Bot — Step 1 (grammY)
+# Telegram Bot — Step 2 Lite (grammY)
 
 Minimal Telegram bot for Casino Oboz MVP.
 
 ## Features
 
 - `/start` command with inline **Open Casino** WebApp button
-- `/tournament` command
-- `/join` command
+- `/tournament` creates a tournament room (`Map` state)
+- `/join` adds user to latest tournament
+- `/players` shows current tournament players
 - In-memory user registry (`Map`)
+- In-memory tournament registry (`Map`)
 - Console logging for `user.id` and `username`
 
 ## Setup
@@ -19,7 +21,7 @@ Minimal Telegram bot for Casino Oboz MVP.
 2. Fill `.env`:
 
    - `BOT_TOKEN=...` from BotFather
-   - `WEBAPP_URL=https://example.com/telegram-webapp` (placeholder for now)
+   - `WEBAPP_URL=https://example.com/telegram-webapp` (placeholder or your webapp URL)
 
 3. Install:
 
@@ -33,4 +35,11 @@ Minimal Telegram bot for Casino Oboz MVP.
 
    - `npm run build`
    - `npm start`
+
+## Commands
+
+- `/start` — intro + Open Casino button
+- `/tournament` — create a new tournament and get a room button
+- `/join` — join latest tournament
+- `/players` — list players in latest tournament
 
