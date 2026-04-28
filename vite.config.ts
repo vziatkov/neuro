@@ -35,6 +35,7 @@ export default defineConfig({
         'card-field-birth-v1': resolve(__dirname, 'card-field-birth-v1.html'),
         'renderingAppRead': resolve(__dirname, 'renderingAppRead.html'),
         'forest-story': resolve(__dirname, 'forest-story.html'),
+        'book/index': resolve(__dirname, 'book/index.html'),
         // preview (12).html — legacy path; preview12.html — same page, ASCII URL (deployed to dist).
         'story-preview-12': resolve(__dirname, 'SMM/storytelling/interview/dist/contextAll/preview (12).html'),
         'story-preview12': resolve(__dirname, 'SMM/storytelling/interview/dist/contextAll/preview12.html'),
