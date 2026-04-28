@@ -1,8 +1,27 @@
+import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+
+const BOOK_CHAPTERS_SOURCE = resolve(__dirname, 'book/chapters');
+const BOOK_CHAPTERS_DIST = resolve(__dirname, 'dist/book/chapters');
+
+function copyBookChaptersPlugin() {
+  return {
+    name: 'copy-book-chapters',
+    closeBundle() {
+      if (!existsSync(BOOK_CHAPTERS_SOURCE)) {
+        return;
+      }
+
+      mkdirSync(dirname(BOOK_CHAPTERS_DIST), { recursive: true });
+      cpSync(BOOK_CHAPTERS_SOURCE, BOOK_CHAPTERS_DIST, { recursive: true, force: true });
+    },
+  };
+}
 
 export default defineConfig({
   base: '/neuro/',
+  plugins: [copyBookChaptersPlugin()],
   build: {
     rollupOptions: {
       input: {
