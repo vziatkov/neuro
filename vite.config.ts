@@ -1,8 +1,27 @@
+import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+
+const BOOK_CHAPTERS_SOURCE = resolve(__dirname, 'book/chapters');
+const BOOK_CHAPTERS_DIST = resolve(__dirname, 'dist/book/chapters');
+
+function copyBookChaptersPlugin() {
+  return {
+    name: 'copy-book-chapters',
+    closeBundle() {
+      if (!existsSync(BOOK_CHAPTERS_SOURCE)) {
+        return;
+      }
+
+      mkdirSync(dirname(BOOK_CHAPTERS_DIST), { recursive: true });
+      cpSync(BOOK_CHAPTERS_SOURCE, BOOK_CHAPTERS_DIST, { recursive: true, force: true });
+    },
+  };
+}
 
 export default defineConfig({
   base: '/neuro/',
+  plugins: [copyBookChaptersPlugin()],
   build: {
     rollupOptions: {
       input: {
@@ -35,6 +54,7 @@ export default defineConfig({
         'card-field-birth-v1': resolve(__dirname, 'card-field-birth-v1.html'),
         'renderingAppRead': resolve(__dirname, 'renderingAppRead.html'),
         'forest-story': resolve(__dirname, 'forest-story.html'),
+        'book/index': resolve(__dirname, 'book/index.html'),
         // preview (12).html — legacy path; preview12.html — same page, ASCII URL (deployed to dist).
         'story-preview-12': resolve(__dirname, 'SMM/storytelling/interview/dist/contextAll/preview (12).html'),
         'story-preview12': resolve(__dirname, 'SMM/storytelling/interview/dist/contextAll/preview12.html'),
