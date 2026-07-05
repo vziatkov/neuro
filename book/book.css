@@ -1,55 +1,154 @@
+.layout,
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(242, 125, 38, 0.12), transparent 30rem),
+    #f5f1ea;
+}
+
 .layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: minmax(220px, 280px) 1fr;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
-  color: #1f2937;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #201a16;
 }
 
 .sidebar {
-  border-right: 1px solid #e5e7eb;
-  padding: 24px 16px;
-  background: #f9fafb;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid rgba(77, 57, 42, 0.14);
+  padding: 28px 18px;
+  background: rgba(255, 252, 247, 0.82);
+  backdrop-filter: blur(18px);
 }
 
 .sidebar h1 {
-  margin: 0 0 16px;
-  font-size: 20px;
+  margin: 0 0 18px;
+  font-size: 22px;
+  letter-spacing: -0.03em;
 }
 
 .chapter-link {
   display: block;
   width: 100%;
   text-align: left;
-  margin-bottom: 8px;
-  padding: 8px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
+  margin-bottom: 10px;
+  padding: 11px 12px;
+  border: 1px solid rgba(77, 57, 42, 0.13);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: inherit;
   cursor: pointer;
   font-size: 14px;
+  line-height: 1.3;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.chapter-link:hover {
+  border-color: rgba(242, 125, 38, 0.42);
+  background: #fff;
+  transform: translateY(-1px);
 }
 
 .chapter-link.active {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: rgba(242, 125, 38, 0.76);
+  background: #fff7ed;
 }
 
 .content {
-  padding: 28px 32px;
-  max-width: 920px;
+  width: min(920px, 100%);
+  padding: 48px clamp(22px, 5vw, 64px);
 }
 
 .content h2 {
   margin-top: 0;
   margin-bottom: 8px;
+  font-size: clamp(32px, 5vw, 56px);
+  letter-spacing: -0.06em;
+  line-height: 0.98;
 }
 
 .subject {
   margin-top: 0;
-  margin-bottom: 24px;
-  font-size: 14px;
-  color: #6b7280;
+  margin-bottom: 34px;
+  font-size: 15px;
+  color: #806b5b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lab-panel {
+  margin: 0 0 34px;
+  overflow: hidden;
+  border: 1px solid rgba(77, 57, 42, 0.14);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(242, 125, 38, 0.16), transparent 28rem),
+    #17120f;
+  box-shadow: 0 22px 70px rgba(62, 39, 18, 0.16);
+}
+
+.lab-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f5efe7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lab-panel-badge {
+  padding: 3px 8px;
+  border: 1px solid rgba(242, 125, 38, 0.35);
+  border-radius: 999px;
+  color: #f27d26;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#chapter-canvas {
+  display: block;
+  width: 100%;
+  height: min(48vw, 420px);
+  min-height: 260px;
+}
+
+#chapter-body {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 2.2vw, 22px);
+  line-height: 1.72;
+}
+
+#chapter-body h2,
+#chapter-body h3 {
+  scroll-margin-top: 28px;
+}
+
+#chapter-body h2 {
+  margin-top: 42px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+#chapter-body a {
+  color: #c45b15;
+  text-decoration-color: rgba(196, 91, 21, 0.35);
+  text-underline-offset: 0.18em;
+}
+
+#chapter-body a:hover {
+  text-decoration-color: currentColor;
 }
 
 #chapter-body :first-child {
@@ -62,7 +161,13 @@
   }
 
   .sidebar {
+    position: static;
+    height: auto;
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid rgba(77, 57, 42, 0.14);
+  }
+
+  #chapter-canvas {
+    height: 320px;
   }
 }

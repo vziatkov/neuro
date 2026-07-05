@@ -3,19 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simple Book Viewer</title>
+    <title>Graphics Lab</title>
     <link rel="stylesheet" href="./book.css" />
   </head>
   <body>
     <div class="layout">
       <aside class="sidebar">
-        <h1>Book</h1>
+        <h1>Graphics Lab</h1>
         <nav id="chapters-nav" aria-label="Chapters"></nav>
       </aside>
 
       <main class="content">
         <h2 id="chapter-title">Loading...</h2>
         <p id="chapter-subject" class="subject"></p>
+        <section class="lab-panel" aria-label="Interactive canvas example">
+          <div class="lab-panel-header">
+            <span id="canvas-example-title">Canvas example</span>
+            <span class="lab-panel-badge">Canvas2D</span>
+          </div>
+          <canvas id="chapter-canvas" width="960" height="420"></canvas>
+        </section>
         <article id="chapter-body"></article>
       </main>
     </div>
