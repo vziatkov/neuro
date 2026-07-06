@@ -17,7 +17,7 @@ const canvasTitleEl = document.getElementById("canvas-example-title");
 const candlesDataPanel = document.getElementById("candles-data-panel");
 const candlesDataInput = document.getElementById("candles-data-input");
 const candlesDataStatus = document.getElementById("candles-data-status");
-
+console.log("redeploy");
 const defaultCandles = [
   { open: 102, high: 109, low: 99, close: 107 },
   { open: 107, high: 111, low: 104, close: 105 },
