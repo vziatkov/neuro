@@ -75,6 +75,10 @@ export function createPriceScale(minPrice, maxPrice, area) {
   return createLinearScale(maxPrice, minPrice, area.y, area.y + area.height);
 }
 
+export function createInversePriceScale(minPrice, maxPrice, area) {
+  return createLinearScale(area.y + area.height, area.y, minPrice, maxPrice);
+}
+
 export function getPriceRange(candles) {
   return {
     minPrice: Math.min(...candles.map((candle) => candle.low)),
