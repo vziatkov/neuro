@@ -1,37 +1,27 @@
 import {
   clearCanvas,
-  createInversePriceScale,
-  createPriceScale,
+  drawCandles,
   drawChartFrame,
   drawGrid,
   drawLabel,
   getChartArea,
-  getPriceRange,
+  prepareCandleChart,
   setupCanvas,
 } from "./graphics/core.js";
 import { initBookViewer } from "./app/book-viewer.js";
 import { registerLabInteractions } from "./app/lab-interactions.js";
+import { fetchBinanceCandles } from "./data/binance.js";
+import { createManyCandles, defaultCandles, parseCandlesJson } from "./data/candles.js";
 
 const canvas = document.getElementById("chapter-canvas");
 const canvasTitleEl = document.getElementById("canvas-example-title");
 const candlesDataPanel = document.getElementById("candles-data-panel");
 const candlesDataInput = document.getElementById("candles-data-input");
 const candlesDataStatus = document.getElementById("candles-data-status");
-console.log("redeploy");
-const defaultCandles = [
-  { open: 102, high: 109, low: 99, close: 107 },
-  { open: 107, high: 111, low: 104, close: 105 },
-  { open: 105, high: 114, low: 103, close: 112 },
-  { open: 112, high: 116, low: 108, close: 110 },
-  { open: 110, high: 118, low: 109, close: 117 },
-  { open: 117, high: 121, low: 113, close: 115 },
-  { open: 115, high: 119, low: 111, close: 112 },
-  { open: 112, high: 116, low: 107, close: 109 },
-  { open: 109, high: 113, low: 105, close: 111 },
-  { open: 111, high: 120, low: 110, close: 119 },
-  { open: 119, high: 124, low: 116, close: 122 },
-  { open: 122, high: 126, low: 118, close: 120 },
-];
+const marketDataControls = document.getElementById("market-data-controls");
+const marketSymbolInput = document.getElementById("market-symbol-input");
+const marketIntervalInput = document.getElementById("market-interval-input");
+const loadMarketDataButton = document.getElementById("load-market-data-button");
 
 let candles = structuredClone(defaultCandles);
 let pointer = null;
@@ -43,29 +33,40 @@ function setCandlesPanelVisible(isVisible) {
   candlesDataPanel.hidden = !isVisible;
 }
 
+function setMarketDataControlsVisible(isVisible) {
+  marketDataControls.hidden = !isVisible;
+}
+
 function setCandlesStatus(message, isError = false) {
   candlesDataStatus.textContent = message;
   candlesDataStatus.classList.toggle("error", isError);
 }
 
 function parseCandlesInput() {
-  const nextCandles = JSON.parse(candlesDataInput.value);
-  if (!Array.isArray(nextCandles)) {
-    throw new Error("Expected an array of candles");
-  }
-  if (nextCandles.length === 0) {
-    throw new Error("Expected at least one candle");
-  }
+  return parseCandlesJson(candlesDataInput.value);
+}
 
-  nextCandles.forEach((candle, index) => {
-    for (const key of ["open", "high", "low", "close"]) {
-      if (typeof candle?.[key] !== "number" || !Number.isFinite(candle[key])) {
-        throw new Error(`Candle ${index + 1}: ${key} must be a number`);
-      }
-    }
-  });
+function syncCandlesInput() {
+  candlesDataInput.value = JSON.stringify(candles, null, 2);
+}
 
-  return nextCandles;
+async function loadBinanceCandles() {
+  const symbol = marketSymbolInput.value.trim().toUpperCase() || "BTCUSDT";
+  const interval = marketIntervalInput.value;
+
+  setCandlesStatus(`Loading ${symbol} ${interval} from Binance...`);
+  loadMarketDataButton.disabled = true;
+
+  try {
+    candles = await fetchBinanceCandles({ symbol, interval });
+    syncCandlesInput();
+    setCandlesStatus(`Loaded ${candles.length} ${symbol} candles`);
+    renderCanvasExample("chapter-07.md");
+  } catch (error) {
+    setCandlesStatus(error.message, true);
+  } finally {
+    loadMarketDataButton.disabled = false;
+  }
 }
 
 function drawCoordinateExample(ctx, width, height) {
@@ -127,37 +128,10 @@ function drawCandlesExample(ctx, width, height, candles) {
   clearCanvas(ctx, width, height);
   drawGrid(ctx, width, height, 38);
 
-  const area = getChartArea(width, height);
-  const { minPrice, maxPrice } = getPriceRange(candles);
-  const priceToY = createPriceScale(minPrice, maxPrice, area);
+  const { area, minPrice, maxPrice, priceToY } = prepareCandleChart(width, height, candles);
 
   drawChartFrame(ctx, area);
-
-  candles.forEach((candle, index) => {
-    const slot = area.width / candles.length;
-    const x = area.x + slot * index + slot * 0.5;
-    const bodyWidth = Math.max(8, slot * 0.52);
-    const up = candle.close >= candle.open;
-    const color = up ? "#63ff9b" : "#ff5c5c";
-    const yOpen = priceToY(candle.open);
-    const yClose = priceToY(candle.close);
-    const yHigh = priceToY(candle.high);
-    const yLow = priceToY(candle.low);
-    const bodyTop = Math.min(yOpen, yClose);
-    const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x, yHigh);
-    ctx.lineTo(x, yLow);
-    ctx.stroke();
-
-    ctx.fillStyle = up ? "rgba(99, 255, 155, 0.24)" : "rgba(255, 92, 92, 0.24)";
-    ctx.strokeStyle = color;
-    ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-    ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-  });
+  drawCandles(ctx, candles, area, priceToY);
 
   drawLabel(ctx, `high ${maxPrice}`, area.x + area.width + 10, priceToY(maxPrice) + 4, "#8f8075");
   drawLabel(ctx, `low ${minPrice}`, area.x + area.width + 10, priceToY(minPrice), "#8f8075");
@@ -168,10 +142,7 @@ function drawPriceScaleExample(ctx, width, height, candles) {
   clearCanvas(ctx, width, height);
   drawGrid(ctx, width, height, 38);
 
-  const area = getChartArea(width, height, { right: 86 });
-  const { minPrice, maxPrice } = getPriceRange(candles);
-  const priceToY = createPriceScale(minPrice, maxPrice, area);
-  const yToPrice = createInversePriceScale(minPrice, maxPrice, area);
+  const { area, minPrice, maxPrice, priceToY, yToPrice } = prepareCandleChart(width, height, candles, { right: 86 });
   const ticks = 5;
 
   drawChartFrame(ctx, area);
@@ -220,8 +191,7 @@ function drawCrosshairExample(ctx, width, height, candles) {
   }
 
   const area = getChartArea(width, height);
-  const { minPrice, maxPrice } = getPriceRange(candles);
-  const yToPrice = createInversePriceScale(minPrice, maxPrice, area);
+  const { yToPrice } = prepareCandleChart(width, height, candles);
   const slot = area.width / candles.length;
   const nearestIndex = Math.max(0, Math.min(candles.length - 1, Math.floor((pointer.x - area.x) / slot)));
   const nearestCandle = candles[nearestIndex];
@@ -250,23 +220,6 @@ function drawCrosshairExample(ctx, width, height, candles) {
   drawLabel(ctx, `y -> price ${price.toFixed(2)}`, area.x + 28, area.y + 100, "#8f8075");
 }
 
-function createManyCandles(count) {
-  let price = 100;
-  return Array.from({ length: count }, (_, index) => {
-    const open = price;
-    const close = open + Math.sin(index * 0.62) * 2.8 + Math.cos(index * 0.17) * 1.6;
-    const high = Math.max(open, close) + 1.4 + (index % 5) * 0.24;
-    const low = Math.min(open, close) - 1.2 - (index % 3) * 0.3;
-    price = close;
-    return {
-      open: Number(open.toFixed(2)),
-      high: Number(high.toFixed(2)),
-      low: Number(low.toFixed(2)),
-      close: Number(close.toFixed(2)),
-    };
-  });
-}
-
 function drawVisibleRangeExample(ctx, width, height) {
   clearCanvas(ctx, width, height);
   drawGrid(ctx, width, height, 38);
@@ -275,46 +228,38 @@ function drawVisibleRangeExample(ctx, width, height) {
   const visibleStart = 28;
   const visibleCount = 24;
   const visibleCandles = allCandles.slice(visibleStart, visibleStart + visibleCount);
-  const area = getChartArea(width, height);
-  const { minPrice, maxPrice } = getPriceRange(visibleCandles);
-  const priceToY = createPriceScale(minPrice, maxPrice, area);
+  const { area, priceToY } = prepareCandleChart(width, height, visibleCandles);
 
   drawChartFrame(ctx, area);
-
-  visibleCandles.forEach((candle, index) => {
-    const slot = area.width / visibleCandles.length;
-    const x = area.x + slot * index + slot * 0.5;
-    const bodyWidth = Math.max(5, slot * 0.45);
-    const up = candle.close >= candle.open;
-    const color = up ? "#63ff9b" : "#ff5c5c";
-    const yOpen = priceToY(candle.open);
-    const yClose = priceToY(candle.close);
-    const yHigh = priceToY(candle.high);
-    const yLow = priceToY(candle.low);
-    const bodyTop = Math.min(yOpen, yClose);
-    const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x, yHigh);
-    ctx.lineTo(x, yLow);
-    ctx.stroke();
-
-    ctx.fillStyle = up ? "rgba(99, 255, 155, 0.2)" : "rgba(255, 92, 92, 0.2)";
-    ctx.strokeStyle = color;
-    ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-    ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-  });
+  drawCandles(ctx, visibleCandles, area, priceToY, { bodyScale: 0.45, minBodyWidth: 5 });
 
   drawLabel(ctx, `dataset: ${allCandles.length} candles`, area.x, 36, "#8f8075");
   drawLabel(ctx, `rendered visible range: ${visibleStart + 1}-${visibleStart + visibleCount}`, area.x, 56, "#63ff9b");
   drawLabel(ctx, "real charts render the viewport, not the whole history", area.x, height - 14, "#f5efe7");
 }
 
+function drawRealMarketDataExample(ctx, width, height, candles) {
+  drawCandlesExample(ctx, width, height, candles);
+
+  const symbol = marketSymbolInput.value.trim().toUpperCase() || "BTCUSDT";
+  const interval = marketIntervalInput.value;
+  drawLabel(ctx, `${symbol} ${interval} via Binance REST`, 58, 54, "#63ff9b");
+  drawLabel(ctx, "click Load Binance REST to refresh the dataset", 58, 74, "#8f8075");
+}
+
 function renderCanvasExample(fileName) {
   const { ctx, width, height } = setupCanvas(canvas);
   currentChapterFileName = fileName;
+
+  if (fileName === "chapter-07.md") {
+    setCandlesPanelVisible(true);
+    setMarketDataControlsVisible(true);
+    canvasTitleEl.textContent = "Exercise 07: Real market data";
+    drawRealMarketDataExample(ctx, width, height, candles);
+    return;
+  }
+
+  setMarketDataControlsVisible(false);
 
   if (fileName === "chapter-06.md") {
     setCandlesPanelVisible(false);
@@ -376,6 +321,10 @@ registerLabInteractions({
   setPointer: (nextPointer) => {
     pointer = nextPointer;
   },
+});
+
+loadMarketDataButton.addEventListener("click", () => {
+  loadBinanceCandles();
 });
 
 setCandlesStatus(`OK: ${candles.length} candles`);

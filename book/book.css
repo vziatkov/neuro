@@ -129,6 +129,52 @@ body {
   background: rgba(0, 0, 0, 0.16);
 }
 
+.market-data-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.market-data-controls label {
+  display: grid;
+  gap: 5px;
+  color: #8f8075;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.market-data-controls input,
+.market-data-controls select,
+.market-data-controls button {
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(8, 6, 5, 0.86);
+  color: #f5efe7;
+  font: 12px Inter, system-ui, sans-serif;
+}
+
+.market-data-controls input,
+.market-data-controls select {
+  min-width: 120px;
+  padding: 0 10px;
+}
+
+.market-data-controls button {
+  padding: 0 14px;
+  border-color: rgba(242, 125, 38, 0.42);
+  color: #f27d26;
+  cursor: pointer;
+}
+
+.market-data-controls button:hover {
+  border-color: rgba(242, 125, 38, 0.8);
+}
+
 .data-panel-label {
   display: block;
   margin-bottom: 8px;

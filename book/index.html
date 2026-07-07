@@ -23,6 +23,22 @@
           </div>
           <canvas id="chapter-canvas" width="960" height="420"></canvas>
           <div id="candles-data-panel" class="data-panel" hidden>
+            <div id="market-data-controls" class="market-data-controls" hidden>
+              <label>
+                Symbol
+                <input id="market-symbol-input" value="BTCUSDT" />
+              </label>
+              <label>
+                Interval
+                <select id="market-interval-input">
+                  <option value="15m">15m</option>
+                  <option value="1h" selected>1h</option>
+                  <option value="4h">4h</option>
+                  <option value="1d">1d</option>
+                </select>
+              </label>
+              <button id="load-market-data-button" type="button">Load Binance REST</button>
+            </div>
             <label class="data-panel-label" for="candles-data-input">Candles JSON</label>
             <textarea id="candles-data-input" spellcheck="false"></textarea>
             <p id="candles-data-status" class="data-panel-status"></p>

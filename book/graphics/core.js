@@ -85,3 +85,47 @@ export function getPriceRange(candles) {
     maxPrice: Math.max(...candles.map((candle) => candle.high)),
   };
 }
+
+export function prepareCandleChart(width, height, candles, padding) {
+  const area = getChartArea(width, height, padding);
+  const { minPrice, maxPrice } = getPriceRange(candles);
+  const priceToY = createPriceScale(minPrice, maxPrice, area);
+  const yToPrice = createInversePriceScale(minPrice, maxPrice, area);
+
+  return { area, minPrice, maxPrice, priceToY, yToPrice };
+}
+
+export function drawCandle(ctx, candle, x, bodyWidth, priceToY) {
+  const up = candle.close >= candle.open;
+  const color = up ? "#63ff9b" : "#ff5c5c";
+  const yOpen = priceToY(candle.open);
+  const yClose = priceToY(candle.close);
+  const yHigh = priceToY(candle.high);
+  const yLow = priceToY(candle.low);
+  const bodyTop = Math.min(yOpen, yClose);
+  const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, yHigh);
+  ctx.lineTo(x, yLow);
+  ctx.stroke();
+
+  ctx.fillStyle = up ? "rgba(99, 255, 155, 0.24)" : "rgba(255, 92, 92, 0.24)";
+  ctx.strokeStyle = color;
+  ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+  ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+}
+
+export function drawCandles(ctx, candles, area, priceToY, options = {}) {
+  const slot = area.width / candles.length;
+  const bodyScale = options.bodyScale ?? 0.52;
+  const minBodyWidth = options.minBodyWidth ?? 8;
+  const bodyWidth = Math.max(minBodyWidth, slot * bodyScale);
+
+  candles.forEach((candle, index) => {
+    const x = area.x + slot * index + slot * 0.5;
+    drawCandle(ctx, candle, x, bodyWidth, priceToY);
+  });
+}
