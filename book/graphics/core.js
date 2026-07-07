@@ -1,3 +1,5 @@
+import { defaultChartTheme } from "./themes.js";
+
 export function setupCanvas(canvas) {
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -9,15 +11,15 @@ export function setupCanvas(canvas) {
   return { ctx, width: rect.width, height: rect.height };
 }
 
-export function clearCanvas(ctx, width, height) {
+export function clearCanvas(ctx, width, height, theme = defaultChartTheme) {
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#17120f";
+  ctx.fillStyle = theme.canvas.background;
   ctx.fillRect(0, 0, width, height);
 }
 
-export function drawGrid(ctx, width, height, step = 40) {
+export function drawGrid(ctx, width, height, step = 40, theme = defaultChartTheme) {
   ctx.save();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+  ctx.strokeStyle = theme.canvas.grid;
   ctx.lineWidth = 1;
 
   for (let x = 0; x <= width; x += step) {
@@ -37,7 +39,7 @@ export function drawGrid(ctx, width, height, step = 40) {
   ctx.restore();
 }
 
-export function drawLabel(ctx, text, x, y, color = "#f5efe7") {
+export function drawLabel(ctx, text, x, y, color = defaultChartTheme.text.primary) {
   ctx.fillStyle = color;
   ctx.font = "12px Inter, system-ui, sans-serif";
   ctx.fillText(text, x, y);
@@ -61,7 +63,7 @@ export function getChartArea(width, height, padding = {}) {
   };
 }
 
-export function drawChartFrame(ctx, area, color = "rgba(255, 255, 255, 0.16)") {
+export function drawChartFrame(ctx, area, color = defaultChartTheme.canvas.frame) {
   ctx.strokeStyle = color;
   ctx.strokeRect(area.x, area.y, area.width, area.height);
 }
@@ -95,9 +97,9 @@ export function prepareCandleChart(width, height, candles, padding) {
   return { area, minPrice, maxPrice, priceToY, yToPrice };
 }
 
-export function drawCandle(ctx, candle, x, bodyWidth, priceToY) {
+export function drawCandle(ctx, candle, x, bodyWidth, priceToY, theme = defaultChartTheme) {
   const up = candle.close >= candle.open;
-  const color = up ? "#63ff9b" : "#ff5c5c";
+  const color = up ? theme.candles.up : theme.candles.down;
   const yOpen = priceToY(candle.open);
   const yClose = priceToY(candle.close);
   const yHigh = priceToY(candle.high);
@@ -112,13 +114,14 @@ export function drawCandle(ctx, candle, x, bodyWidth, priceToY) {
   ctx.lineTo(x, yLow);
   ctx.stroke();
 
-  ctx.fillStyle = up ? "rgba(99, 255, 155, 0.24)" : "rgba(255, 92, 92, 0.24)";
+  ctx.fillStyle = up ? theme.candles.upFill : theme.candles.downFill;
   ctx.strokeStyle = color;
   ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
   ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
 }
 
 export function drawCandles(ctx, candles, area, priceToY, options = {}) {
+  const theme = options.theme ?? defaultChartTheme;
   const slot = area.width / candles.length;
   const bodyScale = options.bodyScale ?? 0.52;
   const minBodyWidth = options.minBodyWidth ?? 8;
@@ -126,6 +129,6 @@ export function drawCandles(ctx, candles, area, priceToY, options = {}) {
 
   candles.forEach((candle, index) => {
     const x = area.x + slot * index + slot * 0.5;
-    drawCandle(ctx, candle, x, bodyWidth, priceToY);
+    drawCandle(ctx, candle, x, bodyWidth, priceToY, theme);
   });
 }

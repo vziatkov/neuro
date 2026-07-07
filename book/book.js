@@ -8,6 +8,7 @@ import {
   prepareCandleChart,
   setupCanvas,
 } from "./graphics/core.js";
+import { defaultChartTheme as chartTheme } from "./graphics/themes.js";
 import { initBookViewer } from "./app/book-viewer.js";
 import { registerLabInteractions } from "./app/lab-interactions.js";
 import { fetchBinanceCandles } from "./data/binance.js";
@@ -70,11 +71,11 @@ async function loadBinanceCandles() {
 }
 
 function drawCoordinateExample(ctx, width, height) {
-  clearCanvas(ctx, width, height);
-  drawGrid(ctx, width, height);
+  clearCanvas(ctx, width, height, chartTheme);
+  drawGrid(ctx, width, height, undefined, chartTheme);
 
   const origin = { x: width * 0.5, y: height * 0.58 };
-  ctx.strokeStyle = "#f27d26";
+  ctx.strokeStyle = chartTheme.text.accent;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(32, origin.y);
@@ -83,34 +84,34 @@ function drawCoordinateExample(ctx, width, height) {
   ctx.lineTo(origin.x, 28);
   ctx.stroke();
 
-  ctx.fillStyle = "#63ff9b";
+  ctx.fillStyle = chartTheme.text.success;
   ctx.beginPath();
   ctx.arc(origin.x + 110, origin.y - 72, 6, 0, Math.PI * 2);
   ctx.fill();
 
-  drawLabel(ctx, "screen y grows down", 34, 34, "#8f8075");
-  drawLabel(ctx, "world point (x: 110, y: 72)", origin.x + 122, origin.y - 78, "#63ff9b");
+  drawLabel(ctx, "screen y grows down", 34, 34, chartTheme.text.muted);
+  drawLabel(ctx, "world point (x: 110, y: 72)", origin.x + 122, origin.y - 78, chartTheme.text.success);
 }
 
 function drawPrimitiveExample(ctx, width, height) {
-  clearCanvas(ctx, width, height);
-  drawGrid(ctx, width, height, 36);
+  clearCanvas(ctx, width, height, chartTheme);
+  drawGrid(ctx, width, height, 36, chartTheme);
 
-  ctx.strokeStyle = "#63ff9b";
+  ctx.strokeStyle = chartTheme.text.success;
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(width * 0.16, height * 0.72);
   ctx.lineTo(width * 0.42, height * 0.26);
   ctx.stroke();
 
-  ctx.fillStyle = "rgba(242, 125, 38, 0.22)";
-  ctx.strokeStyle = "#f27d26";
+  ctx.fillStyle = chartTheme.primitives.rectangleFill;
+  ctx.strokeStyle = chartTheme.text.accent;
   ctx.lineWidth = 2;
   ctx.fillRect(width * 0.5, height * 0.32, width * 0.24, height * 0.28);
   ctx.strokeRect(width * 0.5, height * 0.32, width * 0.24, height * 0.28);
 
-  ctx.fillStyle = "rgba(255, 220, 120, 0.2)";
-  ctx.strokeStyle = "#ffd27a";
+  ctx.fillStyle = chartTheme.primitives.triangleFill;
+  ctx.strokeStyle = chartTheme.text.warning;
   ctx.beginPath();
   ctx.moveTo(width * 0.76, height * 0.72);
   ctx.lineTo(width * 0.86, height * 0.36);
@@ -119,35 +120,35 @@ function drawPrimitiveExample(ctx, width, height) {
   ctx.fill();
   ctx.stroke();
 
-  drawLabel(ctx, "line", width * 0.16, height * 0.76, "#63ff9b");
-  drawLabel(ctx, "rect", width * 0.5, height * 0.28, "#f27d26");
-  drawLabel(ctx, "triangle", width * 0.8, height * 0.78, "#ffd27a");
+  drawLabel(ctx, "line", width * 0.16, height * 0.76, chartTheme.text.success);
+  drawLabel(ctx, "rect", width * 0.5, height * 0.28, chartTheme.text.accent);
+  drawLabel(ctx, "triangle", width * 0.8, height * 0.78, chartTheme.text.warning);
 }
 
 function drawCandlesExample(ctx, width, height, candles) {
-  clearCanvas(ctx, width, height);
-  drawGrid(ctx, width, height, 38);
+  clearCanvas(ctx, width, height, chartTheme);
+  drawGrid(ctx, width, height, 38, chartTheme);
 
   const { area, minPrice, maxPrice, priceToY } = prepareCandleChart(width, height, candles);
 
-  drawChartFrame(ctx, area);
-  drawCandles(ctx, candles, area, priceToY);
+  drawChartFrame(ctx, area, chartTheme.canvas.frame);
+  drawCandles(ctx, candles, area, priceToY, { theme: chartTheme });
 
-  drawLabel(ctx, `high ${maxPrice}`, area.x + area.width + 10, priceToY(maxPrice) + 4, "#8f8075");
-  drawLabel(ctx, `low ${minPrice}`, area.x + area.width + 10, priceToY(minPrice), "#8f8075");
-  drawLabel(ctx, "OHLC -> screen coordinates -> wick + body", area.x, height - 14, "#f5efe7");
+  drawLabel(ctx, `high ${maxPrice}`, area.x + area.width + 10, priceToY(maxPrice) + 4, chartTheme.text.muted);
+  drawLabel(ctx, `low ${minPrice}`, area.x + area.width + 10, priceToY(minPrice), chartTheme.text.muted);
+  drawLabel(ctx, "OHLC -> screen coordinates -> wick + body", area.x, height - 14, chartTheme.text.primary);
 }
 
 function drawPriceScaleExample(ctx, width, height, candles) {
-  clearCanvas(ctx, width, height);
-  drawGrid(ctx, width, height, 38);
+  clearCanvas(ctx, width, height, chartTheme);
+  drawGrid(ctx, width, height, 38, chartTheme);
 
   const { area, minPrice, maxPrice, priceToY, yToPrice } = prepareCandleChart(width, height, candles, { right: 86 });
   const ticks = 5;
 
-  drawChartFrame(ctx, area);
+  drawChartFrame(ctx, area, chartTheme.canvas.frame);
 
-  ctx.strokeStyle = "rgba(242, 125, 38, 0.35)";
+  ctx.strokeStyle = chartTheme.crosshair.axis;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(area.x + area.width, area.y);
@@ -158,19 +159,19 @@ function drawPriceScaleExample(ctx, width, height, candles) {
     const price = minPrice + ((maxPrice - minPrice) / ticks) * index;
     const y = priceToY(price);
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.11)";
+    ctx.strokeStyle = chartTheme.crosshair.guide;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(area.x, y);
     ctx.lineTo(area.x + area.width, y);
     ctx.stroke();
 
-    drawLabel(ctx, price.toFixed(2), area.x + area.width + 12, y + 4, "#f5efe7");
+    drawLabel(ctx, price.toFixed(2), area.x + area.width + 12, y + 4, chartTheme.text.primary);
   }
 
   const sampleY = area.y + area.height * 0.38;
   const samplePrice = yToPrice(sampleY);
-  ctx.strokeStyle = "#63ff9b";
+  ctx.strokeStyle = chartTheme.text.success;
   ctx.setLineDash([6, 6]);
   ctx.beginPath();
   ctx.moveTo(area.x, sampleY);
@@ -178,15 +179,15 @@ function drawPriceScaleExample(ctx, width, height, candles) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  drawLabel(ctx, `mouse y -> ${samplePrice.toFixed(2)}`, area.x + 12, sampleY - 10, "#63ff9b");
-  drawLabel(ctx, "price axis is just an inverted linear scale", area.x, height - 14, "#f5efe7");
+  drawLabel(ctx, `mouse y -> ${samplePrice.toFixed(2)}`, area.x + 12, sampleY - 10, chartTheme.text.success);
+  drawLabel(ctx, "price axis is just an inverted linear scale", area.x, height - 14, chartTheme.text.primary);
 }
 
 function drawCrosshairExample(ctx, width, height, candles) {
   drawCandlesExample(ctx, width, height, candles);
 
   if (!pointer) {
-    drawLabel(ctx, "move mouse over the canvas", 58, 54, "#8f8075");
+    drawLabel(ctx, "move mouse over the canvas", 58, 54, chartTheme.text.muted);
     return;
   }
 
@@ -198,7 +199,7 @@ function drawCrosshairExample(ctx, width, height, candles) {
   const candleX = area.x + slot * nearestIndex + slot * 0.5;
   const price = yToPrice(pointer.y);
 
-  ctx.strokeStyle = "rgba(99, 255, 155, 0.78)";
+  ctx.strokeStyle = chartTheme.crosshair.line;
   ctx.lineWidth = 1;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
@@ -209,20 +210,20 @@ function drawCrosshairExample(ctx, width, height, candles) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = "rgba(8, 6, 5, 0.86)";
-  ctx.strokeStyle = "rgba(99, 255, 155, 0.45)";
+  ctx.fillStyle = chartTheme.canvas.panel;
+  ctx.strokeStyle = chartTheme.canvas.panelBorder;
   ctx.fillRect(area.x + 14, area.y + 14, 220, 86);
   ctx.strokeRect(area.x + 14, area.y + 14, 220, 86);
 
-  drawLabel(ctx, `nearest candle: ${nearestIndex + 1}`, area.x + 28, area.y + 38, "#63ff9b");
-  drawLabel(ctx, `O ${nearestCandle.open}  H ${nearestCandle.high}`, area.x + 28, area.y + 60, "#f5efe7");
-  drawLabel(ctx, `L ${nearestCandle.low}  C ${nearestCandle.close}`, area.x + 28, area.y + 80, "#f5efe7");
-  drawLabel(ctx, `y -> price ${price.toFixed(2)}`, area.x + 28, area.y + 100, "#8f8075");
+  drawLabel(ctx, `nearest candle: ${nearestIndex + 1}`, area.x + 28, area.y + 38, chartTheme.text.success);
+  drawLabel(ctx, `O ${nearestCandle.open}  H ${nearestCandle.high}`, area.x + 28, area.y + 60, chartTheme.text.primary);
+  drawLabel(ctx, `L ${nearestCandle.low}  C ${nearestCandle.close}`, area.x + 28, area.y + 80, chartTheme.text.primary);
+  drawLabel(ctx, `y -> price ${price.toFixed(2)}`, area.x + 28, area.y + 100, chartTheme.text.muted);
 }
 
 function drawVisibleRangeExample(ctx, width, height) {
-  clearCanvas(ctx, width, height);
-  drawGrid(ctx, width, height, 38);
+  clearCanvas(ctx, width, height, chartTheme);
+  drawGrid(ctx, width, height, 38, chartTheme);
 
   const allCandles = createManyCandles(80);
   const visibleStart = 28;
@@ -230,12 +231,12 @@ function drawVisibleRangeExample(ctx, width, height) {
   const visibleCandles = allCandles.slice(visibleStart, visibleStart + visibleCount);
   const { area, priceToY } = prepareCandleChart(width, height, visibleCandles);
 
-  drawChartFrame(ctx, area);
-  drawCandles(ctx, visibleCandles, area, priceToY, { bodyScale: 0.45, minBodyWidth: 5 });
+  drawChartFrame(ctx, area, chartTheme.canvas.frame);
+  drawCandles(ctx, visibleCandles, area, priceToY, { bodyScale: 0.45, minBodyWidth: 5, theme: chartTheme });
 
-  drawLabel(ctx, `dataset: ${allCandles.length} candles`, area.x, 36, "#8f8075");
-  drawLabel(ctx, `rendered visible range: ${visibleStart + 1}-${visibleStart + visibleCount}`, area.x, 56, "#63ff9b");
-  drawLabel(ctx, "real charts render the viewport, not the whole history", area.x, height - 14, "#f5efe7");
+  drawLabel(ctx, `dataset: ${allCandles.length} candles`, area.x, 36, chartTheme.text.muted);
+  drawLabel(ctx, `rendered visible range: ${visibleStart + 1}-${visibleStart + visibleCount}`, area.x, 56, chartTheme.text.success);
+  drawLabel(ctx, "real charts render the viewport, not the whole history", area.x, height - 14, chartTheme.text.primary);
 }
 
 function drawRealMarketDataExample(ctx, width, height, candles) {
@@ -243,8 +244,8 @@ function drawRealMarketDataExample(ctx, width, height, candles) {
 
   const symbol = marketSymbolInput.value.trim().toUpperCase() || "BTCUSDT";
   const interval = marketIntervalInput.value;
-  drawLabel(ctx, `${symbol} ${interval} via Binance REST`, 58, 54, "#63ff9b");
-  drawLabel(ctx, "click Load Binance REST to refresh the dataset", 58, 74, "#8f8075");
+  drawLabel(ctx, `${symbol} ${interval} via Binance REST`, 58, 54, chartTheme.text.success);
+  drawLabel(ctx, "click Load Binance REST to refresh the dataset", 58, 74, chartTheme.text.muted);
 }
 
 function renderCanvasExample(fileName) {
@@ -304,8 +305,8 @@ function renderCanvasExample(fileName) {
   }
 
   canvasTitleEl.textContent = "Deep notes";
-  clearCanvas(ctx, width, height);
-  drawLabel(ctx, "No canvas exercise for this note yet.", 28, 38, "#8f8075");
+  clearCanvas(ctx, width, height, chartTheme);
+  drawLabel(ctx, "No canvas exercise for this note yet.", 28, 38, chartTheme.text.muted);
 }
 
 registerLabInteractions({
