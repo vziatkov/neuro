@@ -1,4 +1,5 @@
 export const defaultChartTheme = {
+  name: "Warm Dark",
   canvas: {
     background: "#17120f",
     grid: "rgba(255, 255, 255, 0.06)",
