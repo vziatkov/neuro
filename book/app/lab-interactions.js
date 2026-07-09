@@ -50,8 +50,6 @@ export function registerLabInteractions({
       return;
     }
 
-    event.preventDefault();
-    canvas.setPointerCapture?.(event.pointerId);
     updateCanvasPointer(event);
   });
 
@@ -60,16 +58,17 @@ export function registerLabInteractions({
       return;
     }
 
-    event.preventDefault();
     updateCanvasPointer(event);
   });
 
-  canvas.addEventListener("pointerup", (event) => {
-    canvas.releasePointerCapture?.(event.pointerId);
-  });
-
   canvas.addEventListener("pointercancel", clearCanvasPointer);
-  canvas.addEventListener("pointerleave", clearCanvasPointer);
+  canvas.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
+
+    clearCanvasPointer();
+  });
 
   ["dragstart", "selectstart", "contextmenu"].forEach((eventName) => {
     canvas.addEventListener(eventName, (event) => {
