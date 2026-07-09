@@ -123,6 +123,21 @@ body {
   width: 100%;
   height: min(48vw, 420px);
   min-height: 260px;
+  border: 0;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-drag: none;
+  cursor: crosshair;
+}
+
+#chapter-canvas:focus,
+#chapter-canvas:focus-visible,
+#chapter-canvas:active {
+  outline: none;
 }
 
 .data-panel {
