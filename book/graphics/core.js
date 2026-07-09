@@ -81,6 +81,26 @@ export function createInversePriceScale(minPrice, maxPrice, area) {
   return createLinearScale(area.y + area.height, area.y, minPrice, maxPrice);
 }
 
+export function createCamera2D({ x = 0, y = 0, zoom = 1 } = {}, viewport) {
+  const centerX = viewport.width * 0.5;
+  const centerY = viewport.height * 0.5;
+
+  return {
+    worldToScreen(point) {
+      return {
+        x: centerX + (point.x - x) * zoom,
+        y: centerY - (point.y - y) * zoom,
+      };
+    },
+    screenToWorld(point) {
+      return {
+        x: x + (point.x - centerX) / zoom,
+        y: y - (point.y - centerY) / zoom,
+      };
+    },
+  };
+}
+
 export function getPriceRange(candles) {
   return {
     minPrice: Math.min(...candles.map((candle) => candle.low)),

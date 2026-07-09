@@ -1,5 +1,6 @@
 import {
   clearCanvas,
+  createCamera2D,
   drawCandles,
   drawChartFrame,
   drawGrid,
@@ -248,9 +249,203 @@ function drawRealMarketDataExample(ctx, width, height, candles) {
   drawLabel(ctx, "click Load Binance REST to refresh the dataset", 58, 74, chartTheme.text.muted);
 }
 
+function drawCoordinateSpacesExample(ctx, width, height) {
+  clearCanvas(ctx, width, height, chartTheme);
+  drawGrid(ctx, width, height, 38, chartTheme);
+
+  const compact = width < 720;
+  const camera = { x: 0, y: 0, zoom: Math.max(32, Math.min(width, height) / 8) };
+  const movedCamera = { x: 2, y: 0 };
+  const transform = createCamera2D(camera, { width, height });
+  const worldSquare = [
+    { x: -2, y: -1 },
+    { x: 2, y: -1 },
+    { x: 2, y: 3 },
+    { x: -2, y: 3 },
+  ];
+  const screenSquare = worldSquare.map(transform.worldToScreen);
+  const origin = transform.worldToScreen({ x: 0, y: 0 });
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
+  ctx.fillRect(32, 26, width - 64, height - 52);
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+  ctx.lineWidth = 1;
+  for (let worldX = -10; worldX <= 10; worldX += 1) {
+    const a = transform.worldToScreen({ x: worldX, y: -6 });
+    const b = transform.worldToScreen({ x: worldX, y: 6 });
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  for (let worldY = -6; worldY <= 6; worldY += 1) {
+    const a = transform.worldToScreen({ x: -10, y: worldY });
+    const b = transform.worldToScreen({ x: 10, y: worldY });
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  const xAxisA = transform.worldToScreen({ x: -10, y: 0 });
+  const xAxisB = transform.worldToScreen({ x: 10, y: 0 });
+  const yAxisA = transform.worldToScreen({ x: 0, y: -6 });
+  const yAxisB = transform.worldToScreen({ x: 0, y: 6 });
+
+  ctx.strokeStyle = chartTheme.text.success;
+  ctx.fillStyle = chartTheme.text.success;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(xAxisA.x, xAxisA.y);
+  ctx.lineTo(xAxisB.x, xAxisB.y);
+  ctx.lineTo(xAxisB.x - 12, xAxisB.y - 7);
+  ctx.moveTo(xAxisB.x, xAxisB.y);
+  ctx.lineTo(xAxisB.x - 12, xAxisB.y + 7);
+  ctx.stroke();
+
+  ctx.strokeStyle = chartTheme.text.accent;
+  ctx.fillStyle = chartTheme.text.accent;
+  ctx.beginPath();
+  ctx.moveTo(yAxisA.x, yAxisA.y);
+  ctx.lineTo(yAxisB.x, yAxisB.y);
+  ctx.lineTo(yAxisB.x - 7, yAxisB.y + 12);
+  ctx.moveTo(yAxisB.x, yAxisB.y);
+  ctx.lineTo(yAxisB.x + 7, yAxisB.y + 12);
+  ctx.stroke();
+
+  ctx.fillStyle = chartTheme.text.success;
+  ctx.beginPath();
+  ctx.arc(origin.x, origin.y, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  const movedCameraCenter = transform.worldToScreen(movedCamera);
+  const cameraFrame = [
+    { x: movedCamera.x - 2.4, y: movedCamera.y - 1.45 },
+    { x: movedCamera.x + 2.4, y: movedCamera.y - 1.45 },
+    { x: movedCamera.x + 2.4, y: movedCamera.y + 1.45 },
+    { x: movedCamera.x - 2.4, y: movedCamera.y + 1.45 },
+  ].map(transform.worldToScreen);
+
+  ctx.strokeStyle = chartTheme.crosshair.line;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7, 6]);
+  ctx.beginPath();
+  ctx.moveTo(cameraFrame[0].x, cameraFrame[0].y);
+  cameraFrame.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = chartTheme.crosshair.line;
+  ctx.beginPath();
+  ctx.arc(movedCameraCenter.x, movedCameraCenter.y, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = chartTheme.crosshair.line;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(origin.x + 10, origin.y + 18);
+  ctx.lineTo(movedCameraCenter.x - 10, movedCameraCenter.y + 18);
+  ctx.lineTo(movedCameraCenter.x - 20, movedCameraCenter.y + 12);
+  ctx.moveTo(movedCameraCenter.x - 10, movedCameraCenter.y + 18);
+  ctx.lineTo(movedCameraCenter.x - 20, movedCameraCenter.y + 24);
+  ctx.stroke();
+
+  ctx.shadowColor = "rgba(242, 125, 38, 0.45)";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = chartTheme.primitives.rectangleFill;
+  ctx.strokeStyle = chartTheme.text.accent;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(screenSquare[0].x, screenSquare[0].y);
+  screenSquare.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  drawLabel(ctx, "WORLD SQUARE", screenSquare[3].x, screenSquare[3].y - 16, chartTheme.text.accent);
+  drawLabel(ctx, "fixed in world space", screenSquare[3].x, screenSquare[3].y - 2, chartTheme.text.primary);
+  drawLabel(ctx, "UV (0,0)", screenSquare[0].x - 28, screenSquare[0].y + 22, chartTheme.text.warning);
+  if (!compact) {
+    drawLabel(ctx, "UV (1,1)", screenSquare[2].x + 10, screenSquare[2].y - 10, chartTheme.text.warning);
+    drawLabel(ctx, "X axis", xAxisB.x - 54, xAxisB.y - 12, chartTheme.text.success);
+    drawLabel(ctx, "Y axis", yAxisB.x + 12, yAxisB.y + 18, chartTheme.text.accent);
+  }
+  drawLabel(ctx, "camera/view window moved to x = 2", cameraFrame[3].x + 8, cameraFrame[3].y - 10, chartTheme.text.success);
+
+  const pipelinePanel = compact ? { x: 24, y: 28, width: Math.min(286, width - 48), height: 102 } : { x: 48, y: 38, width: 288, height: 116 };
+  ctx.fillStyle = chartTheme.canvas.panel;
+  ctx.strokeStyle = chartTheme.canvas.panelBorder;
+  ctx.lineWidth = 1;
+  ctx.fillRect(pipelinePanel.x, pipelinePanel.y, pipelinePanel.width, pipelinePanel.height);
+  ctx.strokeRect(pipelinePanel.x, pipelinePanel.y, pipelinePanel.width, pipelinePanel.height);
+  drawLabel(ctx, "Coordinate pipeline", pipelinePanel.x + 18, pipelinePanel.y + 26, chartTheme.text.success);
+  drawLabel(ctx, "world -> camera/view -> screen", pipelinePanel.x + 18, pipelinePanel.y + 50, chartTheme.text.primary);
+  drawLabel(ctx, "camera moves; square stays fixed", pipelinePanel.x + 18, pipelinePanel.y + 72, chartTheme.text.warning);
+  drawLabel(ctx, `active cam x ${camera.x}, y ${camera.y}, zoom ${camera.zoom.toFixed(1)}`, pipelinePanel.x + 18, pipelinePanel.y + 94, chartTheme.text.muted);
+
+  if (pointer) {
+    const world = transform.screenToWorld(pointer);
+    const ndc = {
+      x: (pointer.x / width) * 2 - 1,
+      y: 1 - (pointer.y / height) * 2,
+    };
+
+    ctx.strokeStyle = chartTheme.crosshair.line;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(pointer.x, 0);
+    ctx.lineTo(pointer.x, height);
+    ctx.moveTo(0, pointer.y);
+    ctx.lineTo(width, pointer.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const pointerPanelWidth = Math.min(238, width - 48);
+    const pointerPanel = {
+      x: compact ? 24 : width - pointerPanelWidth - 28,
+      y: compact ? height - 116 : 28,
+      width: pointerPanelWidth,
+      height: 98,
+    };
+    ctx.fillStyle = chartTheme.canvas.panel;
+    ctx.strokeStyle = chartTheme.canvas.panelBorder;
+    ctx.fillRect(pointerPanel.x, pointerPanel.y, pointerPanel.width, pointerPanel.height);
+    ctx.strokeRect(pointerPanel.x, pointerPanel.y, pointerPanel.width, pointerPanel.height);
+    drawLabel(ctx, `screen: ${pointer.x.toFixed(0)}, ${pointer.y.toFixed(0)}`, pointerPanel.x + 16, pointerPanel.y + 26, chartTheme.text.primary);
+    drawLabel(ctx, `world: ${world.x.toFixed(2)}, ${world.y.toFixed(2)}`, pointerPanel.x + 16, pointerPanel.y + 48, chartTheme.text.success);
+    drawLabel(ctx, `NDC: ${ndc.x.toFixed(2)}, ${ndc.y.toFixed(2)}`, pointerPanel.x + 16, pointerPanel.y + 70, chartTheme.text.warning);
+  } else {
+    const hintPanelWidth = Math.min(238, width - 48);
+    const hintPanel = {
+      x: compact ? 24 : width - hintPanelWidth - 28,
+      y: compact ? height - 86 : 28,
+      width: hintPanelWidth,
+      height: 58,
+    };
+    ctx.fillStyle = chartTheme.canvas.panel;
+    ctx.strokeStyle = chartTheme.canvas.panelBorder;
+    ctx.fillRect(hintPanel.x, hintPanel.y, hintPanel.width, hintPanel.height);
+    ctx.strokeRect(hintPanel.x, hintPanel.y, hintPanel.width, hintPanel.height);
+    drawLabel(ctx, "move mouse over canvas", hintPanel.x + 16, hintPanel.y + 26, chartTheme.text.primary);
+    drawLabel(ctx, "screen -> world -> NDC", hintPanel.x + 16, hintPanel.y + 48, chartTheme.text.muted);
+  }
+
+  ctx.restore();
+}
+
 function renderCanvasExample(fileName) {
   const { ctx, width, height } = setupCanvas(canvas);
   currentChapterFileName = fileName;
+  if (fileName === "chapter-08.md") {
+    setCandlesPanelVisible(false);
+    setMarketDataControlsVisible(false);
+    canvasTitleEl.textContent = "Exercise 08: Coordinate spaces";
+    drawCoordinateSpacesExample(ctx, width, height);
+    return;
+  }
 
   if (fileName === "chapter-07.md") {
     setCandlesPanelVisible(true);

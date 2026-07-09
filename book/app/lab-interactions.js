@@ -8,6 +8,8 @@ export function registerLabInteractions({
   setCandlesStatus,
   setPointer,
 }) {
+  const pointerChapters = new Set(["chapter-05.md", "chapter-08.md"]);
+
   candlesDataInput.addEventListener("input", () => {
     try {
       const candles = parseCandlesInput();
@@ -20,7 +22,8 @@ export function registerLabInteractions({
   });
 
   canvas.addEventListener("pointermove", (event) => {
-    if (getCurrentChapter() !== "chapter-05.md") {
+    const currentChapter = getCurrentChapter();
+    if (!pointerChapters.has(currentChapter)) {
       return;
     }
 
@@ -29,15 +32,16 @@ export function registerLabInteractions({
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
     });
-    renderCanvasExample("chapter-05.md");
+    renderCanvasExample(currentChapter);
   });
 
   canvas.addEventListener("pointerleave", () => {
-    if (getCurrentChapter() !== "chapter-05.md") {
+    const currentChapter = getCurrentChapter();
+    if (!pointerChapters.has(currentChapter)) {
       return;
     }
 
     setPointer(null);
-    renderCanvasExample("chapter-05.md");
+    renderCanvasExample(currentChapter);
   });
 }
