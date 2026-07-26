@@ -100,6 +100,23 @@ li{
   font-size: 13px;
   font-weight: 400;
 }
+.demo-links{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.demo-link{
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #fef3ed;
+  color: #b84a0a;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.demo-link:hover{ text-decoration: underline; }
 .print{
   margin-top: 36px;
   padding: 10px 24px;
@@ -196,6 +213,16 @@ li{
     <li>Developed slot games (e.g. Bonanza Gems, Thunder Plinko) targeting 60fps on low-end devices using Pixi-Spine and WebGL.</li>
     <li>Reduced load time by ~20% through rendering and asset optimization.</li>
     <li>Implemented UI with Svelte, Tailwind, Vite; fostered collaborative delivery under tight deadlines.</li>
+    <li>
+      Selected playable demos:
+      <span class="demo-links">
+        <a class="demo-link" href="https://zeus-claws-eternal-iframe-stage.clawbuster.com/index.html?secret=4b9df38e-bab0-4647-aa8c-3620add36545&amp;d=1763650022975&amp;locale=en-EN&amp;social=false&amp;" target="_blank" rel="noopener">Zeus Claws Eternal</a>
+        <a class="demo-link" href="https://thunder-plinko-iframe-stage.clawbuster.com/index.html?secret=6b4af575-067d-4019-ba1d-490acf0cbd77&amp;d=1785076560238&amp;locale=en-EN&amp;social=false&amp;" target="_blank" rel="noopener">Thunder Plinko</a>
+        <a class="demo-link" href="https://claw-bass-bonanza-iframe-stage.clawbuster.com/index.html?secret=f067d3cb-8a8a-4aa0-8af3-b100ed6a8a93&amp;d=1785076626965&amp;locale=en-EN&amp;social=false&amp;" target="_blank" rel="noopener">Claw Bass Bonanza</a>
+        <a class="demo-link" href="https://sweet-bonanza-iframe-stage.clawbuster.com/index.html?secret=747b0c3e-f57f-4e46-9de0-3844fd127fdf&amp;d=1785076640654&amp;locale=en-EN&amp;social=false&amp;" target="_blank" rel="noopener">Sweet Bonanza</a>
+        <a class="demo-link" href="https://gems-claw-xtreme-iframe-stage.clawbuster.com/index.html?secret=615b77b1-83b0-4777-9828-6201f9f7f9da&amp;d=1785076699738&amp;locale=en-EN&amp;social=false&amp;" target="_blank" rel="noopener">Gems Claw Xtreme</a>
+      </span>
+    </li>
   </ul>
 </div>
 
