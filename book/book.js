@@ -11,12 +11,15 @@ import {
 } from "./graphics/core.js";
 import { defaultChartTheme as chartTheme } from "./graphics/themes.js";
 import { initBookViewer } from "./app/book-viewer.js";
+import { createCheckboxControl } from "./app/lab-controls.ts";
 import { registerLabInteractions } from "./app/lab-interactions.js";
 import { fetchBinanceCandles } from "./data/binance.js";
 import { createManyCandles, defaultCandles, parseCandlesJson } from "./data/candles.js";
+import { ColorBoxPlayground } from "./engine/ColorBoxPlayground.ts";
 
 const canvas = document.getElementById("chapter-canvas");
 const canvasTitleEl = document.getElementById("canvas-example-title");
+const labControlsPanel = document.getElementById("lab-controls-panel");
 const candlesDataPanel = document.getElementById("candles-data-panel");
 const candlesDataInput = document.getElementById("candles-data-input");
 const candlesDataStatus = document.getElementById("candles-data-status");
@@ -28,6 +31,19 @@ const loadMarketDataButton = document.getElementById("load-market-data-button");
 let candles = structuredClone(defaultCandles);
 let pointer = null;
 let currentChapterFileName = "";
+let useAccentColor = false;
+let activeControls = [];
+
+const colorBoxPlayground = new ColorBoxPlayground({
+  background: chartTheme.canvas.background,
+  grid: chartTheme.canvas.grid,
+  primary: chartTheme.text.primary,
+  muted: chartTheme.text.muted,
+  accent: chartTheme.text.accent,
+  success: chartTheme.text.success,
+  accentFill: chartTheme.primitives.rectangleFill,
+  successFill: "rgba(99, 255, 155, 0.22)",
+});
 
 candlesDataInput.value = JSON.stringify(candles, null, 2);
 
@@ -37,6 +53,31 @@ function setCandlesPanelVisible(isVisible) {
 
 function setMarketDataControlsVisible(isVisible) {
   marketDataControls.hidden = !isVisible;
+}
+
+function setLabControlsVisible(isVisible) {
+  labControlsPanel.hidden = !isVisible;
+}
+
+function clearLabControls() {
+  activeControls.forEach((control) => control.remove());
+  activeControls = [];
+  labControlsPanel.replaceChildren();
+}
+
+function setupCheckboxControls() {
+  clearLabControls();
+  activeControls.push(
+    createCheckboxControl({
+      container: labControlsPanel,
+      label: "Use green color",
+      checked: useAccentColor,
+      onChange: (checked) => {
+        useAccentColor = checked;
+        renderCanvasExample("chapter-09.md");
+      },
+    }),
+  );
 }
 
 function setCandlesStatus(message, isError = false) {
@@ -436,9 +477,29 @@ function drawCoordinateSpacesExample(ctx, width, height) {
   ctx.restore();
 }
 
+function drawCheckboxControlExample(ctx, width, height) {
+  colorBoxPlayground.setState({ useGreenColor: useAccentColor });
+  colorBoxPlayground.render(ctx, width, height);
+}
+
 function renderCanvasExample(fileName) {
   const { ctx, width, height } = setupCanvas(canvas);
   currentChapterFileName = fileName;
+
+  clearLabControls();
+
+  if (fileName === "chapter-09.md") {
+    setCandlesPanelVisible(false);
+    setMarketDataControlsVisible(false);
+    setLabControlsVisible(true);
+    setupCheckboxControls();
+    canvasTitleEl.textContent = "Exercise 09: Checkbox control";
+    drawCheckboxControlExample(ctx, width, height);
+    return;
+  }
+
+  setLabControlsVisible(false);
+
   if (fileName === "chapter-08.md") {
     setCandlesPanelVisible(false);
     setMarketDataControlsVisible(false);

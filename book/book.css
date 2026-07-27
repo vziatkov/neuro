@@ -140,6 +140,30 @@ body {
   outline: none;
 }
 
+.lab-controls-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.lab-control {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #f5efe7;
+  font: 12px Inter, system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.lab-control input {
+  accent-color: #f27d26;
+}
+
 .data-panel {
   padding: 14px 16px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
