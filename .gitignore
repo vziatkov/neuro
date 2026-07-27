@@ -8,6 +8,8 @@ dist/
 !public/diff/saas/dist/**
 !public/diff/casino/inside-the-system/dist/
 !public/diff/casino/inside-the-system/dist/**
+!public/games/rock-paper-scissors/dist/
+!public/games/rock-paper-scissors/dist/**
 dist-ssr/
 mmo-map-protected.html
 *.local
