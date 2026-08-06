@@ -117,22 +117,65 @@ li{
   white-space: nowrap;
 }
 .demo-link:hover{ text-decoration: underline; }
-.print{
-  margin-top: 36px;
-  padding: 10px 24px;
-  background: #222;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
+@media (max-width: 640px){
+  body{
+    padding: 0;
+    background: #fff;
+    line-height: 1.58;
+  }
+  .container{
+    max-width: none;
+    padding: 28px 18px 34px;
+    box-shadow: none;
+  }
+  h1{
+    font-size: 32px;
+    line-height: 1.06;
+  }
+  .title{
+    font-size: 15px;
+  }
+  .contact{
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .contact p{
+    font-size: 14px !important;
+    line-height: 1.55;
+  }
+  .section{
+    margin-top: 28px;
+  }
+  .section h2{
+    font-size: 12px;
+    letter-spacing: 1.2px;
+  }
+  .skills{
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  li{
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .company{
+    font-size: 16px;
+  }
+  .date{
+    font-size: 13px;
+  }
+  .badge{
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+  .demo-link{
+    padding: 7px 10px;
+    font-size: 13px;
+  }
 }
-.print:hover{ background: #333; }
 @media print{
   body{ background: #fff; padding: 0; }
   .container{ box-shadow: none; padding: 32px; max-width: 100%; }
-  .print{ display: none; }
   .contact a{ color: #1a1a1a; }
 }
 </style>
@@ -295,8 +338,6 @@ Engineer in Automated Control Systems. Thesis: morphological text analyzer (Java
   &ldquo;We are what we repeatedly do. Excellence, then, is not an act, but a habit.&rdquo; — Aristotle. I treat engineering as a craft: code should be legible, extensible, and maintainable. Clean architecture and separation of concerns as a path to long-term velocity. Empathy and first-principles thinking — understanding the &ldquo;why&rdquo; behind the task to build robust, future-proof solutions.
 </p>
 </div>
-
-<button class="print" onclick="window.print()">Save as PDF</button>
 
 </div>
 
